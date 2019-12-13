@@ -38,6 +38,8 @@ DECLARE_CB(help);
 DECLARE_CB(quit);
 
 DECLARE_CB(ct);
+DECLARE_CB(lightness);
+DECLARE_CB(onoff);
 
 static const command_t commands[] = {
   CMD_ENTRY("sync", ccb_sync,
@@ -50,6 +52,11 @@ static const command_t commands[] = {
             "Print help")
   CMD_ENTRY("list", ccb_list,
             "List all devices in the database")
+
+  CMD_ENTRY("onoff", ccb_onoff,
+            "Set the onoff of a light")
+  CMD_ENTRY("lightness", ccb_lightness,
+            "Set the lightness of a light")
   CMD_ENTRY("colortemp", ccb_ct,
             "Set the color temperature of a light")
 };
@@ -220,12 +227,6 @@ int ccb_reset(char *str)
   return 0;
 }
 
-int ccb_ct(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
 int ccb_list(char *str)
 {
   printf("%s\n", __FUNCTION__);
@@ -246,3 +247,22 @@ int ccb_quit(char *str)
   }
   exit(EXIT_SUCCESS);
 }
+
+int ccb_ct(char *str)
+{
+  printf("%s\n", __FUNCTION__);
+  return 0;
+}
+
+int ccb_lightness(char *str)
+{
+  printf("%s\n", __FUNCTION__);
+  return 0;
+}
+
+int ccb_onoff(char *str)
+{
+  printf("%s\n", __FUNCTION__);
+  return 0;
+}
+
