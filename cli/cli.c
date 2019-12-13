@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include <unistd.h>
+#include <signal.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -32,18 +33,30 @@ typedef struct {
 /* Static Variables *************************************************** */
 DECLARE_CB(sync);
 DECLARE_CB(reset);
+DECLARE_CB(list);
+DECLARE_CB(help);
+DECLARE_CB(quit);
+
 DECLARE_CB(ct);
 
 static const command_t commands[] = {
-  CMD_ENTRY("Sync", ccb_sync,
+  CMD_ENTRY("sync", ccb_sync,
             "Synchronize the configuration of the network with the JSON file")
-  CMD_ENTRY("Reset", ccb_reset,
+  CMD_ENTRY("reset", ccb_reset,
             "[Factory] Reset the device")
-  CMD_ENTRY("ColorTemp", ccb_ct,
+  CMD_ENTRY("q", ccb_quit,
+            "Quit the program")
+  CMD_ENTRY("help", ccb_help,
+            "Print help")
+  CMD_ENTRY("list", ccb_list,
+            "List all devices in the database")
+  CMD_ENTRY("colortemp", ccb_ct,
             "Set the color temperature of a light")
 };
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
+static int children_num = 0;
+static pid_t *children = NULL;
 static char *line = NULL;
 
 /* Static Functions Declaractions ************************************* */
@@ -171,13 +184,24 @@ void readcmd(void)
   }
 }
 
+int cli_proc_init(int child_num, const pid_t *pids)
+{
+  if (children) {
+    free(children);
+  }
+  children = calloc(child_num, sizeof(pid_t));
+  memcpy(children, pids, child_num * sizeof(pid_t));
+  children_num = child_num;
+
+  cli_init();
+  return 0;
+}
+
 int cli_proc(void)
 {
-  cli_init();
   for (;;) {
     readcmd();
   }
-  return 0;
 }
 
 /******************************************************************
@@ -200,4 +224,25 @@ int ccb_ct(char *str)
 {
   printf("%s\n", __FUNCTION__);
   return 0;
+}
+
+int ccb_list(char *str)
+{
+  printf("%s\n", __FUNCTION__);
+  return 0;
+}
+
+int ccb_help(char *str)
+{
+  printf("%s\n", __FUNCTION__);
+  return 0;
+}
+
+int ccb_quit(char *str)
+{
+  printf("%s\n", __FUNCTION__);
+  for (int i = 0; i < children_num; i++) {
+    kill(children[i], SIGKILL);
+  }
+  exit(EXIT_SUCCESS);
 }

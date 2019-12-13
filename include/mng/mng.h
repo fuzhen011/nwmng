@@ -1,21 +1,19 @@
 /*************************************************************************
-    > File Name: cli.h
+    > File Name: mng.h
     > Author: Kevin
-    > Created Time: 2019-12-13
-    > Description:
+    > Created Time: 2019-12-14
+    > Description: 
  ************************************************************************/
 
-#ifndef CLI_H
-#define CLI_H
+#ifndef MNG_H
+#define MNG_H
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-int cli_proc_init(int child_num, const pid_t *pids);
-int cli_proc(void);
+int mng_proc(void);
 
 #ifdef __cplusplus
 }
 #endif
-#endif //CLI_H
+#endif //MNG_H
