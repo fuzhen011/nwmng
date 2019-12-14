@@ -36,11 +36,9 @@ int main(int argc, char *argv[])
   pid_t pid;
   int i = 0;
 #if 1
-  /* char t[] = "ask"; */
-  /* char s[] = "asksdfasdfasdfasdfasdf"; */
-  /* printf("%8.8s\n", t); */
-  /* printf("%8.8s\n", s); */
-  logging_init(NULL);
+  if (argc > 1) {
+    logging_init(argv[1], 1, LOG_MINIMAL_LVL(LVL_AST));
+  }
   logging_demo();
   return 0;
 #endif

@@ -10,11 +10,13 @@
 #include <stdarg.h>
 #include <time.h>
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "logging.h"
 #include "utils.h"
 /* Defines  *********************************************************** */
-#define LOGBUF_SIZE 256
+#define LOGBUF_SIZE 512
 
 #define LOGGING_DBG
 #ifdef LOGGING_DBG
@@ -26,8 +28,21 @@
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
-static size_t log_len = 0;
-static char buf[LOGBUF_SIZE] = { 0 };
+typedef struct {
+  FILE *fp;
+  unsigned int level;
+  int tostdout;
+  size_t log_len;
+  char buf[LOGBUF_SIZE];
+}logcfg_t;
+
+static logcfg_t lcfg = {
+  NULL,
+  LVL_VER,
+  0,
+  0,
+  { 0 },
+};
 
 /* Static Functions Declaractions ************************************* */
 
@@ -188,26 +203,34 @@ err_t __log(const char *file_name,
   err_t e;
   va_list valist;
 
-  EC(ec_success, fill_time(buf, LOGBUF_SIZE, &log_len));
+  if (lvl >= (int)lcfg.level) {
+    return ec_success;
+  }
+
+  EC(ec_success, fill_time(lcfg.buf, LOGBUF_SIZE, &lcfg.log_len));
   EC(ec_success, fill_file_line(file_name,
                                 line,
-                                buf,
+                                lcfg.buf,
                                 LOGBUF_SIZE,
-                                log_len,
-                                &log_len));
+                                lcfg.log_len,
+                                &lcfg.log_len));
   EC(ec_success, fill_lvl(lvl,
-                          buf,
+                          lcfg.buf,
                           LOGBUF_SIZE,
-                          log_len,
-                          &log_len));
+                          lcfg.log_len,
+                          &lcfg.log_len));
 
   va_start(valist, fmt);
-  vsnprintf(buf + log_len,
-            LOGBUF_SIZE - log_len,
+  vsnprintf(lcfg.buf + lcfg.log_len,
+            LOGBUF_SIZE - lcfg.log_len,
             fmt,
             valist);
-
-  LD("%s", buf);
+  if (lcfg.fp) {
+    fprintf(lcfg.fp, "%s", lcfg.buf);
+  }
+  if (lcfg.tostdout) {
+    printf("%s", lcfg.buf);
+  }
 
   return ec_success;
 }
@@ -223,11 +246,41 @@ void logging_demo(void)
     "This is a  verbose message",
   };
   for (int i = LVL_AST; i <= LVL_VER; i++) {
-    LOG(i, "%d ------ %s\n", i, msg[i]);
+    LOG(i, "%d ------ %s\n", i, msg[i + 1]);
   }
 }
 
-int logging_init(const char *fp)
+err_t logging_init(const char *path,
+                   int tostdout,
+                   unsigned int lvl_threshold)
 {
-  return 1;
+  int ret;
+  if (lcfg.fp) {
+    return ec_success;
+  }
+  ret = access(path, R_OK | W_OK | F_OK);
+  if (-1 == ret) {
+    if (errno == ENOENT) {
+      fprintf(stderr, "%s not exists\n", path);
+      return err(ec_not_exist);
+    }
+    fprintf(stderr, "The current user don 't have the RW permit? Error[%u]\n", errno);
+    return err(ec_file_ope);
+  }
+
+  lcfg.fp = fopen(path, "a+");
+  if (!lcfg.fp) {
+    fprintf(stderr, "Cannot open %s\n", path);
+    return err(ec_file_ope);
+  }
+  setlinebuf(lcfg.fp);
+  lcfg.tostdout = tostdout;
+  lcfg.level = lvl_threshold;
+
+  return ec_success;
+}
+
+void logging_deinit(void)
+{
+  memset(&lcfg, 0, sizeof(logcfg_t));
 }

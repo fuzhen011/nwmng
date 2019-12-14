@@ -54,8 +54,9 @@ extern "C"
 #define RTT_CTRL_BG_BRIGHT_CYAN       "[4;46m"
 #define RTT_CTRL_BG_BRIGHT_WHITE      "[4;47m"
 
+/* LVL_AST cannot be masked */
 enum {
-  LVL_AST,
+  LVL_AST = -1,
   LVL_ERR,
   LVL_WRN,
   LVL_MSG,
@@ -63,8 +64,31 @@ enum {
   LVL_VER
 };
 
+#define LOG_MINIMAL_LVL(lvl) ((lvl) + 1)
+
+/**
+ * @brief logging_init - initialization of logging
+ *
+ * @param path - which file the log is writen to
+ * @param tostdout - set to 1 also writes to stdout
+ * @param lvl_threshold - set the logging level threshold, the logging with
+ * level **LESS THAN** the threshold will be writen to file.
+ *
+ * @return @ref{err_t}
+ */
+err_t logging_init(const char *path,
+                   int tostdout,
+                   unsigned int lvl_threshold);
+
+/**
+ * @brief logging_deinit - de-initialization of logging
+ */
+void logging_deinit(void);
+
+/**
+ * @brief logging_demo - output the demonstration of logging to stdout
+ */
 void logging_demo(void);
-int logging_init(const char *fp);
 
 err_t __log(const char *file_name,
             unsigned int line,
@@ -73,6 +97,12 @@ err_t __log(const char *file_name,
             ...);
 
 #define LOG(lvl, fmt, ...) __log(__FILE__, __LINE__, (lvl), (fmt), ##__VA_ARGS__)
+#define LOGA(fmt, ...) LOG(LVL_AST, (fmt), ...)
+#define LOGE(fmt, ...) LOG(LVL_ERR, (fmt), ...)
+#define LOGW(fmt, ...) LOG(LVL_WRN, (fmt), ...)
+#define LOGM(fmt, ...) LOG(LVL_MSG, (fmt), ...)
+#define LOGD(fmt, ...) LOG(LVL_DBG, (fmt), ...)
+#define LOGV(fmt, ...) LOG(LVL_VER, (fmt), ...)
 
 #ifdef __cplusplus
 }
