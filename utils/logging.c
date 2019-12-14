@@ -245,9 +245,12 @@ void logging_demo(void)
     "This is a  debug message",
     "This is a  verbose message",
   };
-  for (int i = LVL_AST; i <= LVL_VER; i++) {
-    LOG(i, "%d ------ %s\n", i, msg[i + 1]);
-  }
+  LOGA("%s\n", msg[0]);
+  LOGE("%s\n", msg[0]);
+  LOGW("%s\n", msg[0]);
+  LOGM("%s\n", msg[0]);
+  LOGD("%s\n", msg[0]);
+  LOGV("%s\n", msg[0]);
 }
 
 err_t logging_init(const char *path,
@@ -283,4 +286,27 @@ err_t logging_init(const char *path,
 void logging_deinit(void)
 {
   memset(&lcfg, 0, sizeof(logcfg_t));
+}
+
+void set_logging_tostdout(int enable)
+{
+  if (lcfg.fp) {
+    lcfg.tostdout = enable;
+  }
+}
+int get_logging_tostdout(void)
+{
+  return lcfg.fp ? lcfg.tostdout : 0;
+}
+
+void set_logging_lvl_threshold(unsigned int lvl)
+{
+  if (lcfg.fp) {
+    lcfg.level = lvl;
+  }
+}
+
+unsigned int get_logging_lvl_threshold(void)
+{
+  return lcfg.fp ? lcfg.level : 0;
 }

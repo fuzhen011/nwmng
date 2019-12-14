@@ -37,9 +37,15 @@ int main(int argc, char *argv[])
   int i = 0;
 #if 1
   if (argc > 1) {
-    logging_init(argv[1], 1, LOG_MINIMAL_LVL(LVL_AST));
+    logging_init(argv[1], 1, LOG_MINIMAL_LVL(LVL_VER));
   }
   logging_demo();
+  set_logging_tostdout(0);
+  logging_demo();
+  set_logging_tostdout(1);
+  set_logging_lvl_threshold(LOG_MINIMAL_LVL(LVL_WRN));
+  logging_demo();
+
   return 0;
 #endif
 

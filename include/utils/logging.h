@@ -95,14 +95,22 @@ err_t __log(const char *file_name,
             int lvl,
             const char *fmt,
             ...);
-
 #define LOG(lvl, fmt, ...) __log(__FILE__, __LINE__, (lvl), (fmt), ##__VA_ARGS__)
-#define LOGA(fmt, ...) LOG(LVL_AST, (fmt), ...)
-#define LOGE(fmt, ...) LOG(LVL_ERR, (fmt), ...)
-#define LOGW(fmt, ...) LOG(LVL_WRN, (fmt), ...)
-#define LOGM(fmt, ...) LOG(LVL_MSG, (fmt), ...)
-#define LOGD(fmt, ...) LOG(LVL_DBG, (fmt), ...)
-#define LOGV(fmt, ...) LOG(LVL_VER, (fmt), ...)
+
+/*
+ * Below 7 LOGx macros are used for logging data in specific level.
+ */
+#define LOGA(fmt, ...) LOG(LVL_AST, (fmt), ##__VA_ARGS__)
+#define LOGE(fmt, ...) LOG(LVL_ERR, (fmt), ##__VA_ARGS__)
+#define LOGW(fmt, ...) LOG(LVL_WRN, (fmt), ##__VA_ARGS__)
+#define LOGM(fmt, ...) LOG(LVL_MSG, (fmt), ##__VA_ARGS__)
+#define LOGD(fmt, ...) LOG(LVL_DBG, (fmt), ##__VA_ARGS__)
+#define LOGV(fmt, ...) LOG(LVL_VER, (fmt), ##__VA_ARGS__)
+
+void set_logging_tostdout(int enable);
+int get_logging_tostdout(void);
+void set_logging_lvl_threshold(unsigned int lvl);
+unsigned int get_logging_lvl_threshold(void);
 
 #ifdef __cplusplus
 }
