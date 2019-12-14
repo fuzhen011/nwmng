@@ -1,5 +1,10 @@
 # ToDo List
 
+## Architecture
+
+- [] Config file format
+  - [] JSON - Bluetooth SIG JSON device database format - search in SF
+
 ## CLI
 
 - [] Tab completion
@@ -34,11 +39,11 @@
 - [] File and line
 - [] Information
 
-## Tools
-
-- [] shell script to view log with level filter
-
-## DONE
+### Error Code
 
 - [x] Porting the error code design from btmesh
   - [x] Porting source file names python script
+
+## Tools
+
+- [] shell script to view log with level filter

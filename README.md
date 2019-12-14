@@ -27,10 +27,6 @@ IPC between CLI and MNG.
 
 It's always the CLI process which sends the "Command Start", then it waits for "Response" and "Command End" either in blocking or non-blocking mode.
 
-**REQs:**
-
-- [] Config file format
-  - [] JSON - Bluetooth SIG JSON device database format
 
 ## CLI
 
