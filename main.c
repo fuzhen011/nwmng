@@ -6,12 +6,16 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <stdio.h>
+#include "logging.h"
+/* TODO: above includes are used for test */
 #include <unistd.h>
 
 #include <sys/wait.h>
 
 #include "cli/cli.h"
 #include "mng/mng.h"
+
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -31,6 +35,75 @@ int main(int argc, char *argv[])
 {
   pid_t pid;
   int i = 0;
+#if 1
+  /* char t[] = "ask"; */
+  /* char s[] = "asksdfasdfasdfasdfasdf"; */
+  /* printf("%8.8s\n", t); */
+  /* printf("%8.8s\n", s); */
+  logging_init(NULL);
+  LOG();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  LOG();
+  return 0;
+#endif
 
   for (i = 0; i < proc_num - 1; i++) {
     pid = fork();

@@ -43,8 +43,19 @@ set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
 
 set(MNG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c)
 
-set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${CMAKE_CURRENT_LIST_DIR}/main.c)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/include ${RL_INC})
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/utils UTILS_SRC_LIST)
+
+set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST}
+             ${CMAKE_CURRENT_LIST_DIR}/main.c)
+
+include_directories(
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include/utils
+  ${CMAKE_CURRENT_LIST_DIR}/include/cli
+  ${CMAKE_CURRENT_LIST_DIR}/include/mng
+  ${CMAKE_CURRENT_LIST_DIR}/include/cfg
+  ${RL_INC})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 
@@ -67,8 +78,7 @@ endif()
 if(UNIX)
   if(APPLE)
     target_link_libraries(
-      ${CMAKE_PROJECT_NAME} m
-      readline
+      ${CMAKE_PROJECT_NAME} m readline
       # pthread json-c
     )
   else()

@@ -8,9 +8,29 @@
 
 3 parts: CLI, MNG, CFG
 
+These 3 parts can be completely separated.
+
 ### IPC Strategy
 
 Unix domain socket.
+
+Header types:
+
+| Header | Description    |
+| ------ | -------------- |
+| 0x01   | Command Start  |
+| 0x02   | Response       |
+| 0x03   | Command End    |
+| 0x04   | Anonmous Event |
+
+IPC between CLI and MNG.
+
+It's always the CLI process which sends the "Command Start", then it waits for "Response" and "Command End" either in blocking or non-blocking mode.
+
+**REQs:**
+
+- [] Config file format
+  - [] JSON - Bluetooth SIG JSON device database format
 
 ## CLI
 
@@ -36,11 +56,6 @@ The command line interface process, which receives commands from user and output
   - [] Set light onoff.
   - [] Set light lightness.
   - [] Set light color temperature.
-- [] Logging, including below items
-  - Level - when tail, could "grep -v" to exclude the unwanted log on level(s)
-  - Time
-  - File and line
-  - Information
 
 ## CFG
 
@@ -49,3 +64,24 @@ The command line interface process, which receives commands from user and output
 - [] Read node by "key"
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
+
+## Utils
+
+This part can be used by any other parts as utils.
+
+### Logging
+
+Format: \[Time\]\[File:Line]: Log Message...  
+\[2019-12-12 21:22:33\]\[xxx_source_xxx.c:225]: Initializing...
+
+**REQs:**
+
+- [] Level - when tail, could "grep -v" to exclude the unwanted log on level(s)
+- [x] Time
+- [] File and line
+- [] Information
+
+## TODOs
+
+- [x] Porting the error code design from btmesh
+  - [x] Porting source file names python script

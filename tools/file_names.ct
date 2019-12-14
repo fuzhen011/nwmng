@@ -1,0 +1,5 @@
+static const char *source_files[] = {
+    {% for s in source_files%}
+    "{{s}}", /* {{loop.index}} */
+    {% endfor %}
+};
