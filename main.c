@@ -41,67 +41,7 @@ int main(int argc, char *argv[])
   /* printf("%8.8s\n", t); */
   /* printf("%8.8s\n", s); */
   logging_init(NULL);
-  LOG();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  LOG();
+  logging_demo();
   return 0;
 #endif
 

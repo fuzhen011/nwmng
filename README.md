@@ -71,8 +71,21 @@ This part can be used by any other parts as utils.
 
 ### Logging
 
-Format: \[Time\]\[File:Line]: Log Message...  
-\[2019-12-12 21:22:33\]\[xxx_source_xxx.c:225]: Initializing...
+Logging has the level feature which is inspired from Android logging system.
+
+| Key word | Meaning | Note                            |
+| -------- | ------- | ------------------------------- |
+| AST      | assert  | Assert, call assert(0) directly |
+| ERR      | error   |                                 |
+| WRN      | warning |                                 |
+| MSG      | message |                                 |
+| DBG      | debug   |                                 |
+| VER      | verbose |                                 |
+
+Format: \[Time\]\[File:Line]\[Level\]: Log Message...  
+\[2019-12-12 21:22:33\]\[xxx_source_xxx.c:225][MSG]: Initializing...
+
+![Logging](doc/pic/logging.png)
 
 **REQs:**
 

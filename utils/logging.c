@@ -7,6 +7,7 @@
 
 /* Includes *********************************************************** */
 #include <stdio.h>
+#include <stdarg.h>
 #include <time.h>
 #include <string.h>
 
@@ -113,13 +114,80 @@ static err_t fill_file_line(const char *file_name,
   if (offset + FILE_LINE_LENGTH < input_len) {
     p[FILE_LINE_LENGTH] = '\0';
   }
+  *len = offset + FILE_LINE_LENGTH;
+  return ec_success;
+}
+#define AST_FLAG  "[" RTT_CTRL_TEXT_BRIGHT_RED "AST" RTT_CTRL_RESET "]"
+#define ERR_FLAG  "[" RTT_CTRL_BG_BRIGHT_RED "ERR" RTT_CTRL_RESET "]"
+#define WRN_FLAG  "[" RTT_CTRL_BG_BRIGHT_YELLOW "WRN" RTT_CTRL_RESET "]"
+#define MSG_FLAG  "[" RTT_CTRL_BG_BRIGHT_BLUE "MSG" RTT_CTRL_RESET "]"
+#define DBG_FLAG  "[" RTT_CTRL_BG_BRIGHT_GREEN "DBG" RTT_CTRL_RESET "]"
+#define VER_FLAG  "[" "VER" "]"
+
+static err_t fill_lvl(int lvl,
+                      char *str,
+                      size_t input_len,
+                      size_t offset,
+                      size_t *len)
+{
+  const char *flag;
+  char *p;
+  size_t flaglen;
+
+  if (!str || !len || !input_len) {
+    return err(ec_param_null);
+  }
+
+  switch (lvl) {
+    case LVL_AST:
+      flag = AST_FLAG;
+      flaglen = sizeof(AST_FLAG);
+      break;
+    case LVL_ERR:
+      flag = ERR_FLAG;
+      flaglen = sizeof(ERR_FLAG);
+      break;
+    case LVL_WRN:
+      flag = WRN_FLAG;
+      flaglen = sizeof(WRN_FLAG);
+      break;
+    case LVL_MSG:
+      flag = MSG_FLAG;
+      flaglen = sizeof(MSG_FLAG);
+      break;
+    case LVL_DBG:
+      flag = DBG_FLAG;
+      flaglen = sizeof(DBG_FLAG);
+      break;
+    default:
+      flag = VER_FLAG;
+      flaglen = sizeof(VER_FLAG);
+      break;
+  }
+  /* LD("%d - %lu\n", lvl, flaglen); */
+
+  if (offset + flaglen + 2 > input_len) {
+    return err(ec_length_leak);
+  }
+
+  p = str + offset;
+  /* sizeof contains the '\0' */
+  memcpy(p, flag, flaglen);
+  p[flaglen - 1] = ':';
+  p[flaglen] = ' ';
+  *len = offset + flaglen + 1;
   return ec_success;
 }
 
-err_t log_header(const char *file_name,
-                 unsigned int line)
+err_t __log(const char *file_name,
+            unsigned int line,
+            int lvl,
+            const char *fmt,
+            ...)
 {
   err_t e;
+  va_list valist;
+
   EC(ec_success, fill_time(buf, LOGBUF_SIZE, &log_len));
   EC(ec_success, fill_file_line(file_name,
                                 line,
@@ -127,8 +195,36 @@ err_t log_header(const char *file_name,
                                 LOGBUF_SIZE,
                                 log_len,
                                 &log_len));
-  LD("%s\n", buf);
+  EC(ec_success, fill_lvl(lvl,
+                          buf,
+                          LOGBUF_SIZE,
+                          log_len,
+                          &log_len));
+
+  va_start(valist, fmt);
+  vsnprintf(buf + log_len,
+            LOGBUF_SIZE - log_len,
+            fmt,
+            valist);
+
+  LD("%s", buf);
+
   return ec_success;
+}
+
+void logging_demo(void)
+{
+  const char *msg[] = {
+    "This is an assert message",
+    "This is an error message",
+    "This is a  warning message",
+    "This is a  message message",
+    "This is a  debug message",
+    "This is a  verbose message",
+  };
+  for (int i = LVL_AST; i <= LVL_VER; i++) {
+    LOG(i, "%d ------ %s\n", i, msg[i]);
+  }
 }
 
 int logging_init(const char *fp)
