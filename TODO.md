@@ -4,9 +4,12 @@
 
 - [] Config file format
   - [] JSON - Bluetooth SIG JSON device database format - search in SF
+- [] Unix domain socket
+  - [] utils level handler
 
 ## CLI
 
+- [] Go through the bluez to learn how the completion works for it
 - [] Tab completion
   - [x] Complete command name
   - [] Complete command parameters
@@ -34,10 +37,10 @@
 
 ### Logging
 
-- [] Level - when tail, could "grep -v" to exclude the unwanted log on level(s)
+- [x] Level - when tail, could "grep -v" to exclude the unwanted log on level(s)
 - [x] Time
-- [] File and line
-- [] Information
+- [x] File and line
+- [x] Information
 
 ### Error Code
 
