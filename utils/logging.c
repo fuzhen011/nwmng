@@ -7,6 +7,7 @@
 
 /* Includes *********************************************************** */
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
 #include <string.h>
@@ -33,7 +34,7 @@ typedef struct {
   unsigned int level;
   int tostdout;
   size_t log_len;
-  char buf[LOGBUF_SIZE];
+  char *buf;
 }logcfg_t;
 
 static logcfg_t lcfg = {
@@ -41,7 +42,7 @@ static logcfg_t lcfg = {
   LVL_VER,
   0,
   0,
-  { 0 },
+  NULL
 };
 
 /* Static Functions Declaractions ************************************* */
@@ -206,19 +207,26 @@ err_t __log(const char *file_name,
   if (lvl >= (int)lcfg.level) {
     return ec_success;
   }
+  lcfg.buf = calloc(LOGBUF_SIZE, 1);
 
-  EC(ec_success, fill_time(lcfg.buf, LOGBUF_SIZE, &lcfg.log_len));
-  EC(ec_success, fill_file_line(file_name,
-                                line,
-                                lcfg.buf,
-                                LOGBUF_SIZE,
-                                lcfg.log_len,
-                                &lcfg.log_len));
-  EC(ec_success, fill_lvl(lvl,
-                          lcfg.buf,
-                          LOGBUF_SIZE,
-                          lcfg.log_len,
-                          &lcfg.log_len));
+  ECG(ec_success,
+      fill_time(lcfg.buf, LOGBUF_SIZE, &lcfg.log_len),
+      out);
+  ECG(ec_success,
+      fill_file_line(file_name,
+                     line,
+                     lcfg.buf,
+                     LOGBUF_SIZE,
+                     lcfg.log_len,
+                     &lcfg.log_len),
+      out);
+  ECG(ec_success,
+      fill_lvl(lvl,
+               lcfg.buf,
+               LOGBUF_SIZE,
+               lcfg.log_len,
+               &lcfg.log_len),
+      out);
 
   va_start(valist, fmt);
   vsnprintf(lcfg.buf + lcfg.log_len,
@@ -232,7 +240,10 @@ err_t __log(const char *file_name,
     printf("%s", lcfg.buf);
   }
 
-  return ec_success;
+  out:
+  free(lcfg.buf);
+  lcfg.buf = NULL;
+  return e;
 }
 
 void logging_demo(void)

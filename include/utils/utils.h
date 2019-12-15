@@ -28,9 +28,13 @@ extern "C"
 
 /* Expected call - if the return value is not the expected value, return the
  * current function with the returned value of the call */
-#define EC(exp_ret, func)                             \
-  do {                                                \
-    if ((exp_ret) != (e = (func))) { return err(e); } \
+#define EC(exp_ret, func)                          \
+  do {                                             \
+    if ((exp_ret) != (e = (func))) { return (e); } \
+  } while (0)
+#define ECG(exp_ret, func, err)                    \
+  do {                                             \
+    if ((exp_ret) != (e = (func))) { goto err; } \
   } while (0)
 #ifdef __cplusplus
 }
