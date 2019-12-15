@@ -17,7 +17,6 @@ $(BUILD_DIR)/Makefile: FORCE
 	@mkdir -p ${BUILD_DIR}
 	@cd ${BUILD_DIR} && cmake \
 		-G "Unix Makefiles" \
-		-DDBG=$(DBG) \
 		-DGCOV=$(GCOV) \
 		-DCMAKE_BUILD_TYPE=$(MODE) \
 		..

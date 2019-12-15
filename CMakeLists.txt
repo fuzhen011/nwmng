@@ -44,7 +44,10 @@ set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
 
 set(MNG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c)
 
-aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/utils UTILS_SRC_LIST)
+# aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/utils UTILS_SRC_LIST)
+
+set(UTILS_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
+                   ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c)
 
 set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST}
              ${CMAKE_CURRENT_LIST_DIR}/main.c)
