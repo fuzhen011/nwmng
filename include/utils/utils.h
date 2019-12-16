@@ -38,6 +38,7 @@ extern "C"
   } while (0)
 
 char *strdelimit(char *str, char *del, char c);
+int strsuffix(const char *str, const char *suffix);
 #ifdef __cplusplus
 }
 #endif

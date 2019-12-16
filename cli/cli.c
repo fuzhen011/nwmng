@@ -13,6 +13,8 @@
 
 #include <unistd.h>
 #include <signal.h>
+#include <assert.h>
+#include <errno.h>
 
 #include <wordexp.h>
 
@@ -52,7 +54,11 @@ DECLARE_CB(onoff);
 static const command_t commands[] = {
   { "sync", NULL, ccb_sync,
     "Synchronize the configuration of the network with the JSON file" },
-  { "reset", "<1(factory)/0(normal)>", ccb_reset,
+  { "sync1", NULL, ccb_sync },
+  { "sync2", NULL, ccb_sync },
+  { "sync3", NULL, ccb_sync },
+  { "sync4", NULL, ccb_sync },
+  { "reset", "<1/0>", ccb_reset,
     "[Factory] Reset the device" },
   { "q", NULL, ccb_quit,
     "Quit the program" },
@@ -69,6 +75,7 @@ static const command_t commands[] = {
   { "colortemp", "[pecentage] [addr...]", ccb_ct,
     "Set the color temperature of a light" },
 };
+
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
 static int children_num = 0;
@@ -119,7 +126,6 @@ char *command_generator(const char *text, int state)
 
 static int parse_args(char *arg, wordexp_t *w, char *del, int flags)
 {
-#if 0
   char *str;
 
   str = strdelimit(arg, del, '"');
@@ -135,7 +141,6 @@ static int parse_args(char *arg, wordexp_t *w, char *del, int flags)
   }
 
   free(str);
-#endif
   return 0;
 }
 
@@ -187,12 +192,11 @@ static char **args_completion(const command_t *entry,
 
   /* Check if argument is valid */
   if ((unsigned) index > args.we_wordc - 1) {
-    goto done;
-  }
-
-  /* Check if there are multiple values */
-  if (!strrchr(entry->arg, '/')) {
-    goto done;
+    if (args.we_offs == 0) {
+      goto done;
+    } else {
+      goto done;
+    }
   }
 
   free(str);
@@ -215,7 +219,7 @@ static char **args_completion(const command_t *entry,
   end:
   if (!matches && text[0] == '\0') {
     /* printf("Usage: %s %s\n", entry->cmd, */
-           /* entry->arg ? entry->arg : ""); */
+    /* entry->arg ? entry->arg : ""); */
   }
 
   args.we_offs = 0;
@@ -346,9 +350,13 @@ int cli_proc_init(int child_num, const pid_t *pids)
   if (children) {
     free(children);
   }
-  children = calloc(child_num, sizeof(pid_t));
-  memcpy(children, pids, child_num * sizeof(pid_t));
-  children_num = child_num;
+
+  if (child_num) {
+    assert(pids);
+    children = calloc(child_num, sizeof(pid_t));
+    memcpy(children, pids, child_num * sizeof(pid_t));
+    children_num = child_num;
+  }
 
   cli_init();
   return 0;

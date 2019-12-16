@@ -15,27 +15,27 @@
 
 #include "cli/cli.h"
 #include "mng/mng.h"
+#include "utils.h"
 
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
+#if 0
 typedef int (*proc)(void);
 
 static proc procs[] = {
   cli_proc, mng_proc
 };
-
 static const int proc_num = sizeof(procs) / sizeof(proc);
 pid_t pids[10] = { 0 };
+#endif
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
 
 int main(int argc, char *argv[])
 {
-  pid_t pid;
-  int i = 0;
-#if 1
+#if 0
   if (argc > 1) {
     logging_init(argv[1], 1, LOG_MINIMAL_LVL(LVL_VER));
   }
@@ -48,7 +48,9 @@ int main(int argc, char *argv[])
 
   return 0;
 #endif
-
+#if 0
+  pid_t pid;
+  int i = 0;
   for (i = 0; i < proc_num - 1; i++) {
     pid = fork();
 
@@ -77,7 +79,12 @@ int main(int argc, char *argv[])
     default:
       break;
   }
-
+#endif
+  err_t e;
+  EC(ec_success, logging_init("logs/cli.log",
+                              0, /* Not output to stdout */
+                              LOG_MINIMAL_LVL(LVL_VER)));
+  cli_proc_init(0, NULL);
   cli_proc();
 
   return 0;
