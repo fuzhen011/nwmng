@@ -9,7 +9,9 @@
 
 ## CLI
 
-- [] Go through the bluez to learn how the completion works for it
+- [] Go through the bluez to learn how the arguments completion works
+- [] Input prompt - when blacklisting or removing typed, prompt to user to
+  confirm - refer the implementation in bluez
 - [] Tab completion
   - [x] Complete command name
   - [] Complete command parameters
