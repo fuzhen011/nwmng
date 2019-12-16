@@ -27,10 +27,9 @@ else()
   set(GCOV_FLAGS "")
 endif()
 
-set(
-  CMAKE_C_FLAGS
-  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
-  )
+set(CMAKE_C_FLAGS
+    "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
+)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g3 -DDEBUG=1")
 set(CMAKE_C_FLAGS_RELEASE "-Os -DDEBUG=0")
 
@@ -57,25 +56,33 @@ set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c)
 
-set(SRC_LIST
-    ${CLI_SRC_LIST}
-    ${MNG_SRC_LIST}
-    ${UTILS_SRC_LIST}
-    ${CMAKE_CURRENT_LIST_DIR}/main.c)
+set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST}
+             ${CMAKE_CURRENT_LIST_DIR}/main.c)
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}
-                    ${CMAKE_CURRENT_LIST_DIR}/include
-                    ${CMAKE_CURRENT_LIST_DIR}/include/utils
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cli
-                    ${CMAKE_CURRENT_LIST_DIR}/include/mng
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-                    ${RL_INC})
+include_directories(
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include/utils
+  ${CMAKE_CURRENT_LIST_DIR}/include/cli
+  ${CMAKE_CURRENT_LIST_DIR}/include/mng
+  ${CMAKE_CURRENT_LIST_DIR}/include/cfg
+  ${RL_INC})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 
-target_link_libraries(${CMAKE_PROJECT_NAME} m readline
-                      # pthread json-c
-                      )
+if(APPLE)
+set(CMAKE_C_LINK_FLAGS "-L/usr/local/Cellar/readline/8.0.1/lib ${CMAKE_C_LINK_FLAGS}")
+set(LIBS readline.dylib)
+else()
+set(LIBS readline.so)
+endif()
+
+target_link_libraries(
+  ${CMAKE_PROJECT_NAME}
+  m
+  ${LIBS}
+  # pthread json-c
+)
 
 add_custom_command(
   TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
