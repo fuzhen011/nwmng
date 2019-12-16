@@ -297,12 +297,12 @@ static char **args_completion(const command_t *entry,
   /* goto done; */
   /* } */
   /* } */
-  free(str);
 
   if (!strrchr(args.we_wordv[index], '/')) {
     goto done;
   }
 
+  free(str);
   /* Split values separated by / */
   str = strdelimit(args.we_wordv[index], "/", ' ');
 
@@ -520,7 +520,7 @@ void bt_shell_printf(const char *fmt, ...)
     saved_point = rl_point;
     saved_line = rl_copy_text(0, rl_end);
     /* if (!data.saved_prompt) */
-    /* rl_save_prompt(); */
+    rl_save_prompt();
     rl_replace_line("", 0);
     rl_redisplay();
   }
@@ -537,7 +537,7 @@ void bt_shell_printf(const char *fmt, ...)
 
   if (save_input) {
     /* if (!data.saved_prompt) */
-    /* rl_restore_prompt(); */
+    rl_restore_prompt();
     rl_replace_line(saved_line, 0);
     rl_point = saved_point;
     rl_forced_update_display();
