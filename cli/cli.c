@@ -9,28 +9,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <unistd.h>
 #include <signal.h>
+
+#include <wordexp.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
 
 #include "cli/cli.h"
+#include "utils.h"
 
 /* Defines  *********************************************************** */
+#define SHELL_NAME "[1;34m" "nwmng$ " "[0m"
 #define RL_HISTORY  ".history"
-#define CMD_ENTRY(name, pfncb, doc) { (name), (pfncb), (doc) },
 #define DECLARE_CB(name)  int ccb_##name(char *str)
 
 typedef struct {
   const char *name;
+  const char *arg;
   rl_icpfunc_t *fn;
   const char *doc;
+  rl_compdisp_func_t *disp;
+  rl_compentry_func_t *argcmpl;
 }command_t;
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
+
 DECLARE_CB(sync);
 DECLARE_CB(reset);
 DECLARE_CB(list);
@@ -42,23 +50,24 @@ DECLARE_CB(lightness);
 DECLARE_CB(onoff);
 
 static const command_t commands[] = {
-  CMD_ENTRY("sync", ccb_sync,
-            "Synchronize the configuration of the network with the JSON file")
-  CMD_ENTRY("reset", ccb_reset,
-            "[Factory] Reset the device")
-  CMD_ENTRY("q", ccb_quit,
-            "Quit the program")
-  CMD_ENTRY("help", ccb_help,
-            "Print help")
-  CMD_ENTRY("list", ccb_list,
-            "List all devices in the database")
+  { "sync", NULL, ccb_sync,
+    "Synchronize the configuration of the network with the JSON file" },
+  { "reset", "<1(factory)/0(normal)>", ccb_reset,
+    "[Factory] Reset the device" },
+  { "q", NULL, ccb_quit,
+    "Quit the program" },
+  { "help", NULL, ccb_help,
+    "Print help" },
+  { "list", NULL, ccb_list,
+    "List all devices in the database" },
 
-  CMD_ENTRY("onoff", ccb_onoff,
-            "Set the onoff of a light")
-  CMD_ENTRY("lightness", ccb_lightness,
-            "Set the lightness of a light")
-  CMD_ENTRY("colortemp", ccb_ct,
-            "Set the color temperature of a light")
+  /* Light Control Commands */
+  { "onoff", "[on/off] [addr...]", ccb_onoff,
+    "Set the onoff of a light" },
+  { "lightness", "[pecentage] [addr...]", ccb_lightness,
+    "Set the lightness of a light" },
+  { "colortemp", "[pecentage] [addr...]", ccb_ct,
+    "Set the color temperature of a light" },
 };
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
@@ -67,12 +76,12 @@ static pid_t *children = NULL;
 static char *line = NULL;
 
 /* Static Functions Declaractions ************************************* */
-char **cmd_cmpl(const char *text, int start, int end);
+char **shell_completion(const char *text, int start, int end);
 
 static void cli_init(void)
 {
   /* Tell the completer that we want a crack first. */
-  rl_attempted_completion_function = cmd_cmpl;
+  rl_attempted_completion_function = shell_completion;
   using_history();
   read_history(RL_HISTORY);
 }
@@ -108,17 +117,158 @@ char *command_generator(const char *text, int state)
   return ((char *)NULL);
 }
 
-char **cmd_cmpl(const char *text, int start, int end)
+static int parse_args(char *arg, wordexp_t *w, char *del, int flags)
 {
-  char **matches;
-  matches = (char **)NULL;
+#if 0
+  char *str;
 
-  /* printf("\ntext[%s][%d:%d]\n", text, start, end); */
-  /* If this word is at the start of the line, then it is a command
-   *      to complete.  Otherwise it is the name of a file in the current
-   *           directory. */
+  str = strdelimit(arg, del, '"');
+
+  if (wordexp(str, w, flags)) {
+    free(str);
+    return -EINVAL;
+  }
+
+  /* If argument ends with ... set we_offs bypass strict checks */
+  if (w->we_wordc && !strsuffix(w->we_wordv[w->we_wordc - 1], "...")) {
+    w->we_offs = 1;
+  }
+
+  free(str);
+#endif
+  return 0;
+}
+
+static wordexp_t args;
+static char *arg_generator(const char *text, int state)
+{
+  static unsigned int index, len;
+  const char *arg;
+
+  if (!state) {
+    index = 0;
+    len = strlen(text);
+  }
+
+  while (index < args.we_wordc) {
+    arg = args.we_wordv[index];
+    index++;
+
+    if (!strncmp(arg, text, len)) {
+      return strdup(arg);
+    }
+  }
+
+  return NULL;
+}
+
+static char **args_completion(const command_t *entry,
+                              int argc,
+                              const char *text)
+{
+  char **matches = NULL;
+  char *str;
+  int index;
+
+  index = text[0] == '\0' ? argc - 1 : argc - 2;
+  if (index < 0) {
+    return NULL;
+  }
+
+  if (!entry->arg) {
+    goto end;
+  }
+
+  str = strdup(entry->arg);
+
+  if (parse_args(str, &args, "<>[]", WRDE_NOCMD)) {
+    goto done;
+  }
+
+  /* Check if argument is valid */
+  if ((unsigned) index > args.we_wordc - 1) {
+    goto done;
+  }
+
+  /* Check if there are multiple values */
+  if (!strrchr(entry->arg, '/')) {
+    goto done;
+  }
+
+  free(str);
+
+  /* Split values separated by / */
+  str = strdelimit(args.we_wordv[index], "/", ' ');
+
+  args.we_offs = 0;
+  wordfree(&args);
+
+  if (wordexp(str, &args, WRDE_NOCMD)) {
+    goto done;
+  }
+
+  rl_completion_display_matches_hook = NULL;
+  matches = rl_completion_matches(text, arg_generator);
+
+  done:
+  free(str);
+  end:
+  if (!matches && text[0] == '\0') {
+    /* printf("Usage: %s %s\n", entry->cmd, */
+           /* entry->arg ? entry->arg : ""); */
+  }
+
+  args.we_offs = 0;
+  wordfree(&args);
+  return matches;
+}
+
+static char **menu_completion(const char *text,
+                              int argc,
+                              char *input_cmd)
+{
+  char **matches = NULL;
+
+  for (int i = 0; i < cmd_num; i++) {
+    const command_t *cmd = &commands[i];
+    if (strcmp(cmd->name, input_cmd)) {
+      continue;
+    }
+
+    if (!cmd->argcmpl) {
+      matches = args_completion(cmd, argc, text);
+      break;
+    }
+
+    rl_completion_display_matches_hook = cmd->disp;
+    matches = rl_completion_matches(text, cmd->argcmpl);
+    break;
+  }
+
+  return matches;
+}
+
+char **shell_completion(const char *text, int start, int end)
+{
+  char **matches = NULL;
+
   if (start == 0) {
+    rl_completion_display_matches_hook = NULL;
     matches = rl_completion_matches(text, command_generator);
+  } else {
+    wordexp_t w;
+    if (wordexp(rl_line_buffer, &w, WRDE_NOCMD)) {
+      return NULL;
+    }
+
+    matches = menu_completion(text, w.we_wordc,
+                              w.we_wordv[0]);
+    /* if (!matches) */
+    /* matches = menu_completion(data.menu->entries, text, */
+    /* w.we_wordc, */
+    /* w.we_wordv[0]); */
+
+    wordfree(&w);
   }
 
   return (matches);
@@ -265,4 +415,3 @@ int ccb_onoff(char *str)
   printf("%s\n", __FUNCTION__);
   return 0;
 }
-

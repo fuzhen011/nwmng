@@ -33,25 +33,35 @@ The command line interface process, which receives commands from user and output
 
 Supported commands
 
-|  Command  |           Args           |     Usage     | Description                                                                              |
-| :-------: | :----------------------: | :-----------: | ---------------------------------------------------------------------------------------- |
-|   sync    |            \             |     sync      | Synchronize the network configuration with the JSON file                                 |
-|   reset   |          [0/1]           |  reset [0/1]  | Reset the device, if args 1, erase the storage                                           |
-|   list    |            \             |     list      | List all the devices in the provisioner device database, including UUID, Device key etc. |
-|     q     |            \             |       q       | Quit the program                                                                         |
-| blacklist | addr [addr1 [addr2 ...]] | blacklist 1 2 | Blacklisting the specific nodes                                                          |
-|  remove   | addr [addr1 [addr2 ...]] |  remove 1 2   | Removing the specific nodes                                                              |
+Conventions:
+
+- Argument in \[\] means normal argument.
+- Argument in &lt;&gt; means that the argument is optional to present, in this
+  case, argument(s) probably have default value(s).
+- Argument followed by ... means variable number of the argument.
+- Content in \(\) following a argument is illustrative.
+
+|  Command  |             Args             | Defaults |       Usage        | Description                                                                              |
+| :-------: | :--------------------------: | :------: | :----------------: | ---------------------------------------------------------------------------------------- |
+|   sync    |              \               |    \     |        sync        | Synchronize the network configuration with the JSON file                                 |
+|   reset   | &lt;1(Factory)/0(Normal)&gt; |    0     |       reset        | Reset the device, if args 1, erase the storage                                           |
+|   list    |              \               |    \     |        list        | List all the devices in the provisioner device database, including UUID, Device key etc. |
+|     q     |              \               |    \     |         q          | Quit the program                                                                         |
+| blacklist |       &lt;addr...&gt;        |    \     | blacklist 0x112c 2 | Blacklisting the specific node(s)                                                        |
+|  remove   |       &lt;addr...&gt;        |    \     |  remove 0x120c 2   | Removing the specific node(s)                                                            |
 
 Table x: Network Configuration Commands
 
-| Command  |          Args           |                Usage                 | Description          |
-| :------: | :---------------------: | :----------------------------------: | -------------------- |
-| lightset | addr onoff/lightness/ct | lightset addr onoff/lightness/ct xxx | Set the light status |
+|  Command  |           Args            |           Usage            | Description                            |
+| :-------: | :-----------------------: | :------------------------: | -------------------------------------- |
+|   onoff   |  \[on/off\] \[addr...\]   |   onoff on 0x1203 0x100c   | Set the light onoff status             |
+| lightness | \[pecentage\] \[addr...\] | lightness 50 0x1203 0x100c | Set the light lightness status         |
+| colortemp | \[pecentage\] \[addr...\] | colortemp 30 0x1203 0x100c | Set the light color temperature status |
 
 Table x: Lighting Control Commands
 
 For example:
-lightset 0xc001 lightness 50 - set the lightness of the lights in group 0xc001 to 50%
+lightness 50 0x1203 0x100c - set the lightness of the lights whose address is 0x1203 or 0x100c to 50%
 
 ## MNG
 

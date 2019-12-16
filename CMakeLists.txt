@@ -52,6 +52,7 @@ set(MNG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c)
 # aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/utils UTILS_SRC_LIST)
 
 set(UTILS_SRC_LIST
+    ${CMAKE_CURRENT_LIST_DIR}/utils/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c)

@@ -36,6 +36,8 @@ extern "C"
   do {                                             \
     if ((exp_ret) != (e = (func))) { goto err; } \
   } while (0)
+
+char *strdelimit(char *str, char *del, char c);
 #ifdef __cplusplus
 }
 #endif
