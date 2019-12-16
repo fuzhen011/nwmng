@@ -7,9 +7,11 @@
 
 /* Includes *********************************************************** */
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -23,11 +25,20 @@
 
 #include "cli/cli.h"
 #include "utils.h"
+#include "err.h"
 
 /* Defines  *********************************************************** */
 #define SHELL_NAME "[1;34m" "nwmng$ " "[0m"
 #define RL_HISTORY  ".history"
 #define DECLARE_CB(name)  int ccb_##name(char *str)
+#define DECLARE_VAGET_FUN(name) static err_t vaget_##name(void *vap, int inbuflen, int *ulen, int *rlen)
+
+#define VAP_LEN 256
+
+typedef err_t (*va_param_get_func_t)(void *vap,
+                                     int inbuflen,
+                                     int *ulen,
+                                     int *rlen);
 
 typedef struct {
   const char *name;
@@ -36,10 +47,13 @@ typedef struct {
   const char *doc;
   rl_compdisp_func_t *disp;
   rl_compentry_func_t *argcmpl;
+  va_param_get_func_t vpget;
 }command_t;
+
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
+DECLARE_VAGET_FUN(addrs);
 
 DECLARE_CB(sync);
 DECLARE_CB(reset);
@@ -69,7 +83,7 @@ static const command_t commands[] = {
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", ccb_onoff,
-    "Set the onoff of a light" },
+    "Set the onoff of a light", NULL, NULL, vaget_addrs },
   { "lightness", "[pecentage] [addr...]", ccb_lightness,
     "Set the lightness of a light" },
   { "colortemp", "[pecentage] [addr...]", ccb_ct,
@@ -84,6 +98,42 @@ static char *line = NULL;
 
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
+
+static int dummy_get_addrs(uint16_t *addrs)
+{
+  addrs[0] = 0x1003;
+  addrs[1] = 0xc005;
+  addrs[2] = 0x120c;
+  addrs[3] = 0x100e;
+  /* addrs[4] = 0x1003; */
+  return 4;
+}
+
+#define ADDRULEN  7
+static err_t vaget_addrs(void *vap,
+                         int inbuflen,
+                         int *ulen,
+                         int *rlen)
+{
+  if (!vap || !inbuflen || !ulen || !rlen) {
+    return err(ec_param_null);
+  }
+  char *p = vap;
+
+  *ulen = ADDRULEN;
+  uint16_t *addrs = calloc(VAP_LEN / ADDRULEN, sizeof(uint16_t));
+  int num = dummy_get_addrs(addrs);
+  if (num * (*ulen) > inbuflen ) {
+    num = inbuflen / (*ulen);
+  }
+  *rlen = num * (*ulen);
+
+  while (num--) {
+    addr_to_buf(addrs[num], &p[num * (*ulen)]);
+  }
+
+  return ec_success;
+}
 
 static void cli_init(void)
 {
@@ -145,6 +195,7 @@ static int parse_args(char *arg, wordexp_t *w, char *del, int flags)
 }
 
 static wordexp_t args;
+
 static char *arg_generator(const char *text, int state)
 {
   static unsigned int index, len;
@@ -157,6 +208,43 @@ static char *arg_generator(const char *text, int state)
 
   while (index < args.we_wordc) {
     arg = args.we_wordv[index];
+    index++;
+
+    if (!strncmp(arg, text, len)) {
+      return strdup(arg);
+    }
+  }
+
+  return NULL;
+}
+
+static struct {
+  char va_param[VAP_LEN];
+  int len;
+  int ulen;
+  va_param_get_func_t *pvpget;
+} vaget;
+
+static char *var_arg_generator(const char *text, int state)
+{
+  static unsigned int index, len;
+  const char *arg;
+
+  if (!state) {
+    if (!vaget.pvpget) {
+      return NULL;
+    }
+    index = 0;
+    len = strlen(text);
+    memset(vaget.va_param, 0, VAP_LEN);
+    vaget.len = 0;
+    if (ec_success != (*vaget.pvpget)(vaget.va_param, VAP_LEN, &vaget.ulen, &vaget.len)) {
+      return NULL;
+    }
+  }
+
+  while (index < vaget.len / vaget.ulen) {
+    arg = &vaget.va_param[index * vaget.ulen];
     index++;
 
     if (!strncmp(arg, text, len)) {
@@ -191,15 +279,29 @@ static char **args_completion(const command_t *entry,
   }
 
   /* Check if argument is valid */
-  if ((unsigned) index > args.we_wordc - 1) {
-    if (args.we_offs == 0) {
+  if (args.we_offs == 0) {
+    /* No variable number args */
+    if ((unsigned) index > args.we_wordc - 1) {
       goto done;
-    } else {
-      goto done;
+    }
+  } else {
+    if ((unsigned) index >= args.we_wordc - 1) {
+      goto var_handler;
     }
   }
 
+  /* if ((unsigned) index > args.we_wordc - 1) { */
+  /* if (args.we_offs == 0) { */
+  /* goto done; */
+  /* } else { */
+  /* goto done; */
+  /* } */
+  /* } */
   free(str);
+
+  if (!strrchr(args.we_wordv[index], '/')) {
+    goto done;
+  }
 
   /* Split values separated by / */
   str = strdelimit(args.we_wordv[index], "/", ' ');
@@ -213,13 +315,20 @@ static char **args_completion(const command_t *entry,
 
   rl_completion_display_matches_hook = NULL;
   matches = rl_completion_matches(text, arg_generator);
+  goto done;
 
+  var_handler:
+  if (entry->vpget) {
+    vaget.pvpget = (va_param_get_func_t *)&entry->vpget;
+    rl_completion_display_matches_hook = NULL;
+    matches = rl_completion_matches(text, var_arg_generator);
+  }
   done:
   free(str);
   end:
   if (!matches && text[0] == '\0') {
-    /* printf("Usage: %s %s\n", entry->cmd, */
-    /* entry->arg ? entry->arg : ""); */
+    bt_shell_printf("Usage: %s %s\n", entry->name,
+                    entry->arg ? entry->arg : "");
   }
 
   args.we_offs = 0;
@@ -274,6 +383,9 @@ char **shell_completion(const char *text, int start, int end)
 
     wordfree(&w);
   }
+  if (!matches) {
+    rl_attempted_completion_over = 1;
+  }
 
   return (matches);
 }
@@ -323,7 +435,7 @@ void readcmd(void)
     free(line);
     line = NULL;
   }
-  line = readline("[1;34m" "nwmng$ " "[0m");
+  line = readline(SHELL_NAME);
   if (!line) {
     return;
   }
@@ -362,10 +474,74 @@ int cli_proc_init(int child_num, const pid_t *pids)
   return 0;
 }
 
+/* static void rl_handler(char *input) */
+/* { */
+/* printf("111\n"); */
+/* } */
+
 int cli_proc(void)
 {
   for (;;) {
     readcmd();
+  }
+  /* rl_readline_name = SHELL_NAME; */
+  /* setlinebuf(stdout); */
+  /* rl_attempted_completion_function = shell_completion; */
+  /* rl_erase_empty_line = 1; */
+  /* rl_callback_handler_install(NULL, rl_handler); */
+  /* using_history(); */
+  /* read_history(RL_HISTORY); */
+  /* while (1) */
+  /* { */
+  /* } */
+  return 0;
+}
+
+void bt_shell_printf(const char *fmt, ...)
+{
+  va_list args;
+  bool save_input;
+  char *saved_line;
+  int saved_point;
+
+  /* if (!data.input) */
+  /* return; */
+
+  /* if (data.mode) { */
+  /* va_start(args, fmt); */
+  /* vprintf(fmt, args); */
+  /* va_end(args); */
+  /* return; */
+  /* } */
+
+  save_input = !RL_ISSTATE(RL_STATE_DONE);
+
+  if (save_input) {
+    saved_point = rl_point;
+    saved_line = rl_copy_text(0, rl_end);
+    /* if (!data.saved_prompt) */
+    /* rl_save_prompt(); */
+    rl_replace_line("", 0);
+    rl_redisplay();
+  }
+
+  va_start(args, fmt);
+  vprintf(fmt, args);
+  va_end(args);
+
+  /* if (data.monitor) { */
+  /* va_start(args, fmt); */
+  /* bt_log_vprintf(0xffff, data.name, LOG_INFO, fmt, args); */
+  /* va_end(args); */
+  /* } */
+
+  if (save_input) {
+    /* if (!data.saved_prompt) */
+    /* rl_restore_prompt(); */
+    rl_replace_line(saved_line, 0);
+    rl_point = saved_point;
+    rl_forced_update_display();
+    free(saved_line);
   }
 }
 

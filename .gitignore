@@ -9,3 +9,4 @@ core
 cppcheck.xml
 .clangd
 .history
+.gdb*

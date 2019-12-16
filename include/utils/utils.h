@@ -11,6 +11,7 @@
 extern "C"
 {
 #endif
+#include <stdint.h>
 
 #ifndef MAX
 #define MAX(a, b)                                   ((a) > (b) ? (a) : (b))
@@ -32,13 +33,52 @@ extern "C"
   do {                                             \
     if ((exp_ret) != (e = (func))) { return (e); } \
   } while (0)
-#define ECG(exp_ret, func, err)                    \
-  do {                                             \
+#define ECG(exp_ret, func, err)                  \
+  do {                                           \
     if ((exp_ret) != (e = (func))) { goto err; } \
   } while (0)
 
 char *strdelimit(char *str, char *del, char c);
 int strsuffix(const char *str, const char *suffix);
+
+static inline char hex_value_to_char(char x)
+{
+  /* Calling function needs to make sure the format 0-9, a-f, A-F */
+  if (x >= 0 && x <= 9) {
+    return x + '0';
+  } else if (x >= 0xa && x <= 0xf) {
+    return x = x + 'a' - 10;
+  } else {
+    return x;
+  }
+}
+
+static inline char hex_char_to_value(char x)
+{
+  /* Calling function needs to make sure the format 0-9, a-f, A-F */
+  if (((x) >= '0') && ((x) <= '9')) {
+    return (x) - '0';
+  } else if (((x) >= 'a') && ((x) <= 'f')) {
+    return (x) - 'a' + 10;
+  } else {
+    return (x) - 'A' + 10;
+  }
+}
+
+static inline void addr_to_buf(uint16_t addr, char *buf)
+{
+  buf[0] = '0';
+  buf[1] = 'x';
+
+  buf[2] = hex_value_to_char(addr / 0x1000);
+  addr &= 0xfff;
+  buf[3] = hex_value_to_char(addr / 0x100);
+  addr &= 0xff;
+  buf[4] = hex_value_to_char(addr / 0x10);
+  addr &= 0xf;
+  buf[5] = hex_value_to_char(addr);
+}
+
 #ifdef __cplusplus
 }
 #endif

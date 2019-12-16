@@ -15,6 +15,7 @@ extern "C"
 int cli_proc_init(int child_num, const pid_t *pids);
 int cli_proc(void);
 
+void bt_shell_printf(const char *fmt, ...);
 #ifdef __cplusplus
 }
 #endif
