@@ -123,20 +123,17 @@ static int addr_in_cfg(const char *straddr,
                        uint16_t *addr)
 {
   /* TODO: socket to CFG to get dev */
-  if (!strcmp(straddr, "0x1003")) {
-    *addr = 0x1003;
-    return 0;
-  } else
-  if (!strcmp(straddr, "0xc005")) {
-    *addr = 0xc005;
-    return 0;
-  } else
-  if (!strcmp(straddr, "0x120c")) {
-    *addr = 0x120c;
-    return 0;
-  } else
-  if (!strcmp(straddr, "0x100e")) {
-    *addr = 0x100e;
+  uint16_t addrtmp;
+  if (ec_success != str2uint(straddr, strlen(straddr), &addrtmp, sizeof(uint16_t))) {
+    LOGD("str2uint failed\n");
+    return -1;
+  }
+  if (addrtmp == 0x1003
+      || addrtmp == 0xc005
+      || addrtmp == 0x120c
+      || addrtmp == 0x100e
+      || addrtmp == 0x1 ) {
+    *addr = addrtmp;
     return 0;
   }
   return -1;
@@ -148,8 +145,9 @@ static int dummy_get_addrs(uint16_t *addrs)
   addrs[1] = 0xc005;
   addrs[2] = 0x120c;
   addrs[3] = 0x100e;
+  addrs[4] = 0x1;
   /* addrs[4] = 0x1003; */
-  return 4;
+  return 5;
 }
 
 #define ADDRULEN  7

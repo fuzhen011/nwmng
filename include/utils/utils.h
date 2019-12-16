@@ -11,7 +11,15 @@
 extern "C"
 {
 #endif
+#include <stdio.h>
 #include <stdint.h>
+
+#include "err.h"
+
+enum {
+  BASE_DEC,
+  BASE_HEX
+};
 
 #ifndef MAX
 #define MAX(a, b)                                   ((a) > (b) ? (a) : (b))
@@ -79,6 +87,14 @@ static inline void addr_to_buf(uint16_t addr, char *buf)
   buf[5] = hex_value_to_char(addr);
 }
 
+err_t str2uint(const char *input,
+               size_t length,
+               void *p_ret,
+               size_t retlen);
+err_t int2str(uint64_t input,
+              uint8_t base_type,
+              size_t length,
+              char str[]);
 #ifdef __cplusplus
 }
 #endif
