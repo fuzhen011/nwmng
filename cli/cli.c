@@ -48,6 +48,7 @@
 
 #define VAP_LEN 256
 
+#define CMD_LENGTH  48
 #define print_text(color, fmt, args ...) \
   printf(color fmt COLOR_OFF "\n", ## args)
 #define print_menu(cmd, args, desc)                   \
@@ -57,6 +58,10 @@
   printf(COLOR_BLUE "%s %-*s " COLOR_OFF "%s\n", \
          cmd, (int)(CMD_LENGTH - strlen(cmd)), "", desc)
 
+#define print_cmd_usage(cmd)                                               \
+  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",                      \
+         (cmd)->name, (int)(CMD_LENGTH - strlen((cmd)->name)), (cmd)->arg, \
+         (cmd)->doc)
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
@@ -485,6 +490,8 @@ void readcmd(void)
   DUMP_PARAMS(w.we_wordc, w.we_wordv);
   ret = commands[ret].fn(w.we_wordc, w.we_wordv);
   if (ec_param_invalid == ret) {
+    printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+    print_cmd_usage(&commands[ret]);
     goto out;
   }
 
@@ -602,7 +609,7 @@ static err_t clicb_reset(int argc, char *argv[])
 static err_t clicb_list(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
-  return 0;
+  return ec_param_invalid;
 }
 
 static err_t clicb_help(int argc, char *argv[])
@@ -623,7 +630,7 @@ static err_t clicb_quit(int argc, char *argv[])
 static err_t clicb_ct(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
-  return 0;
+  return ec_param_invalid;
 }
 
 static err_t clicb_lightness(int argc, char *argv[])
