@@ -26,6 +26,7 @@
 #include "cli/cli.h"
 #include "utils.h"
 #include "err.h"
+#include "logging.h"
 
 /* Defines  *********************************************************** */
 #define SHELL_NAME "[1;34m" "nwmng$ " "[0m"
@@ -131,7 +132,7 @@ static err_t vaget_addrs(void *vap,
   while (num--) {
     addr_to_buf(addrs[num], &p[num * (*ulen)]);
   }
-
+  free(addrs);
   return ec_success;
 }
 
@@ -481,6 +482,7 @@ int cli_proc_init(int child_num, const pid_t *pids)
 
 int cli_proc(void)
 {
+  LOGD("CLI started\n");
   for (;;) {
     readcmd();
   }
