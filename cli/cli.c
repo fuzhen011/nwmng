@@ -48,7 +48,7 @@
 
 #define VAP_LEN 256
 
-#define CMD_LENGTH  48
+#define CMD_LENGTH  36
 #define print_text(color, fmt, args ...) \
   printf(color fmt COLOR_OFF "\n", ## args)
 #define print_menu(cmd, args, desc)                   \
@@ -58,10 +58,13 @@
   printf(COLOR_BLUE "%s %-*s " COLOR_OFF "%s\n", \
          cmd, (int)(CMD_LENGTH - strlen(cmd)), "", desc)
 
-#define print_cmd_usage(cmd)                                               \
-  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",                      \
-         (cmd)->name, (int)(CMD_LENGTH - strlen((cmd)->name)), (cmd)->arg, \
+#define print_cmd_usage(cmd)                                   \
+  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",          \
+         (cmd)->name, (int)(CMD_LENGTH - strlen((cmd)->name)), \
+         (cmd)->arg ? (cmd)->arg : "",                         \
          (cmd)->doc)
+
+#define iterate_cmds(i) for (int i = 0; i < cmd_num; i++)
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
@@ -95,7 +98,7 @@ DECLARE_CB(onoff);
 
 static const command_t commands[] = {
   { "sync", NULL, clicb_sync,
-    "Synchronize the configuration of the network with the JSON file" },
+    "Synchronize network configuration" },
   { "reset", "<1/0>", clicb_reset,
     "[Factory] Reset the device" },
   { "q", NULL, clicb_quit,
@@ -614,7 +617,12 @@ static err_t clicb_list(int argc, char *argv[])
 
 static err_t clicb_help(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
+  print_text(COLOR_HIGHLIGHT, "Available commands:");
+  print_text(COLOR_HIGHLIGHT, "-------------------");
+  iterate_cmds(i)
+  {
+    print_cmd_usage(&commands[i]);
+  }
   return 0;
 }
 
