@@ -133,12 +133,6 @@ static err_t fill_file_line(const char *file_name,
   *len = offset + FILE_LINE_LENGTH;
   return ec_success;
 }
-#define AST_FLAG  "[" RTT_CTRL_TEXT_BRIGHT_RED "AST" RTT_CTRL_RESET "]"
-#define ERR_FLAG  "[" RTT_CTRL_BG_BRIGHT_RED "ERR" RTT_CTRL_RESET "]"
-#define WRN_FLAG  "[" RTT_CTRL_BG_BRIGHT_YELLOW "WRN" RTT_CTRL_RESET "]"
-#define MSG_FLAG  "[" RTT_CTRL_BG_BRIGHT_BLUE "MSG" RTT_CTRL_RESET "]"
-#define DBG_FLAG  "[" RTT_CTRL_BG_BRIGHT_GREEN "DBG" RTT_CTRL_RESET "]"
-#define VER_FLAG  "[" "VER" "]"
 
 static err_t fill_lvl(int lvl,
                       char *str,

@@ -51,13 +51,6 @@
 #define CMD_LENGTH  36
 #define print_text(color, fmt, args ...) \
   printf(color fmt COLOR_OFF "\n", ## args)
-#define print_menu(cmd, args, desc)                   \
-  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n", \
-         cmd, (int)(CMD_LENGTH - strlen(cmd)), args, desc)
-#define print_submenu(cmd, desc)                 \
-  printf(COLOR_BLUE "%s %-*s " COLOR_OFF "%s\n", \
-         cmd, (int)(CMD_LENGTH - strlen(cmd)), "", desc)
-
 #define print_cmd_usage(cmd)                                   \
   printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",          \
          (cmd)->name, (int)(CMD_LENGTH - strlen((cmd)->name)), \
@@ -125,6 +118,29 @@ static char *line = NULL;
 
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
+
+static int addr_in_cfg(const char *straddr,
+                       uint16_t *addr)
+{
+  /* TODO: socket to CFG to get dev */
+  if (!strcmp(straddr, "0x1003")) {
+    *addr = 0x1003;
+    return 0;
+  } else
+  if (!strcmp(straddr, "0xc005")) {
+    *addr = 0xc005;
+    return 0;
+  } else
+  if (!strcmp(straddr, "0x120c")) {
+    *addr = 0x120c;
+    return 0;
+  } else
+  if (!strcmp(straddr, "0x100e")) {
+    *addr = 0x100e;
+    return 0;
+  }
+  return -1;
+}
 
 static int dummy_get_addrs(uint16_t *addrs)
 {
@@ -498,12 +514,11 @@ void readcmd(void)
     goto out;
   }
 
+  out:
   if (*str) {
     add_history(str);
     write_history(RL_HISTORY);
   }
-
-  out:
   wordfree(&w);
 }
 
@@ -649,6 +664,38 @@ static err_t clicb_lightness(int argc, char *argv[])
 
 static err_t clicb_onoff(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
-  return 0;
+  err_t e = ec_success;
+  int onoff;
+  uint16_t *addrs;
+  if (argc < 3) {
+    return ec_param_invalid;
+  }
+  if (!strcmp(argv[1], "on")) {
+    onoff = 1;
+  } else if (!strcmp(argv[1], "off")) {
+    onoff = 0;
+  } else {
+    return ec_param_invalid;
+  }
+  addrs = calloc(argc - 2, sizeof(uint16_t));
+
+  for (int i = 2; i < argc; i++) {
+    if (-1 == addr_in_cfg(argv[i], &addrs[i - 2])) {
+      LOGW("Onoff invalid addr[%s]\n", argv[i]);
+      e = ec_param_invalid;
+      break;
+    }
+  }
+  if (e == ec_success) {
+    /* TODO */
+    /* handle onoff set to addrs */
+    LOGD("Sending onoff[%s] to be handled\n",
+         onoff ? "on" : "off");
+    /* IMPL PENDING, now for DEBUG */
+    sleep(1);
+    printf("Success\n");
+    (void)onoff;
+  }
+  free(addrs);
+  return e;
 }

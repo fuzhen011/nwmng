@@ -14,22 +14,22 @@ extern "C"
 #include "err.h"
 
 /* TODO: clear below */
-#define COLOR_OFF	"\x1B[0m"
-#define COLOR_BLACK	"\x1B[0;30m"
-#define COLOR_RED	"\x1B[0;31m"
-#define COLOR_GREEN	"\x1B[0;32m"
-#define COLOR_YELLOW	"\x1B[0;33m"
-#define COLOR_BLUE	"\x1B[0;34m"
-#define COLOR_MAGENTA	"\x1B[0;35m"
-#define COLOR_CYAN	"\x1B[0;36m"
-#define COLOR_WHITE	"\x1B[0;37m"
-#define COLOR_WHITE_BG	"\x1B[0;47;30m"
-#define COLOR_HIGHLIGHT	"\x1B[1;39m"
+#define COLOR_OFF "\x1B[0m"
+#define COLOR_BLACK "\x1B[0;30m"
+#define COLOR_RED "\x1B[0;31m"
+#define COLOR_GREEN "\x1B[0;32m"
+#define COLOR_YELLOW  "\x1B[0;33m"
+#define COLOR_BLUE  "\x1B[0;34m"
+#define COLOR_MAGENTA "\x1B[0;35m"
+#define COLOR_CYAN  "\x1B[0;36m"
+#define COLOR_WHITE "\x1B[0;37m"
+#define COLOR_WHITE_BG  "\x1B[0;47;30m"
+#define COLOR_HIGHLIGHT "\x1B[1;39m"
 
-#define COLOR_RED_BOLD		"\x1B[1;31m"
-#define COLOR_GREEN_BOLD	"\x1B[1;32m"
-#define COLOR_BLUE_BOLD		"\x1B[1;34m"
-#define COLOR_MAGENTA_BOLD	"\x1B[1;35m"
+#define COLOR_RED_BOLD    "\x1B[1;31m"
+#define COLOR_GREEN_BOLD  "\x1B[1;32m"
+#define COLOR_BLUE_BOLD   "\x1B[1;34m"
+#define COLOR_MAGENTA_BOLD  "\x1B[1;35m"
 /******************************************************************
  * Copied from RTT
  * ***************************************************************/
@@ -71,6 +71,13 @@ extern "C"
 #define RTT_CTRL_BG_BRIGHT_MAGENTA    "[4;45m"
 #define RTT_CTRL_BG_BRIGHT_CYAN       "[4;46m"
 #define RTT_CTRL_BG_BRIGHT_WHITE      "[4;47m"
+
+#define AST_FLAG  "[" RTT_CTRL_TEXT_BRIGHT_RED "AST" RTT_CTRL_RESET "]"
+#define ERR_FLAG  "[" RTT_CTRL_BG_BRIGHT_RED "ERR" RTT_CTRL_RESET "]"
+#define WRN_FLAG  "[" RTT_CTRL_BG_BRIGHT_YELLOW "WRN" RTT_CTRL_RESET "]"
+#define MSG_FLAG  "[" RTT_CTRL_BG_BRIGHT_BLUE "MSG" RTT_CTRL_RESET "]"
+#define DBG_FLAG  "[" RTT_CTRL_BG_BRIGHT_GREEN "DBG" RTT_CTRL_RESET "]"
+#define VER_FLAG  "[" "VER" "]"
 
 /* LVL_AST cannot be masked */
 enum {
