@@ -21,8 +21,8 @@ typedef enum {
   ec_not_exist = 3,
   ec_file_ope = 4,
   ec_sock = 5,
+  ec_param_invalid = 6,
 
-  ec_pre_pending = 6,
   ec_unspecified = 7,
   ec_pub_param_not_set = 8,
   ec_pub_data_not_set = 9,

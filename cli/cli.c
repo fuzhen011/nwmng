@@ -29,22 +29,45 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-#define SHELL_NAME "[1;34m" "nwmng$ " "[0m"
+#define __DUMP_PARAMS
+#ifdef __DUMP_PARAMS
+#define DUMP_PARAMS(argc, argv)                            \
+  do{                                                      \
+    LOGV("CMD - %s with %d params.\n", argv[0], argc - 1); \
+    for (int i = 1; i < (argc); i++)                       \
+    { LOGV("\tparam[%d]: %s\n", i, (argv)[i]); }           \
+  }while (0)
+#else
+#define DUMP_PARAMS()
+#endif
+#define DECLARE_CB(name)  static err_t clicb_##name(int argc, char *argv[])
+
+#define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWmng$ " RTT_CTRL_RESET
 #define RL_HISTORY  ".history"
-#define DECLARE_CB(name)  int ccb_##name(char *str)
 #define DECLARE_VAGET_FUN(name) static err_t vaget_##name(void *vap, int inbuflen, int *ulen, int *rlen)
 
 #define VAP_LEN 256
+
+#define print_text(color, fmt, args ...) \
+  printf(color fmt COLOR_OFF "\n", ## args)
+#define print_menu(cmd, args, desc)                   \
+  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n", \
+         cmd, (int)(CMD_LENGTH - strlen(cmd)), args, desc)
+#define print_submenu(cmd, desc)                 \
+  printf(COLOR_BLUE "%s %-*s " COLOR_OFF "%s\n", \
+         cmd, (int)(CMD_LENGTH - strlen(cmd)), "", desc)
 
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
                                      int *rlen);
 
+typedef err_t (*cmd_exec_func_t)(int argc, char *argv[]);
+
 typedef struct {
   const char *name;
   const char *arg;
-  rl_icpfunc_t *fn;
+  cmd_exec_func_t fn;
   const char *doc;
   rl_compdisp_func_t *disp;
   rl_compentry_func_t *argcmpl;
@@ -61,40 +84,35 @@ DECLARE_CB(reset);
 DECLARE_CB(list);
 DECLARE_CB(help);
 DECLARE_CB(quit);
-
 DECLARE_CB(ct);
 DECLARE_CB(lightness);
 DECLARE_CB(onoff);
 
 static const command_t commands[] = {
-  { "sync", NULL, ccb_sync,
+  { "sync", NULL, clicb_sync,
     "Synchronize the configuration of the network with the JSON file" },
-  { "sync1", NULL, ccb_sync },
-  { "sync2", NULL, ccb_sync },
-  { "sync3", NULL, ccb_sync },
-  { "sync4", NULL, ccb_sync },
-  { "reset", "<1/0>", ccb_reset,
+  { "reset", "<1/0>", clicb_reset,
     "[Factory] Reset the device" },
-  { "q", NULL, ccb_quit,
+  { "q", NULL, clicb_quit,
     "Quit the program" },
-  { "help", NULL, ccb_help,
+  { "help", NULL, clicb_help,
     "Print help" },
-  { "list", NULL, ccb_list,
+  { "list", NULL, clicb_list,
     "List all devices in the database" },
 
   /* Light Control Commands */
-  { "onoff", "[on/off] [addr...]", ccb_onoff,
+  { "onoff", "[on/off] [addr...]", clicb_onoff,
     "Set the onoff of a light", NULL, NULL, vaget_addrs },
-  { "lightness", "[pecentage] [addr...]", ccb_lightness,
+  { "lightness", "[pecentage] [addr...]", clicb_lightness,
     "Set the lightness of a light" },
-  { "colortemp", "[pecentage] [addr...]", ccb_ct,
+  { "colortemp", "[pecentage] [addr...]", clicb_ct,
     "Set the color temperature of a light" },
 };
 
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
-static int children_num = 0;
-static pid_t *children = NULL;
+int children_num = 0;
+pid_t *children = NULL;
 static char *line = NULL;
 
 /* Static Functions Declaractions ************************************* */
@@ -425,13 +443,20 @@ static inline int find_cmd_index(const char *cmd)
 
 static void output_nspt(const char *cmd)
 {
-  printf("Command [%s] NOT SUPPORTED\n", cmd);
+  print_text(COLOR_HIGHLIGHT,
+             "Invalid command: %s",
+             cmd);
+  print_text(COLOR_HIGHLIGHT,
+             "\n"
+             "Use \"help\" for a list of available commands");
 }
 
 void readcmd(void)
 {
   char *str;
   int ret;
+  wordexp_t w;
+
   if (line) {
     free(line);
     line = NULL;
@@ -445,17 +470,31 @@ void readcmd(void)
    * and execute it. */
   str = stripwhite(line);
 
-  ret = find_cmd_index(str);
-  if (ret == -1) {
-    output_nspt(str);
+  if (wordexp(str, &w, WRDE_NOCMD)) {
     return;
   }
-  ret = commands[ret].fn(str);
+  if (!str || str[0] == '\0') {
+    goto out;
+  }
+
+  ret = find_cmd_index(str);
+  if (ret == -1) {
+    output_nspt(w.we_wordv[0]);
+    goto out;
+  }
+  DUMP_PARAMS(w.we_wordc, w.we_wordv);
+  ret = commands[ret].fn(w.we_wordc, w.we_wordv);
+  if (ec_param_invalid == ret) {
+    goto out;
+  }
 
   if (*str) {
     add_history(str);
     write_history(RL_HISTORY);
   }
+
+  out:
+  wordfree(&w);
 }
 
 int cli_proc_init(int child_num, const pid_t *pids)
@@ -547,35 +586,32 @@ void bt_shell_printf(const char *fmt, ...)
   }
 }
 
-/******************************************************************
- * Callbacks
- * ***************************************************************/
-int ccb_sync(char *str)
+static err_t clicb_sync(int argc, char *argv[])
 {
   sleep(5);
   printf("%s\n", __FUNCTION__);
   return 0;
 }
 
-int ccb_reset(char *str)
+static err_t clicb_reset(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return 0;
 }
 
-int ccb_list(char *str)
+static err_t clicb_list(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return 0;
 }
 
-int ccb_help(char *str)
+static err_t clicb_help(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return 0;
 }
 
-int ccb_quit(char *str)
+static err_t clicb_quit(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   for (int i = 0; i < children_num; i++) {
@@ -584,19 +620,19 @@ int ccb_quit(char *str)
   exit(EXIT_SUCCESS);
 }
 
-int ccb_ct(char *str)
+static err_t clicb_ct(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return 0;
 }
 
-int ccb_lightness(char *str)
+static err_t clicb_lightness(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return 0;
 }
 
-int ccb_onoff(char *str)
+static err_t clicb_onoff(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return 0;

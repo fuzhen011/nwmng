@@ -12,6 +12,24 @@ extern "C"
 {
 #endif
 #include "err.h"
+
+/* TODO: clear below */
+#define COLOR_OFF	"\x1B[0m"
+#define COLOR_BLACK	"\x1B[0;30m"
+#define COLOR_RED	"\x1B[0;31m"
+#define COLOR_GREEN	"\x1B[0;32m"
+#define COLOR_YELLOW	"\x1B[0;33m"
+#define COLOR_BLUE	"\x1B[0;34m"
+#define COLOR_MAGENTA	"\x1B[0;35m"
+#define COLOR_CYAN	"\x1B[0;36m"
+#define COLOR_WHITE	"\x1B[0;37m"
+#define COLOR_WHITE_BG	"\x1B[0;47;30m"
+#define COLOR_HIGHLIGHT	"\x1B[1;39m"
+
+#define COLOR_RED_BOLD		"\x1B[1;31m"
+#define COLOR_GREEN_BOLD	"\x1B[1;32m"
+#define COLOR_BLUE_BOLD		"\x1B[1;34m"
+#define COLOR_MAGENTA_BOLD	"\x1B[1;35m"
 /******************************************************************
  * Copied from RTT
  * ***************************************************************/

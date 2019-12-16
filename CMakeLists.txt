@@ -71,16 +71,15 @@ include_directories(
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 
 if(APPLE)
-set(CMAKE_C_LINK_FLAGS "-L/usr/local/Cellar/readline/8.0.1/lib ${CMAKE_C_LINK_FLAGS}")
-set(LIBS readline.dylib)
+  set(CMAKE_C_LINK_FLAGS
+      "-L/usr/local/Cellar/readline/8.0.1/lib ${CMAKE_C_LINK_FLAGS}")
+  set(LIBS readline.dylib)
 else()
-set(LIBS readline.so)
+  set(LIBS readline.so)
 endif()
 
 target_link_libraries(
-  ${CMAKE_PROJECT_NAME}
-  m
-  ${LIBS}
+  ${CMAKE_PROJECT_NAME} m ${LIBS}
   # pthread json-c
 )
 
