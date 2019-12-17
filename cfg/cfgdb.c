@@ -75,5 +75,17 @@ static cfgdb_t db = { NULL, NULL };
 
 err_t cfgdb_init(void)
 {
+  if (db.devs || db.lights) {
+    return ec_success;
+  }
+
+  db.devs = g_hash_table_new(NULL, NULL);
+  db.lights = NULL;
+  return ec_success;
+}
+
+void cfgdb_deinit(void)
+{
+
 }
 #endif
