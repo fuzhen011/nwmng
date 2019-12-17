@@ -12,7 +12,10 @@ extern "C"
 {
 #endif
 #include <stdint.h>
+#include <stdbool.h>
+
 #include "utils.h"
+#include "glib.h"
 
 enum {
   relay_bitoffs,
@@ -44,6 +47,7 @@ typedef struct publication{
 typedef struct {
   uint8_t uuid[16];
   uint16_t addr;
+  uint8_t done;
   struct {
     uint8_t ttl;
     txparam_t *net_txp;
@@ -56,9 +60,9 @@ typedef struct {
      * 4. Set the feature if it's not "2-keep"
      */
     struct {
-      uint8_t dcd_status;
-      uint8_t needset;
-      uint8_t value;
+      bbitmap_t dcd_status;
+      bbitmap_t needset;
+      bbitmap_t value;
     }features;
 
     publication_t pub;
@@ -67,16 +71,57 @@ typedef struct {
   }config;
 
   struct {
-    uint16_t light_supt;
+    uint8_t light_supt;
     uint16_t venmod_supt;
   }models;
 }node_t;
 
-typedef struct{
+typedef struct {
+  uint16_t refid;
+  uint16_t id;
+  uint8_t done;
+  uint16_t val[16];
+}meshkey_t;
 
-}cfg_t;
+typedef struct {
+  meshkey_t netkey;
+  uint8_t appkey_num;
+  meshkey_t appkey[];
+}subnet_t;
 
+typedef struct {
+  uint16_t addr;
+  time_t sync_time;
+  uint32_t ivi;
+  /* TODO: Add queue to each item */
+  GList *pubgroups;
+  GList *subgroups;
+  uint8_t subnet_num;
+  subnet_t *subnets;
+}provcfg_t;
+
+typedef struct {
+  GHashTable *unprov_devs;
+  GHashTable *nodes;
+  GQueue *lights;
+  GQueue *backlog;
+} cfg_devdb_t;
+
+typedef struct {
+  bool initialized;
+  cfg_devdb_t devdb;
+  provcfg_t self;
+}cfgdb_t;
+
+err_t cfgdb_init(void);
 void cfgdb_deinit(void);
+
+int cfgdb_devnum(bool proved);
+
+node_t *cfgdb_node_get(uint16_t addr);
+node_t *cfgdb_unprov_dev_get(const uint8_t *uuid);
+err_t cfgdb_remove(node_t *n, bool destory);
+err_t cfgdb_add(node_t *n);
 
 #ifdef __cplusplus
 }

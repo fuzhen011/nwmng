@@ -10,6 +10,14 @@
           "Tmpl": "0xFF",
           "Blacklist": "0x00",
           "Done": "0x01"
+        },
+        {
+          "UUID": "000b57ef2b872d7665447362616c6953",
+          "Addr": "0x0000",
+          "Err": "0x00000000",
+          "Tmpl": "0xFF",
+          "Blacklist": "0x00",
+          "Done": "0x00"
         }
       ]
     },

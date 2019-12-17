@@ -11,6 +11,10 @@
 extern "C"
 {
 #endif
+#ifndef SINGLE_PROC
+#define SINGLE_PROC
+#endif
+
 #define GC_EXP_DEV_NUM  128
 
 #ifdef __cplusplus

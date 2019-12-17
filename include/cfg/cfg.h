@@ -2,7 +2,7 @@
     > File Name: cfg.h
     > Author: Kevin
     > Created Time: 2019-12-17
-    > Description: 
+    > Description:
  ************************************************************************/
 
 #ifndef CFG_H
@@ -11,6 +11,11 @@
 extern "C"
 {
 #endif
+
+#include "err.h"
+
+err_t cfg_init(void);
+void cfg_proc(void);
 
 #ifdef __cplusplus
 }

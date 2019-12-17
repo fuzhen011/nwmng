@@ -13,10 +13,14 @@
 
 #include <sys/wait.h>
 
+#include "projconfig.h"
 #include "cli/cli.h"
 #include "mng/mng.h"
 #include "utils.h"
 
+#ifdef SINGLE_PROC
+#include "cfg.h"
+#endif
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -84,6 +88,11 @@ int main(int argc, char *argv[])
   EC(ec_success, logging_init("logs/cli.log",
                               0, /* Not output to stdout */
                               LOG_MINIMAL_LVL(LVL_VER)));
+#ifdef SINGLE_PROC
+  EC(ec_success, cfg_init());
+  cfg_proc();
+#endif
+
   cli_proc_init(0, NULL);
   cli_proc();
 

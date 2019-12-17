@@ -21,10 +21,14 @@ typedef struct {
   uint16_t data[];
 }uint16array_t;
 
-typedef struct{
+typedef struct {
   uint8_t len;
   uint16_t *data;
 }uint16list_t;
+
+typedef uint32_t lbitmap_t;
+typedef uint16_t sbitmap_t;
+typedef uint8_t  bbitmap_t;
 
 enum {
   BASE_DEC,
