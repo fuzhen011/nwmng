@@ -64,25 +64,35 @@ set(SRC_LIST
     ${CFG_SRC_LIST}
     ${CMAKE_CURRENT_LIST_DIR}/main.c)
 
+if(APPLE)
+  set(
+    CMAKE_C_LINK_FLAGS
+    "-L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
+    )
+  set(EXTRA_INC_PATH /usr/local/Cellar/glib/2.62.3/include/glib-2.0
+      /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include)
+  set(LIBS readline.dylib)
+else()
+  set(EXTRA_INC_PATH /usr/include/glib-2.0
+      /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+  set(LIBS readline.so)
+endif()
+
 include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${CMAKE_CURRENT_LIST_DIR}/include
                     ${CMAKE_CURRENT_LIST_DIR}/include/utils
                     ${CMAKE_CURRENT_LIST_DIR}/include/cli
                     ${CMAKE_CURRENT_LIST_DIR}/include/mng
                     ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-                    ${RL_INC})
+                    ${RL_INC}
+                    ${EXTRA_INC_PATH})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 
-if(APPLE)
-  set(CMAKE_C_LINK_FLAGS
-      "-L/usr/local/Cellar/readline/8.0.1/lib ${CMAKE_C_LINK_FLAGS}")
-  set(LIBS readline.dylib)
-else()
-  set(LIBS readline.so)
-endif()
-
-target_link_libraries(${CMAKE_PROJECT_NAME} m ${LIBS}
+target_link_libraries(${CMAKE_PROJECT_NAME}
+                      m
+                      glib-2.0
+                      ${LIBS}
                       # pthread json-c
                       )
 

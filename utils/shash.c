@@ -118,9 +118,9 @@ int htb_insert(htb_t *htb,
   return 0;
 }
 
-int htb_replace(htb_t *htb,
-                const void *key,
-                const void *value)
+void htb_replace(htb_t *htb,
+                 const void *key,
+                 const void *value)
 {
   void *v;
   unsigned int index = htb->hash(key);
@@ -134,12 +134,21 @@ int htb_replace(htb_t *htb,
     free(v);
     freed = 1;
   } else if (v == value) {
-    return 0;
+    return;
   }
 
   htb->data[index] = (void *)value;
   if (!freed) {
     htb->num++;
   }
-  return 0;
+}
+
+void htb_remove(htb_t *htb,
+                const void *key)
+{
+  void *v = __htb_value(htb, key);
+  if (v) {
+    free(v);
+    v = NULL;
+  }
 }

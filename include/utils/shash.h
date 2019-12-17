@@ -42,10 +42,12 @@ int htb_contains(htb_t *htb,
 int htb_insert(htb_t *htb,
                const void *key,
                const void *value);
-int htb_replace(htb_t *htb,
-                const void *key,
-                const void *value);
+void htb_replace(htb_t *htb,
+                 const void *key,
+                 const void *value);
 void *htb_next_value(htb_t * htb, int reset);
+void htb_remove(htb_t *htb,
+                const void *key);
 #ifdef __cplusplus
 }
 #endif

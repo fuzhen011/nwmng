@@ -23,8 +23,8 @@ typedef enum {
   ec_sock = 5,
   ec_param_invalid = 6,
   ec_format = 7,
+  ec_state = 8,
 
-  ec_pub_param_not_set = 8,
   ec_pub_data_not_set = 9,
   ec_all_try_done_still_fail = 10,
   ec_already_exist = 11,
