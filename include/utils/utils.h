@@ -16,6 +16,16 @@ extern "C"
 
 #include "err.h"
 
+typedef struct {
+  uint8_t len;
+  uint16_t data[];
+}uint16array_t;
+
+typedef struct{
+  uint8_t len;
+  uint16_t *data;
+}uint16list_t;
+
 enum {
   BASE_DEC,
   BASE_HEX
