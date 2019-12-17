@@ -1,3 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+
+- [Architecture](#architecture)
+  - [IPC Strategy](#ipc-strategy)
+- [CLI](#cli)
+- [MNG](#mng)
+- [CFG](#cfg)
+  - [What information needs to be stored in config file](#what-information-needs-to-be-stored-in-config-file)
+    - [Provisioner](#provisioner)
+    - [Network & Nodes](#network--nodes)
+- [Utils](#utils)
+  - [Logging](#logging)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 [![Build status](https://img.shields.io/badge/Build-MacOS-brightgreen)](www.baidu.com)
 
 ---
@@ -66,6 +83,31 @@ lightness 50 0x1203 0x100c - set the lightness of the lights whose address is 0x
 ## MNG
 
 ## CFG
+
+### What information needs to be stored in config file
+
+#### Provisioner
+
+|         What's it          |   Key    |   Value    | Description |
+| :------------------------: | :------: | :--------: | ----------- |
+| Last sync time<sup>1</sup> | SyncTime | time_t TBD |             |
+|          IV index          |   IVI    |   uint32   |             |
+|            Keys            |    \     |     \      |             |
+
+|       What's it       |  Key  | Value | Description |
+| :-------------------: | :---: | :---: | ----------- |
+|     Reference ID      | RefId | bool  |             |
+| Created successfully? | Done  | bool  |             |
+
+1. By checking the last modification time against last synchronized time to know
+   if the configuration is changed out of the program.
+
+#### Network & Nodes
+
+|    What's it    | Key  | Value  | Description |
+| :-------------: | :--: | :----: | ----------- |
+| Unicast address | Addr | uint16 |             |
+|    IV index     | IVI  | uint32 |             |
 
 ## Utils
 
