@@ -27,10 +27,9 @@ else()
   set(GCOV_FLAGS "")
 endif()
 
-set(
-  CMAKE_C_FLAGS
-  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
-  )
+set(CMAKE_C_FLAGS
+    "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
+)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g3 -DDEBUG=1")
 set(CMAKE_C_FLAGS_RELEASE "-Os -DDEBUG=0")
 
@@ -48,8 +47,10 @@ endif()
 # **Source files** for the project
 set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
 set(MNG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c)
-set(CFG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c
-    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c)
+set(CFG_SRC_LIST
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/generic_parser.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/json_parser.c)
 set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
@@ -57,44 +58,38 @@ set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/shash.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c)
 
-set(SRC_LIST
-    ${CLI_SRC_LIST}
-    ${MNG_SRC_LIST}
-    ${UTILS_SRC_LIST}
-    ${CFG_SRC_LIST}
-    ${CMAKE_CURRENT_LIST_DIR}/main.c)
+set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST} ${CFG_SRC_LIST}
+             ${CMAKE_CURRENT_LIST_DIR}/main.c)
 
 if(APPLE)
-  set(
-    CMAKE_C_LINK_FLAGS
-    "-L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
-    )
+  set(CMAKE_C_LINK_FLAGS
+      "-L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
+  )
   set(EXTRA_INC_PATH /usr/local/Cellar/glib/2.62.3/include/glib-2.0
-      /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include)
+                     /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include)
   set(LIBS readline.dylib)
 else()
   set(EXTRA_INC_PATH /usr/include/glib-2.0
-      /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+                     /usr/lib/x86_64-linux-gnu/glib-2.0/include)
   set(LIBS readline.so)
 endif()
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}
-                    ${CMAKE_CURRENT_LIST_DIR}/include
-                    ${CMAKE_CURRENT_LIST_DIR}/include/utils
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cli
-                    ${CMAKE_CURRENT_LIST_DIR}/include/mng
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-                    ${RL_INC}
-                    ${EXTRA_INC_PATH})
+include_directories(
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include/utils
+  ${CMAKE_CURRENT_LIST_DIR}/include/cli
+  ${CMAKE_CURRENT_LIST_DIR}/include/mng
+  ${CMAKE_CURRENT_LIST_DIR}/include/cfg
+  ${RL_INC}
+  ${EXTRA_INC_PATH})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 
-target_link_libraries(${CMAKE_PROJECT_NAME}
-                      m
-                      glib-2.0
-                      ${LIBS}
-                      # pthread json-c
-                      )
+target_link_libraries(
+  ${CMAKE_PROJECT_NAME} m glib-2.0 ${LIBS}
+  # pthread json-c
+)
 
 add_custom_command(
   TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
