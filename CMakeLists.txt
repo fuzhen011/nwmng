@@ -48,11 +48,13 @@ endif()
 # **Source files** for the project
 set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
 set(MNG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c)
-set(CFG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c)
+set(CFG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c)
 set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c
+    ${CMAKE_CURRENT_LIST_DIR}/utils/shash.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c)
 
 set(SRC_LIST

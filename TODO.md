@@ -32,8 +32,8 @@
 ## CFG
 
 - [] Read node by "key"
-  - [] Device database as a hash table, key is the string of address e.g.
-    "0x0003", value is the structure of device item.
+  - [] Device database as a hash table, key is the hex format address e.g.
+    0x0003, value is the structure of device item.
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
 

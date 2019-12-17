@@ -1,7 +1,6 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
 - [Architecture](#architecture)
   - [IPC Strategy](#ipc-strategy)
 - [CLI](#cli)
@@ -67,7 +66,7 @@ Conventions:
 | blacklist |       &lt;addr...&gt;        |    \     | blacklist 0x112c 2 | Blacklisting the specific node(s)                                                        |
 |  remove   |       &lt;addr...&gt;        |    \     |  remove 0x120c 2   | Removing the specific node(s)                                                            |
 
-Table x: Network Configuration Commands
+<center>Table x: Network Configuration Commands</center>
 
 |  Command  |           Args            |           Usage            | Description                            |
 | :-------: | :-----------------------: | :------------------------: | -------------------------------------- |
@@ -75,7 +74,7 @@ Table x: Network Configuration Commands
 | lightness | \[pecentage\] \[addr...\] | lightness 50 0x1203 0x100c | Set the light lightness status         |
 | colortemp | \[pecentage\] \[addr...\] | colortemp 30 0x1203 0x100c | Set the light color temperature status |
 
-Table x: Lighting Control Commands
+<center>Table x: Lighting Control Commands</center>
 
 For example:
 lightness 50 0x1203 0x100c - set the lightness of the lights whose address is 0x1203 or 0x100c to 50%
@@ -88,19 +87,32 @@ lightness 50 0x1203 0x100c - set the lightness of the lights whose address is 0x
 
 #### Provisioner
 
-|         What's it          |   Key    |   Value    | Description |
-| :------------------------: | :------: | :--------: | ----------- |
-| Last sync time<sup>1</sup> | SyncTime | time_t TBD |             |
-|          IV index          |   IVI    |   uint32   |             |
-|            Keys            |    \     |     \      |             |
+|         What's it          |    Key    |    Value    | Description      |
+| :------------------------: | :-------: | :---------: | ---------------- |
+| Last sync time<sup>1</sup> | SyncTime  | time_t TBD  |                  |
+|          IV index          |    IVI    |   uint32    |                  |
+|            Keys            |    \      |     \       | Table x          |
+|   Network Transmit Count   |   TxCnt   |    uint8    | [0, 7]           |
+| Network Transmit Interval  |  TxIntv   |    uint8    | [10, 320]@step10 |
+|       Added Devices        |  Devices  | uint16array | (0, 0x7fff]      |
+|     Publication Groups     | PubGroups | uint16array | [0xc000, 0xfeff] |
+|    Subscription Groups     | SubGroups | uint16array | [0xc000, 0xfeff] |
 
-|       What's it       |  Key  | Value | Description |
-| :-------------------: | :---: | :---: | ----------- |
-|     Reference ID      | RefId | bool  |             |
-| Created successfully? | Done  | bool  |             |
+<center>Table x. Provisioner Config File Content</center>
 
 1. By checking the last modification time against last synchronized time to know
    if the configuration is changed out of the program.
+
+|        What's it         |  Key  |      Value      | Description |
+| :----------------------: | :---: | :-------------: | ----------- |
+| Reference ID<sup>1</sup> | RefId |     uint16      |             |
+|        Key Index         |  Id   |     uint16      |             |
+|        Key Value         | Value | 16BL uint8array |             |
+|  Created successfully?   | Done  |      bool       |             |
+
+<center>Table x. Key Content</center>
+
+1. The read id is allocated when the key is created successfully, however, in most of the cases, configuration of the network happens before it.
 
 #### Network & Nodes
 
@@ -108,6 +120,8 @@ lightness 50 0x1203 0x100c - set the lightness of the lights whose address is 0x
 | :-------------: | :--: | :----: | ----------- |
 | Unicast address | Addr | uint16 |             |
 |    IV index     | IVI  | uint32 |             |
+
+<center>Table x. Network & Nodes Config File Content</center>
 
 ## Utils
 
@@ -125,6 +139,8 @@ Logging has the level feature which is inspired from Android logging system.
 | MSG      | message |                                               |
 | DBG      | debug   |                                               |
 | VER      | verbose |                                               |
+
+<center></center>
 
 Format: \[Time\]\[File:Line]\[Level\]: Log Message...  
 \[2019-12-12 21:22:33\]\[xxx_source_xxx.c:225][MSG]: Initializing...

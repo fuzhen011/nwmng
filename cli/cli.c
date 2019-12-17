@@ -57,7 +57,7 @@
          (cmd)->arg ? (cmd)->arg : "",                         \
          (cmd)->doc)
 
-#define iterate_cmds(i) for (int i = 0; i < cmd_num; i++)
+#define foreach_cmds(i) for (int i = 0; i < cmd_num; i++)
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
@@ -632,7 +632,7 @@ static err_t clicb_help(int argc, char *argv[])
 {
   print_text(COLOR_HIGHLIGHT, "Available commands:");
   print_text(COLOR_HIGHLIGHT, "-------------------");
-  iterate_cmds(i)
+  foreach_cmds(i)
   {
     print_cmd_usage(&commands[i]);
   }
