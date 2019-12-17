@@ -48,6 +48,7 @@ typedef struct {
   uint8_t uuid[16];
   uint16_t addr;
   uint8_t done;
+  uint8_t rmorbl; /* Remove or blacklist state */
   struct {
     uint8_t ttl;
     txparam_t *net_txp;
