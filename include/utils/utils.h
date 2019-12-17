@@ -73,8 +73,19 @@ static inline char hex_char_to_value(char x)
   }
 }
 
+err_t str2uint(const char *input,
+               size_t length,
+               void *p_ret,
+               size_t retlen);
+
+err_t uint2str(uint64_t input,
+               uint8_t base_type,
+               size_t length,
+               char *str);
+
 static inline void addr_to_buf(uint16_t addr, char *buf)
 {
+#if 0
   buf[0] = '0';
   buf[1] = 'x';
 
@@ -85,16 +96,10 @@ static inline void addr_to_buf(uint16_t addr, char *buf)
   buf[4] = hex_value_to_char(addr / 0x10);
   addr &= 0xf;
   buf[5] = hex_value_to_char(addr);
+#else
+  uint2str(addr, BASE_HEX, 6, buf);
+#endif
 }
-
-err_t str2uint(const char *input,
-               size_t length,
-               void *p_ret,
-               size_t retlen);
-err_t int2str(uint64_t input,
-              uint8_t base_type,
-              size_t length,
-              char str[]);
 #ifdef __cplusplus
 }
 #endif

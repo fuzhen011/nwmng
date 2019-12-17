@@ -125,14 +125,17 @@ err_t str2uint(const char *input,
   return ec_success;
 }
 
-err_t int2str(uint64_t input,
-              uint8_t base_type,
-              size_t length,
-              char str[])
+err_t uint2str(uint64_t input,
+               uint8_t base_type,
+               size_t length,
+               char *str)
 {
   uint64_t ret = 0;
   uint8_t base = 10, remaining = 0, idx = 0;
-  /* pvPortMalloc(); */
+  if (!length || !str) {
+    return ec_param_invalid;
+  }
+
   if (base_type == BASE_DEC) {
     ret = input / base;
     remaining = input % base;

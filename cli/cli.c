@@ -32,11 +32,11 @@
 #define __DUMP_PARAMS
 #ifdef __DUMP_PARAMS
 #define DUMP_PARAMS(argc, argv)                            \
-  do{                                                      \
+  do {                                                     \
     LOGV("CMD - %s with %d params.\n", argv[0], argc - 1); \
     for (int i = 1; i < (argc); i++)                       \
     { LOGV("\tparam[%d]: %s\n", i, (argv)[i]); }           \
-  }while (0)
+  } while (0)
 #else
 #define DUMP_PARAMS()
 #endif
@@ -105,9 +105,9 @@ static const command_t commands[] = {
   { "onoff", "[on/off] [addr...]", clicb_onoff,
     "Set the onoff of a light", NULL, NULL, vaget_addrs },
   { "lightness", "[pecentage] [addr...]", clicb_lightness,
-    "Set the lightness of a light" },
+    "Set the lightness of a light", NULL, NULL, vaget_addrs },
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
-    "Set the color temperature of a light" },
+    "Set the color temperature of a light", NULL, NULL, vaget_addrs },
 };
 
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
@@ -650,14 +650,83 @@ static err_t clicb_quit(int argc, char *argv[])
 
 static err_t clicb_ct(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
-  return ec_param_invalid;
+  err_t e = ec_success;
+  unsigned int ct;
+  uint16_t *addrs;
+  if (argc < 3) {
+    return ec_param_invalid;
+  }
+
+  if (ec_success != (e = str2uint(argv[1],
+                                  strlen(argv[1]),
+                                  &ct,
+                                  sizeof(unsigned int)))) {
+    return ec_param_invalid;
+  }
+  if (ct > 100) {
+    return ec_param_invalid;
+  }
+
+  addrs = calloc(argc - 2, sizeof(uint16_t));
+
+  for (int i = 2; i < argc; i++) {
+    if (-1 == addr_in_cfg(argv[i], &addrs[i - 2])) {
+      LOGW("Onoff invalid addr[%s]\n", argv[i]);
+      e = ec_param_invalid;
+      break;
+    }
+  }
+  if (e == ec_success) {
+    /* TODO */
+    /* handle onoff set to addrs */
+    LOGD("Sending color temperature [%u] to be handled\n", ct);
+    /* IMPL PENDING, now for DEBUG */
+    sleep(1);
+    printf("Success\n");
+    (void)ct;
+  }
+  free(addrs);
+  return e;
 }
 
 static err_t clicb_lightness(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
-  return 0;
+  err_t e = ec_success;
+  unsigned int lightness;
+  uint16_t *addrs;
+  if (argc < 3) {
+    return ec_param_invalid;
+  }
+
+  if (ec_success != (e = str2uint(argv[1],
+                                  strlen(argv[1]),
+                                  &lightness,
+                                  sizeof(unsigned int)))) {
+    return ec_param_invalid;
+  }
+  if (lightness > 100) {
+    return ec_param_invalid;
+  }
+  addrs = calloc(argc - 2, sizeof(uint16_t));
+
+  for (int i = 2; i < argc; i++) {
+    if (-1 == addr_in_cfg(argv[i], &addrs[i - 2])) {
+      LOGW("Onoff invalid addr[%s]\n", argv[i]);
+      e = ec_param_invalid;
+      break;
+    }
+  }
+  if (e == ec_success) {
+    /* TODO */
+    /* handle onoff set to addrs */
+    LOGD("Sending lightness [%u] to be handled\n", lightness);
+    /* IMPL PENDING, now for DEBUG */
+    sleep(1);
+    printf("Success\n");
+    (void)lightness;
+  }
+  free(addrs);
+  return e;
 }
 
 static err_t clicb_onoff(int argc, char *argv[])
@@ -687,8 +756,7 @@ static err_t clicb_onoff(int argc, char *argv[])
   if (e == ec_success) {
     /* TODO */
     /* handle onoff set to addrs */
-    LOGD("Sending onoff[%s] to be handled\n",
-         onoff ? "on" : "off");
+    LOGD("Sending onoff[%s] to be handled\n", onoff ? "on" : "off");
     /* IMPL PENDING, now for DEBUG */
     sleep(1);
     printf("Success\n");

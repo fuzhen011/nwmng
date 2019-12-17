@@ -18,6 +18,7 @@
 - [x] History
 - [] Synchronized command - block until the command ends normally or unexpectedly.
 - [] Trap Ctrl-C to end all operations.
+- [] Finish the command execs
 
 ## MNG
 
