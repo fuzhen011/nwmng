@@ -20,6 +20,9 @@
 
 ## Architecture
 
+Current Limitation - Only one subnet is supported, I haven't seen any
+requirements for using more than one subnets so I don't want to waste time on
+it, leave it to future.
 [ProcessOn](https://www.processon.com/diagraming/5a581bfae4b0332f15299433)
 
 3 parts: CLI, MNG, CFG
@@ -41,11 +44,13 @@ Header types:
 
 IPC between CLI and MNG.
 
-It's always the CLI process which sends the "Command Start", then it waits for "Response" and "Command End" either in blocking or non-blocking mode.
+It's always the CLI process which sends the "Command Start", then it waits for
+"Response" and "Command End" either in blocking or non-blocking mode.
 
 ## CLI
 
-The command line interface process, which receives commands from user and outputs the status.
+The command line interface process, which receives commands from user and
+outputs the status.
 
 Supported commands
 
@@ -77,7 +82,9 @@ Conventions:
 <center>Table x: Lighting Control Commands</center>
 
 For example:
-lightness 50 0x1203 0x100c - set the lightness of the lights whose address is 0x1203 or 0x100c to 50%
+
+lightness 50 0x1203 0x100c - set the lightness of the lights whose address is
+0x1203 or 0x100c to 50%
 
 ## MNG
 

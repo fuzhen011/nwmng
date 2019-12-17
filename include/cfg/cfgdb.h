@@ -72,6 +72,10 @@ typedef struct {
   }models;
 }node_t;
 
+typedef struct{
+
+}cfg_t;
+
 void cfgdb_deinit(void);
 
 #ifdef __cplusplus
