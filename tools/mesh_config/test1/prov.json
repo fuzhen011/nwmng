@@ -1,8 +1,8 @@
 {
   "COMMENT": "The following parameters are configurable at run time, users can set it to proper value",
-  "Addr": "0x0000",
+  "Address": "0x0000",
   "TTL": "0x09",
-  "TxParam": {
+  "Tx Parameters": {
     "Count": "0d03",
     "Interval": "0d50"
   },

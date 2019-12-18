@@ -11,59 +11,50 @@
 extern "C"
 {
 #endif
+#include "err.h"
+#include "cfg_keys.h"
+
+/* cfg_fd */
+enum {
+  PROV_CFG_FILE,
+  NW_NODES_CFG_FILE,
+  TEMPLATE_FILE
+};
+
+#define FL_CREATE                       (1UL << 0)
+#define FL_TRUNC                        (1UL << 1)
+/* Clear all control fields */
+#define FL_CLR_CTLFS                    (1UL << 2)
 
 /*
- * String keys in both the network & nodes config file and the provisioner
- * config file
+ * Below typedefs are used for parsering any kind of config file with a
+ * key-value structure.
+ *
+ * All single item in the file can be address by {type + key}, the {key} can be a
+ * string or integer or anything else, the type of it depends on the {type}.
+ * E.g. if the {type} is to modify the value of a key, the {key} could be the
+ * reference ID of the key. For some specific {type}, {key} can be NULL. E.g. the
+ * {type} is to read the whole config file, no {key} is needed.
+ *
+ *
  */
-#define STR_REFID                         "RefId"
-#define STR_ID                            "Id"
-#define STR_DONE                          "Done"
-#define STR_CNT                           "Count"
-#define STR_INTV                          "Interval"
-#define STR_SUBNETS                       "Subnets"
-#define STR_APPKEY                        "AppKey"
-#define STR_TTL                           "TTL"
+typedef err_t (*gp_init_func_t)(void *data);
+typedef err_t (*gp_deinit_func_t)(void);
+typedef err_t (*gp_open_func_t)(int cfg_fd,
+                                const char *filepath,
+                                unsigned int flags,
+                                void **data);
+typedef err_t (*gp_read_func_t)(int rdtype,
+                                const void *key,
+                                void *data);
+typedef err_t (*gp_write_func_t)(int wrtype,
+                                 const void *key,
+                                 const void *data);
+typedef err_t (*gp_close_func_t)(int cfg_fd);
 
-/*
- * String keys only in the provisioner config file
- */
-#define STR_VALUE                         "Value"
-#define STR_SYNC_TIME                     "SyncTime"
-#define STR_IVI                           "IVI"
+typedef err_t (*gp_flush_func_t)(int cfg_fd);
 
-/*
- * String keys only in the network & nodes config file
- */
-#define STR_NODES                         "Nodes"
-#define STR_NODE                          "Node"
-#define STR_UUID                          "UUID"
-#define STR_FEATURES                      "Features"
-
-/* TODO: Needs to clear */
-#define STR_NETKEY                        "NetKey"
-#define STR_KEY                           "Key"
-
-#define STR_TEMPLATES                     "Templates"
-#define STR_ERRBITS                       "Err"
-#define STR_BL                            "Blacklist"
-#define STR_TMPL                          "Tmpl"
-#define STR_BIND                          "Bind"
-#define STR_PUB_BIND                      "Pub_bind"
-#define STR_SUB                           "Sub"
-#define STR_TRANS_CNT                     "Trans"
-#define STR_TRANS_INTERVAL                "Tran_interval"
-#define STR_PERIOD                        "Period"
-
-#define STR_SECURE_NETWORK_BEACON "SNB"
-#define STR_LPN "LPN"
-#define STR_PROXY "Proxy"
-#define STR_FRIEND "Friend"
-#define STR_RELAY "Relay"
-#define STR_NET_RETRAN "Net_Retransmit"
-#define STR_ENABLE "Enable"
-#define STR_PUB                           "Pub"
-/* TODO: Needs to clear */
+typedef err_t (*gp_free_cfg_func_t)(void **);
 
 #ifdef __cplusplus
 }

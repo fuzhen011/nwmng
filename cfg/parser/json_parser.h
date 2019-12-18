@@ -11,6 +11,7 @@
 extern "C"
 {
 #endif
+#include "err.h"
 
 #ifdef __cplusplus
 }

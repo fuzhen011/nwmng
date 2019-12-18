@@ -70,8 +70,9 @@ if(APPLE)
   set(LIBS readline.dylib)
 else()
   set(EXTRA_INC_PATH /usr/include/glib-2.0
-                     /usr/lib/x86_64-linux-gnu/glib-2.0/include)
-  set(LIBS readline.so)
+                     /usr/lib/x86_64-linux-gnu/glib-2.0/include
+                     /usr/include/json-c)
+  set(LIBS readline.so json-c)
 endif()
 
 include_directories(

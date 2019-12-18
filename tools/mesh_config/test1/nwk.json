@@ -7,7 +7,7 @@
           "UUID": "000b5731555c2d7665447362616c6953",
           "TTL": "0x03",
           "Features": {
-            "LPN": "0x01",
+            "Low Power": "0x01",
             "Proxy": "0x01",
             "Friend": "0x01",
             "Relay": {
@@ -16,33 +16,38 @@
               "Interval": "0x0032"
             }
           },
-          "SNB": "0x01",
-          "Net_Retransmit": {
+          "Publish To": {
+            "Address": "0xC001",
+            "AppKey": "0x0000",
+            "Period": "0x00002710"
+          },
+          "Secure Network Beacon": "0x01",
+          "TX Parameters": {
             "Count": "0x03",
             "Interval": "0x001E"
           },
-          "Bind": ["0x00", "0x01"],
-          "Sub": ["0xD051", "0xD052", "0xD053", "0xD054"],
-          "Addr": "0x0005",
+          "Bind Appkeys": ["0x0000", "0x0001"],
+          "Subscribe from": ["0xD051", "0xD052", "0xD053", "0xD054"],
+          "Address": "0x0005",
           "Err": "0x00000000",
-          "Tmpl": "0x01",
-          "Blacklist": "0x00",
+          "Template ID": "0x01",
+          "RM_Blacklist": "0x00",
           "Done": "0x11"
         },
         {
           "UUID": "08080808080808080808080808080808",
-          "Addr": "0x0001",
+          "Address": "0x0001",
           "Err": "0x00000004",
-          "Tmpl": "0xFF",
-          "Blacklist": "0x00",
+          "Template ID": "0xFF",
+          "RM_Blacklist": "0x00",
           "Done": "0x01"
         },
         {
           "UUID": "000b57ef2b872d7665447362616c6953",
-          "Addr": "0x0000",
+          "Address": "0x0000",
           "Err": "0x00000000",
-          "Tmpl": "0xFF",
-          "Blacklist": "0x00",
+          "Template ID": "0xFF",
+          "RM_Blacklist": "0x00",
           "Done": "0x00"
         }
       ]
@@ -52,10 +57,10 @@
       "Nodes": [
         {
           "UUID": "000b57ef2b872d7665447362616c6953",
-          "Addr": "0x0000",
+          "Address": "0x0000",
           "Err": "0x00000000",
-          "Tmpl": "0xFF",
-          "Blacklist": "0x00",
+          "Template ID": "0xFF",
+          "RM_Blacklist": "0x00",
           "Done": "0x00"
         }
       ]
