@@ -258,6 +258,25 @@ void logging_demo(void)
   LOGV("%s\n", msg[0]);
 }
 
+static void log_welcome(void)
+{
+  char buf[200] = { 0 };
+  snprintf(buf, 200,
+           RTT_CTRL_BG_BRIGHT_BLUE
+           "NWMNG LOG - Compiled at %s - %s"
+           RTT_CTRL_RESET
+           "\n"
+           ,
+           __DATE__,
+           __TIME__);
+  if (lcfg.fp) {
+    fprintf(lcfg.fp, "%s", buf);
+  }
+  if (lcfg.tostdout) {
+    printf("%s", buf);
+  }
+}
+
 err_t logging_init(const char *path,
                    int tostdout,
                    unsigned int lvl_threshold)
@@ -285,11 +304,15 @@ err_t logging_init(const char *path,
   lcfg.tostdout = tostdout;
   lcfg.level = lvl_threshold;
 
+  log_welcome();
   return ec_success;
 }
 
 void logging_deinit(void)
 {
+  if (lcfg.fp) {
+    fclose(lcfg.fp);
+  }
   memset(&lcfg, 0, sizeof(logcfg_t));
 }
 

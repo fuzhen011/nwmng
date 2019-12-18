@@ -35,6 +35,8 @@ enum {
   BASE_HEX
 };
 
+#define SAFE_FREE(p) do { if (p) { free(p); p = NULL; } } while (0)
+
 #ifndef MAX
 #define MAX(a, b)                                   ((a) > (b) ? (a) : (b))
 #endif

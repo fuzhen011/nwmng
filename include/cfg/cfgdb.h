@@ -45,8 +45,9 @@ typedef struct publication{
 } publication_t;
 
 typedef struct {
-  uint8_t refid;
-  uint8_t ttl;
+  uint16_t refid;
+  uint8_t *ttl;
+  uint8_t *psnb;
   txparam_t *net_txp;
   txparam_t *relay_txp;
   publication_t *pub;
@@ -60,7 +61,7 @@ typedef struct {
   uint8_t done;
   uint8_t rmorbl; /* Remove or blacklist state */
   struct {
-    uint8_t ttl;
+    uint8_t *ttl;
     txparam_t *net_txp;
     txparam_t *relay_txp;
     /*
@@ -112,6 +113,7 @@ typedef struct {
 }provcfg_t;
 
 typedef struct {
+  GHashTable *templates;
   GHashTable *unprov_devs;
   GHashTable *nodes;
   GQueue *lights;
@@ -133,7 +135,12 @@ node_t *cfgdb_node_get(uint16_t addr);
 node_t *cfgdb_unprov_dev_get(const uint8_t *uuid);
 err_t cfgdb_remove(node_t *n, bool destory);
 err_t cfgdb_add(node_t *n);
-
+/*
+ * Template related functions
+ */
+tmpl_t *cfgdb_tmpl_get(uint16_t refid);
+err_t cfgdb_tmpl_remove(tmpl_t *n);
+err_t cfgdb_tmpl_add(tmpl_t *n);
 #ifdef __cplusplus
 }
 #endif

@@ -45,6 +45,7 @@
 - [x] Time
 - [x] File and line
 - [x] Information
+- [] file length and line number length settable
 
 ### Error Code
 

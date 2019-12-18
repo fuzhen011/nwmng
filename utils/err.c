@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "utils/err.h"
+#include "logging.h"
 
 /* Defines  *********************************************************** */
 
@@ -132,4 +133,27 @@ void eprint(err_t err)
           get_error_str(e),
           file,
           (unsigned long)line);
+}
+
+void elog(err_t err)
+{
+  error_code_t e;
+  uint32_t line;
+  const char *file;
+  if (ec_success == (e = errof(err))) {
+    return;
+  }
+
+  line = get_err_line(err);
+  file = get_err_file_name(err);
+
+  if (line == 0 || !file) {
+    LOGE("No file:line in err_t[%d].\n", err);
+  } else {
+    LOGE("(%d:%s) happended at %s:%lu\n",
+         e,
+         get_error_str(e),
+         file,
+         (unsigned long)line);
+  }
 }

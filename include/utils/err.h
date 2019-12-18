@@ -30,6 +30,10 @@ typedef enum {
   ec_already_exist = 11,
   ec_timeout = 12,
   ec_not_supported = 13,
+  /* Json related error code */
+  ec_json_null = 30,
+  ec_json_open = 31,
+  ec_json_format = 32,
 }error_code_t;
 
 /* const char *get_error_str(error_code_t e); */
@@ -131,6 +135,12 @@ static inline error_code_t errof(err_t e)
 /* Generate the @ref{err_t} from @ref{error_code_t} */
 #define err(e)  (__err(__FILE__, (uint32_t)__LINE__, (e)))
 
+/**
+ * @brief elog - the same as eprint, but use logging instead of fprint
+ *
+ * @param err - @ref{err_t}
+ */
+void elog(err_t err);
 /* #define */
 /**  @} */
 

@@ -1,10 +1,10 @@
 {
   "Templates": [
     {
-      "RefId": "0x01",
+      "RefId": "0x0001",
       "TTL": "0x03",
       "Features": {
-        "Low Power": "0x01",
+        "Low Power": "0x00",
         "Proxy": "0x01",
         "Friend": "0x01",
         "Relay": {
@@ -24,33 +24,32 @@
         "Interval": "0x001E"
       },
       "Bind Appkeys": ["0x0000", "0x0001"],
-      "Subscribe from": ["0xD051", "0xD052", "0xD053", "0xD054"]
+      "Subscribe from": ["0xD051", "0xD052", "0xD053", "0xD054", "0xC021"]
     },
     {
-      "RefId": "0x01",
-      "TTL": "0x03",
+      "RefId": "0x0021",
       "Features": {
         "Low Power": "0x01",
-        "Proxy": "0x01",
-        "Friend": "0x01",
+        "Proxy": "0x00",
+        "Friend": "0x00",
         "Relay": {
-          "Enable": "0x01",
-          "Count": "0x02",
-          "Interval": "0x0032"
+          "Enable": "0x00",
+          "Count": "0x00",
+          "Interval": "0x0000"
         }
       },
       "Publish To": {
-        "Address": "0xC001",
+        "Address": "0xC021",
         "AppKey": "0x0000",
-        "Period": "0x00002710"
+        "Period": "0x00000000"
       },
-      "Secure Network Beacon": "0x01",
+      "Secure Network Beacon": "0x00",
       "TX Parameters": {
-        "Count": "0x03",
-        "Interval": "0x001E"
+        "Count": "0x00",
+        "Interval": "0x0000"
       },
       "Bind Appkeys": ["0x0000", "0x0001"],
-      "Subscribe from": ["0xD051", "0xD052", "0xD053", "0xD054"]
+      "Subscribe from": ["0xD051", "0xD052", "0xD053", "0xD054", "0xC001"]
     }
   ],
   "Backlog": [

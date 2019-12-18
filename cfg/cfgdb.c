@@ -14,6 +14,7 @@
 #include "projconfig.h"
 #include "err.h"
 #include "cfgdb.h"
+#include "logging.h"
 
 /* Defines  *********************************************************** */
 
@@ -32,10 +33,63 @@
 #define G_KEY(n) ((n)->addr == 0 ? UNPROV_DEV_KEY((n)) : NODE_KEY((n)))
 #define __HTB(x) ((x) ? db.devdb.nodes : db.devdb.unprov_devs)
 #define G_HTB(n) (__HTB(n->addr))
+#define TMPL_KEY(refid) ((gpointer)(&(refid)))
 /* Static Variables *************************************************** */
 static cfgdb_t db = { 0 };
 
 /* Static Functions Declaractions ************************************* */
+void dump__(gpointer key,
+            gpointer value,
+            gpointer ud)
+{
+  LOGM("%d key found.\n", *(uint8_t *)key);
+}
+
+void cfgdb_test(void)
+{
+  g_hash_table_foreach(db.devdb.templates, dump__, NULL);
+}
+
+static void node_free(void *p)
+{
+  if (!p) {
+    return;
+  }
+  node_t *n = (node_t *)p;
+  SAFE_FREE(n->config.ttl);
+  SAFE_FREE(n->config.net_txp);
+  SAFE_FREE(n->config.relay_txp);
+  SAFE_FREE(n->config.pub);
+  SAFE_FREE(n->config.bindings);
+  SAFE_FREE(n->config.sublist);
+  SAFE_FREE(n);
+}
+
+static void tmpl_free(void *p)
+{
+  if (!p) {
+    return;
+  }
+  tmpl_t *t = (tmpl_t *)p;
+  SAFE_FREE(t->ttl);
+  SAFE_FREE(t->psnb);
+  SAFE_FREE(t->net_txp);
+  SAFE_FREE(t->relay_txp);
+  SAFE_FREE(t->pub);
+  SAFE_FREE(t->bindings);
+  SAFE_FREE(t->sublist);
+  SAFE_FREE(t);
+}
+
+guint u16_hash(gconstpointer key)
+{
+  return (guint)(*(uint16_t *)key);
+}
+
+gboolean u16_equal(gconstpointer a, gconstpointer b)
+{
+  return ((*(uint16_t *)a) == (*(uint16_t *)b));
+}
 
 err_t cfgdb_init(void)
 {
@@ -46,10 +100,12 @@ err_t cfgdb_init(void)
   /* Initialize the device database */
   /* TODO: Is it OK to use direct hash for both case - str and integer? While
    * using str hash, need to check if it requires the str ends with '\0' */
-  db.devdb.unprov_devs = g_hash_table_new_full(NULL, NULL, NULL, free);
-  db.devdb.nodes = g_hash_table_new_full(NULL, NULL, NULL, free);
+  db.devdb.unprov_devs = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, node_free);
+  db.devdb.nodes = g_hash_table_new_full(u16_hash, u16_equal, NULL, node_free);
+  db.devdb.templates = g_hash_table_new_full(u16_hash, u16_equal, NULL, tmpl_free);
   db.devdb.lights = g_queue_new();
   db.devdb.backlog = g_queue_new();
+  db.initialized = 1;
 
   return ec_success;
 }
@@ -88,6 +144,11 @@ void cfgdb_deinit(void)
     g_hash_table_remove_all(db.devdb.nodes);
     g_hash_table_unref(db.devdb.nodes);
     db.devdb.nodes = NULL;
+  }
+  if (db.devdb.templates) {
+    g_hash_table_remove_all(db.devdb.templates);
+    g_hash_table_unref(db.devdb.templates);
+    db.devdb.templates = NULL;
   }
   db.initialized = 0;
 }
@@ -129,6 +190,50 @@ static node_t *__cfgdb_get(node_t *n)
   return (node_t *)g_hash_table_lookup(G_HTB(n), G_KEY(n));
 }
 
+/* err_t cfgdb_tmpl_add(tmpl_t *t) */
+/* { */
+/* } */
+
+tmpl_t *cfgdb_tmpl_get(uint16_t refid)
+{
+  return (tmpl_t *)g_hash_table_lookup(db.devdb.templates, TMPL_KEY(refid));
+}
+
+err_t cfgdb_tmpl_remove(tmpl_t *n)
+{
+  CHECK_STATE(ec_state);
+  if (!n) {
+    return err(ec_param_invalid);
+  }
+  g_hash_table_remove(db.devdb.templates, TMPL_KEY(n->refid));
+  return ec_success;
+}
+
+err_t cfgdb_tmpl_add(tmpl_t *n)
+{
+  err_t e;
+  tmpl_t *tmp;
+  CHECK_STATE(ec_state);
+  if (!n) {
+    return err(ec_param_invalid);
+  }
+  /* Check if it's already in? */
+  tmp = cfgdb_tmpl_get(n->refid);
+  if (tmp && tmp != n) {
+    /* key n->addr already has a value in hash table and the value doesn't equal
+     * to n, need to remove and free it first, then add */
+    e = cfgdb_tmpl_remove(tmp);
+    if (ec_success != e) {
+      return e;
+    }
+  } else if (n == tmp) {
+    return ec_success;
+  }
+
+  g_hash_table_insert(db.devdb.templates, TMPL_KEY(n->refid), n);
+  return ec_success;
+}
+
 err_t cfgdb_add(node_t *n)
 {
   err_t e;
@@ -158,7 +263,7 @@ err_t cfgdb_add(node_t *n)
 err_t cfgdb_remove(node_t *n, bool destory)
 {
   CHECK_STATE(ec_state);
-  if (!n || n->addr == 0) {
+  if (!n) {
     return err(ec_param_invalid);
   }
   if (destory) {

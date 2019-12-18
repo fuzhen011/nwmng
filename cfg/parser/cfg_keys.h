@@ -38,6 +38,7 @@ extern "C"
  * String keys only in the network & nodes config file
  */
 #define STR_NODES                         "Nodes"
+#define STR_BACKLOG                       "Backlog"
 #define STR_NODE                          "Node"
 #define STR_UUID                          "UUID"
 #define STR_FEATURES                      "Features"

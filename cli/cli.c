@@ -625,7 +625,7 @@ static err_t clicb_reset(int argc, char *argv[])
 static err_t clicb_list(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
-  return ec_param_invalid;
+  return err(ec_param_invalid);
 }
 
 static err_t clicb_help(int argc, char *argv[])
@@ -654,17 +654,17 @@ static err_t clicb_ct(int argc, char *argv[])
   unsigned int ct;
   uint16_t *addrs;
   if (argc < 3) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
 
   if (ec_success != (e = str2uint(argv[1],
                                   strlen(argv[1]),
                                   &ct,
                                   sizeof(unsigned int)))) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   if (ct > 100) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
 
   addrs = calloc(argc - 2, sizeof(uint16_t));
@@ -695,17 +695,17 @@ static err_t clicb_lightness(int argc, char *argv[])
   unsigned int lightness;
   uint16_t *addrs;
   if (argc < 3) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
 
   if (ec_success != (e = str2uint(argv[1],
                                   strlen(argv[1]),
                                   &lightness,
                                   sizeof(unsigned int)))) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   if (lightness > 100) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   addrs = calloc(argc - 2, sizeof(uint16_t));
 
@@ -735,14 +735,14 @@ static err_t clicb_onoff(int argc, char *argv[])
   int onoff;
   uint16_t *addrs;
   if (argc < 3) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   if (!strcmp(argv[1], "on")) {
     onoff = 1;
   } else if (!strcmp(argv[1], "off")) {
     onoff = 0;
   } else {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   addrs = calloc(argc - 2, sizeof(uint16_t));
 
