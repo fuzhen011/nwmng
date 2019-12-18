@@ -63,7 +63,8 @@ static err_t json_load_template(void)
 }
 
 static err_t json_load_file(int cfg_fd,
-                            bool clrctlfls)
+                            bool clrctlfls,
+                            void *out)
 {
   /* TODO */
   return ec_success;
@@ -72,7 +73,7 @@ static err_t json_load_file(int cfg_fd,
 err_t json_cfg_open(int cfg_fd,
                     const char *filepath,
                     unsigned int flags,
-                    void *data)
+                    void *out)
 {
   int tmp;
   err_t ret = ec_success;
@@ -123,25 +124,22 @@ err_t json_cfg_open(int cfg_fd,
         if (ec_success != (ret = new_json_file(cfg_fd))) {
           goto fail;
         }
-      } 
+      }
     }
   }
 
-      else {
-        if (ec_success != (ret = fjsonConfigOpen((flags & FL_CLEAR) ? true : false))) {
-          goto fail;
-        }
-      }
-  if (ec_success != (ret = json_load_file(cfg_fd, !(flags & FL_CLEAR)))) {
-    return ret;
+  if (ec_success != (ret = json_load_file(cfg_fd,
+                                          !!(flags & FL_CLR_CTLFS),
+                                          out))) {
+    goto fail;
   }
-  return ec_success;
 
   fail:
   if (ec_success != ret) {
-    jsonConfigDeinit();
+    /* jsonConfigDeinit(); */
     LOGE("JSON[%s] Open failed, err[%d]\n", fp, ret);
   }
+
   return ret;
 #if 0
 

@@ -45,6 +45,16 @@ typedef struct publication{
 } publication_t;
 
 typedef struct {
+  uint8_t refid;
+  uint8_t ttl;
+  txparam_t *net_txp;
+  txparam_t *relay_txp;
+  publication_t *pub;
+  uint16list_t *bindings;
+  uint16list_t *sublist;
+} tmpl_t;
+
+typedef struct {
   uint8_t uuid[16];
   uint16_t addr;
   uint8_t done;
@@ -66,7 +76,7 @@ typedef struct {
       bbitmap_t value;
     }features;
 
-    publication_t pub;
+    publication_t *pub;
     uint16list_t *bindings;
     uint16list_t *sublist;
   }config;

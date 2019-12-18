@@ -43,7 +43,7 @@ typedef err_t (*gp_deinit_func_t)(void);
 typedef err_t (*gp_open_func_t)(int cfg_fd,
                                 const char *filepath,
                                 unsigned int flags,
-                                void **data);
+                                void *out);
 typedef err_t (*gp_read_func_t)(int rdtype,
                                 const void *key,
                                 void *data);

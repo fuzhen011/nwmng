@@ -63,15 +63,17 @@ set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST} ${CFG_SRC_LIST}
 
 if(APPLE)
   set(CMAKE_C_LINK_FLAGS
-      "-L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
+      "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
   )
-  set(EXTRA_INC_PATH /usr/local/Cellar/glib/2.62.3/include/glib-2.0
-                     /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include)
-  set(LIBS readline.dylib)
+  set(EXTRA_INC_PATH
+      /usr/local/Cellar/glib/2.62.3/include/glib-2.0
+      /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include
+      /usr/local/Cellar/json-c/0.13.1/include/json-c)
+  set(LIBS readline.dylib json-c)
 else()
-  set(EXTRA_INC_PATH /usr/include/glib-2.0
-                     /usr/lib/x86_64-linux-gnu/glib-2.0/include
-                     /usr/include/json-c)
+  set(EXTRA_INC_PATH
+      /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include
+      /usr/include/json-c)
   set(LIBS readline.so json-c)
 endif()
 
