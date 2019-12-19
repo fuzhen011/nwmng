@@ -6,7 +6,7 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
-
+#include "projconfig.h"
 #include "cfg.h"
 #include "cfgdb.h"
 #include "logging.h"
@@ -81,14 +81,14 @@ static void dump_tmpl(int k)
 static void cfg_test(void)
 {
   err_t e;
-  char cwd[100] = {0};
+  char cwd[100] = { 0 };
   getcwd(cwd, 100);
   LOGD("CWD - %s\n", cwd);
   /* LOGD("%d devices in DB.\n", cfgdb_devnum(0)); */
   /* LOGD("%d nodes in DB.\n", cfgdb_devnum(1)); */
 
   e = json_cfg_open(TEMPLATE_FILE,
-                    "/home/zhfu/work/projs/nwmng/tools/mesh_config/templates.json",
+                    TMPLATE_FILE_PATH,
                     0,
                     NULL);
   elog(e);
@@ -98,7 +98,7 @@ static void cfg_test(void)
 #if 0
   sleep(5);
   e = json_cfg_open(TEMPLATE_FILE,
-                    "/home/zhfu/work/projs/nwmng/tools/mesh_config/templates.json",
+                    TMPLATE_FILE_PATH,
                     0,
                     NULL);
   elog(e);
@@ -108,12 +108,12 @@ static void cfg_test(void)
 #endif
 
   e = json_cfg_open(NW_NODES_CFG_FILE,
-                    "/home/zhfu/work/projs/nwmng/tools/mesh_config/test1/nwk.json",
+                    NWNODES_FILE_PATH,
                     0,
                     NULL);
   elog(e);
   e = json_cfg_open(PROV_CFG_FILE,
-                    "/home/zhfu/work/projs/nwmng/tools/mesh_config/test1/prov.json",
+                    SELFCFG_FILE_PATH,
                     0,
                     NULL);
   elog(e);

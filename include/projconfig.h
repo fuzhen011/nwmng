@@ -2,7 +2,7 @@
     > File Name: projconfig.h
     > Author: Kevin
     > Created Time: 2019-12-17
-    > Description: 
+    > Description:
  ************************************************************************/
 
 #ifndef PROJCONFIG_H
@@ -17,7 +17,17 @@ extern "C"
 
 #define GC_EXP_DEV_NUM  128
 
-#define TMPLATE_FILE_PATH "tools/mesh_config/templates.json"
+#if __APPLE__ == 1
+#define PROJ_DIR  "/Users/zhfu/work/projs/nwmng/"
+#else
+#define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
+#endif
+
+#define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/test1/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/test1/nwk.json"
+
+#define LOG_FILE_PATH PROJ_DIR "logs/cli.log"
 
 #ifdef __cplusplus
 }
