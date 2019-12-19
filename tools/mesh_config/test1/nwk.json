@@ -82,6 +82,22 @@
       "Template ID":"0xFF",
       "RM_Blacklist":"0x00",
       "Done":"0x00"
+    },
+    {
+      "UUID":"1102030405060707090a0b0c0d0e0f10",
+      "Address":"0x0000",
+      "Err":"0x00000000",
+      "Template ID":"0xFF",
+      "RM_Blacklist":"0x00",
+      "Done":"0x00"
+    },
+    {
+      "UUID":"2102030405060707090a0b0c0d0e0f10",
+      "Address":"0x0000",
+      "Err":"0x00000000",
+      "Template ID":"0xFF",
+      "RM_Blacklist":"0x00",
+      "Done":"0x00"
     }
   ]
 }

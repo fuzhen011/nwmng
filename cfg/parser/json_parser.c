@@ -229,7 +229,7 @@ static err_t _load_pub(json_object *obj,
     *p = calloc(sizeof(publication_t), 1);
   }
 
-#if (JSON_ECHO_DBG == 0)
+#if (JSON_ECHO_DBG == 1)
   JSON_ECHO("Pub", o);
 #endif
   const char *v;
@@ -570,7 +570,7 @@ static err_t load_to_node_item(json_object *obj,
                                node_t *node)
 {
   err_t e;
-#if (JSON_ECHO_DBG == 2)
+#if (JSON_ECHO_DBG == 1)
   JSON_ECHO("Node", obj);
 #endif
   for (int i = 0; i < node_loader_end; i++) {
@@ -1019,7 +1019,6 @@ err_t json_flush(int cfg_fd)
  *
  *
  */
-
 static err_t _backlog_node_add(const uint8_t *uuid)
 {
   err_t e;

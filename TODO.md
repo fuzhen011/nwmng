@@ -28,6 +28,8 @@
   - [] Set light onoff.
   - [] Set light lightness.
   - [] Set light color temperature.
+- [] Whenever start provision a new device, check if it's in backlog, if yes,
+  delete it;
 
 ## CFG
 
