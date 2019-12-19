@@ -17,6 +17,8 @@ extern "C"
 
 #define GC_EXP_DEV_NUM  128
 
+#define TMPLATE_FILE_PATH "tools/mesh_config/templates.json"
+
 #ifdef __cplusplus
 }
 #endif

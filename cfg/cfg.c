@@ -81,7 +81,9 @@ static void dump_tmpl(int k)
 static void cfg_test(void)
 {
   err_t e;
-
+  char cwd[100] = {0};
+  getcwd(cwd, 100);
+  LOGD("CWD - %s\n", cwd);
   /* LOGD("%d devices in DB.\n", cfgdb_devnum(0)); */
   /* LOGD("%d nodes in DB.\n", cfgdb_devnum(1)); */
 

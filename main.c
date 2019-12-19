@@ -37,6 +37,21 @@ pid_t pids[10] = { 0 };
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
+size_t get_executable_path(char* processdir, char* processname, size_t len)
+{
+  char* path_end;
+  if (readlink("/proc/self/exe", processdir, len) <= 0) {
+    return -1;
+  }
+  path_end = strrchr(processdir, '/');
+  if (path_end == NULL) {
+    return -1;
+  }
+  ++path_end;
+  strcpy(processname, path_end);
+  *path_end = '\0';
+  return (size_t)(path_end - processdir);
+}
 
 int main(int argc, char *argv[])
 {
@@ -86,7 +101,12 @@ int main(int argc, char *argv[])
   }
 #endif
   err_t e;
-  EC(ec_success, logging_init("logs/cli.log",
+  char path[PATH_MAX];
+  char processname[1024];
+  get_executable_path(path, processname, sizeof(path));
+  printf("directory:%s\nprocessname:%s\n", path, processname);
+  return 0;
+  EC(ec_success, logging_init("/home/zhfu/work/projs/nwmng/logs/cli.log",
                               0, /* Not output to stdout */
                               LOG_MINIMAL_LVL(LVL_VER)));
   /* ASSERT_MSG(0, "%s\n", "ssdfasdf"); */
