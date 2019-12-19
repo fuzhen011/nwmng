@@ -260,6 +260,16 @@ void logging_demo(void)
   LOGV("%s\n", msg[0]);
 }
 
+void log_n(void)
+{
+  if (lcfg.fp) {
+    fprintf(lcfg.fp, "\n");
+  }
+  if (lcfg.tostdout) {
+    printf("\n");
+  }
+}
+
 static void log_welcome(void)
 {
   char buf[200] = { 0 };

@@ -72,7 +72,7 @@ static void tmpl_free(void *p)
   }
   tmpl_t *t = (tmpl_t *)p;
   SAFE_FREE(t->ttl);
-  SAFE_FREE(t->psnb);
+  SAFE_FREE(t->snb);
   SAFE_FREE(t->net_txp);
   SAFE_FREE(t->relay_txp);
   SAFE_FREE(t->pub);

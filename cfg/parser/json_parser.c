@@ -83,6 +83,9 @@ typedef struct {
 
 DECLLOADER1(ttl);
 DECLLOADER1(pub);
+DECLLOADER1(snb);
+DECLLOADER1(txp);
+
 #if 0
 static const key_loader_t keyloaders[] = {
   { 1, STR_TTL, _load_ttl, 0 },
@@ -92,6 +95,8 @@ static const int klsize = sizeof(keyloaders) / sizeof(key_loader_t);
 static const __load_func_t loaders[] = {
   _load_ttl,
   _load_pub,
+  _load_snb,
+  _load_txp,
 };
 
 /**
@@ -153,6 +158,26 @@ static inline publication_t **ppub_from_fd(int cfg_fd, void *out)
   assert(0);
 }
 
+static inline txparam_t **ptxp_from_fd(int cfg_fd, void *out)
+{
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    return (&((node_t *)out)->config.net_txp);
+  } else if (cfg_fd == TEMPLATE_FILE) {
+    return (&((tmpl_t *)out)->net_txp);
+  }
+  assert(0);
+}
+
+static inline uint8_t **psnb_from_fd(int cfg_fd, void *out)
+{
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    return (&((node_t *)out)->config.snb);
+  } else if (cfg_fd == TEMPLATE_FILE) {
+    return (&((tmpl_t *)out)->snb);
+  }
+  assert(0);
+}
+
 static err_t _load_pub(json_object *obj,
                        int cfg_fd,
                        void *out)
@@ -165,7 +190,9 @@ static err_t _load_pub(json_object *obj,
     goto free;
     e = err(e);
   }
-  *p = calloc(sizeof(publication_t), 1);
+  if (!*p) {
+    *p = calloc(sizeof(publication_t), 1);
+  }
 
 #if (JSON_ECHO_DBG == 0)
   LOGD("pub obj --- %s", json_object_to_json_string(o));
@@ -218,6 +245,47 @@ static err_t _load_pub(json_object *obj,
   return e;
 }
 
+static err_t _load_txp(json_object *obj,
+                       int cfg_fd,
+                       void *out)
+{
+  err_t e = ec_success;
+  txparam_t **p = ptxp_from_fd(cfg_fd, out);
+  json_object *o;
+
+  if (!json_object_object_get_ex(obj, STR_TXP, &o)) {
+    goto free;
+    e = err(e);
+  }
+  if (!*p) {
+    *p = calloc(sizeof(txparam_t), 1);
+  }
+
+#if (JSON_ECHO_DBG == 2)
+  LOGD("txp obj --- %s", json_object_to_json_string(o));
+#endif
+  const char *v;
+  json_object *tmp;
+  if (json_object_object_get_ex(o, STR_CNT, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (ec_success != (e = uint8_loader(v, &(*p)->cnt))) {
+      goto free;
+    }
+  }
+  if (json_object_object_get_ex(o, STR_INTV, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (ec_success != (e = uint16_loader(v, &(*p)->intv))) {
+      goto free;
+    }
+  }
+  return ec_success;
+
+  free:
+  free(*p);
+  *p = NULL;
+  return e;
+}
+
 static err_t _load_ttl(json_object *obj,
                        int cfg_fd,
                        void *out)
@@ -249,23 +317,36 @@ static err_t _load_ttl(json_object *obj,
   return e;
 }
 
-#if 0
-static err_t load_item(json_object *obj,
-                       const char *key,
+static err_t _load_snb(json_object *obj,
                        int cfg_fd,
                        void *out)
 {
-  for (int i = 0; i < klsize; i++) {
-    if (!strcmp(keyloaders[i].key, key)) {
-      int must = (cfg_fd == PROV_CFG_FILE ? 1
-                  : cfg_fd == TEMPLATE_FILE ? 0
-                  : keyloaders[i].mustfornode);
-      return keyloaders[i].loader(obj, must, out);
-    }
+  err_t e = ec_success;
+  uint8_t **p = psnb_from_fd(cfg_fd, out);
+  json_object *o;
+
+  if (!json_object_object_get_ex(obj, STR_SNB, &o)) {
+    goto free;
+    e = err(e);
   }
-  return err(ec_not_exist);
-}
+#if (JSON_ECHO_DBG == 1)
+  LOGD("snb obj --- %s", json_object_to_json_string(o));
+  LOGD("\n");
 #endif
+  const char *v = json_object_get_string(o);
+  if (!*p) {
+    *p = malloc(sizeof(uint8_t));
+  }
+  if (ec_success != (e = uint8_loader(v, *p))) {
+    goto free;
+  }
+  return ec_success;
+
+  free:
+  free(*p);
+  *p = NULL;
+  return e;
+}
 
 static err_t load_to_tmpl_item(json_object *obj,
                                tmpl_t *tmpl)
@@ -276,7 +357,11 @@ static err_t load_to_tmpl_item(json_object *obj,
   LOGD("\n");
 #endif
   for (int i = 0; i < sizeof(loaders) / sizeof(__load_func_t); i++) {
-    EC(ec_success, loaders[i](obj, TEMPLATE_FILE, tmpl));
+    e = loaders[i](obj, TEMPLATE_FILE, tmpl);
+    if (e != ec_success) {
+      LOGE("Load %dth object failed.\n", i);
+      elog(e);
+    }
   }
   return ec_success;
 }

@@ -45,13 +45,7 @@
       },
       "Publish To": {
         "Address": "0xC021",
-        "AppKey": "0x0000",
-        "Period": "0x00000000"
-      },
-      "Secure Network Beacon": "0x00",
-      "TX Parameters": {
-        "Count": "0x00",
-        "Interval": "0x0000"
+        "AppKey": "0x0000"
       },
       "Bind Appkeys": ["0x0000", "0x0001"],
       "Subscribe from": ["0xD051", "0xD052", "0xD053", "0xD054", "0xC001"]

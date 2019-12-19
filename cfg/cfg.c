@@ -53,6 +53,17 @@ static void dump_tmpl(int k)
   } else {
     LOGD("\tPublication: NULL\n");
   }
+  LOGD("\tSecure Network Beacon[%s]\n",
+       t->snb ? (*t->snb ? "On" : "Off") : "NULL");
+
+  if (t->net_txp) {
+    LOGD("\t\tNetwork Tx Parameter[Count[0x%x]:Interval[0x%x]]\n", t->net_txp->cnt,
+         t->net_txp->intv);
+  } else {
+    LOGD("\tNetwork Tx Parameter: NULL\n");
+  }
+
+  LOGN();
 }
 
 static void cfg_test(void)

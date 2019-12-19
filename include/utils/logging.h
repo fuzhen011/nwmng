@@ -120,7 +120,10 @@ err_t __log(const char *file_name,
             int lvl,
             const char *fmt,
             ...);
+
+void log_n(void);
 #define LOG(lvl, fmt, ...) __log(__FILE__, __LINE__, (lvl), (fmt), ##__VA_ARGS__)
+#define LOGN() log_n()
 
 /*
  * Below 7 LOGx macros are used for logging data in specific level.

@@ -47,7 +47,7 @@ typedef struct publication{
 typedef struct {
   uint16_t refid;
   uint8_t *ttl;
-  uint8_t *psnb;
+  uint8_t *snb;
   txparam_t *net_txp;
   txparam_t *relay_txp;
   publication_t *pub;
@@ -62,6 +62,7 @@ typedef struct {
   uint8_t rmorbl; /* Remove or blacklist state */
   struct {
     uint8_t *ttl;
+    uint8_t *snb;
     txparam_t *net_txp;
     txparam_t *relay_txp;
     /*
