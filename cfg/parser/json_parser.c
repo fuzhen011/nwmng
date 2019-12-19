@@ -12,6 +12,7 @@
 
 #include <unistd.h>
 #include <json.h>
+#include <json_util.h>
 #include <glib.h>
 
 #include "cfgdb.h"
@@ -25,6 +26,7 @@
 #ifndef JSON_ECHO_DBG
 #define JSON_ECHO_DBG 2
 #endif
+
 #define json_array_foreach(i, n, obj)       \
   size_t n = json_object_array_length(obj); \
   for (int i = 0; i < n; i++)
@@ -938,15 +940,30 @@ err_t json_cfg_open(int cfg_fd,
 
   return ret;
 #if 0
-
   if (rootPtr) {
     jsonConfigClose();
   }
+#endif
+}
 
-  if (data) {
-    *data = pNetConfig;
+err_t json_flush(int cfg_fd)
+{
+  json_object **root;
+  char **fp;
+  if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
+    return err(ec_param_invalid);
+  }
+  fp = fp_from_fd(cfg_fd);
+  root = root_from_fd(cfg_fd);
+  if (!*root || !*fp) {
+    return err(ec_json_null);
+  }
+
+  if (-1 == json_object_to_file_ext(*fp, *root, JSON_C_TO_STRING_PRETTY)) {
+    /* LOGE("json file save error, reason[%s]\n", */
+    /* json_util_get_last_err()); */
+    LOGE("json file save error\n");
+    return err(ec_json_save);
   }
   return ec_success;
-
-#endif
 }

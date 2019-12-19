@@ -33,7 +33,8 @@ typedef enum {
   /* Json related error code */
   ec_json_null = 30,
   ec_json_open = 31,
-  ec_json_format = 32,
+  ec_json_save = 32,
+  ec_json_format = 33,
 }error_code_t;
 
 /* const char *get_error_str(error_code_t e); */

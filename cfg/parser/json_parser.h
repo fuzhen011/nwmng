@@ -18,6 +18,7 @@ err_t json_cfg_open(int cfg_fd,
                     unsigned int flags,
                     void *out);
 void json_close(int cfg_fd);
+err_t json_flush(int cfg_fd);
 
 #ifdef __cplusplus
 }

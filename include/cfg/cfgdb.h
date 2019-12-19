@@ -44,6 +44,9 @@ typedef struct publication{
   /* uint8_t security_credentials_flag; */
 } publication_t;
 
+/**
+ * @brief - Template structure, only the reference ID is mandatory
+ */
 typedef struct {
   uint16_t refid;
   uint8_t *ttl;
@@ -53,8 +56,19 @@ typedef struct {
   publication_t *pub;
   uint16list_t *bindings;
   uint16list_t *sublist;
+  struct {
+    bbitmap_t dcd_status;
+    bbitmap_t needset;
+    bbitmap_t value;
+    txparam_t *relay_txp;
+  }*features;
 } tmpl_t;
 
+/**
+ * @brief Node structure, all the configuration of a node will be loaded to the
+ * structure, all fields with pointer type are optional to present, the others
+ * are mandatory.
+ */
 typedef struct {
   uint8_t uuid[16];
   uint16_t addr;
