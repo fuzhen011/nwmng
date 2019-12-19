@@ -970,3 +970,126 @@ err_t json_flush(int cfg_fd)
   }
   return ec_success;
 }
+/*
+ * What fields can be modified?
+ *
+ * - In node scope [key]
+ *   - Error bitmap [Err]
+ *   - Address [Address]
+ *   - Remove or blacklist [RM_Blacklist]
+ *   - Done [Done]
+ * - In Self config scope
+ *   - Address
+ *   - Sync time
+ *   - IVI
+ *   - Id*
+ *   - Value*
+ *   - Done*
+ *   - Pub groups
+ *   - Sub groups
+ *
+ * How to address a specific key-value pair in the json file?
+ * - In node scope:
+ *   1> find the node by UUID
+ *   2> find the key-value pair by the key
+ *   3> modify the value
+ *
+ * - In Self config scope, since there are overlap keys used in network and
+ *   application keys, additional field key(s) is needed:
+ *   1> Check if field key is provided? Yes means to modify the field in
+ *   subnets, no means modify the field in current level.
+ *
+ *   - Modify the current level
+ *     - Find the key-value pair by key and modify the value
+ *
+ *   - Searching down still
+ *     - if the additional field key IS NOT provided, then iterate all the
+ *       network key by matching the RefId, then modify the value
+ *     - if the additional field key IS provided, then iterate all the
+ *       application key by matching the RefId, then modify the value
+ *
+ * So x parameters are needed to modify the target value in general.
+ *
+ * - field_key - used to address the field in array for searching key-value
+ *   pair, e.g. UUID for searching node, refId for network key.
+ * - level_indicator - used to indicate how many levels need to go into to find
+ *   to match the field key, now only used for appkey
+ * - key - used to address the key-value pair in above field.
+ * - value - new value to set.
+ *
+ *
+ */
+
+static err_t _backlog_node_add(const uint8_t *uuid)
+{
+  err_t e;
+  char uuid_str[33] = { 0 };
+  node_t *n = NULL;
+  json_object *obj;
+
+  if (ec_success != (e = cbuf2str((char *)uuid, 16, 0, uuid_str, 33))) {
+    return e;
+  }
+  obj = json_object_new_object();
+
+  json_object_object_add(obj, STR_UUID, json_object_new_string(uuid_str));
+  json_object_object_add(obj, STR_ADDR, json_object_new_string("0x0000"));
+  json_object_object_add(obj, STR_ERRBITS, json_object_new_string("0x00000000"));
+  json_object_object_add(obj, STR_TMPL, json_object_new_string("0xFF"));
+  json_object_object_add(obj, STR_RMORBL, json_object_new_string("0x00"));
+  json_object_object_add(obj, STR_DONE, json_object_new_string("0x00"));
+
+  json_object_array_add(jcfg.nw.backlog, obj);
+
+  n = calloc(1, sizeof(node_t));
+  memcpy(n->uuid, uuid, 16);
+  if (ec_success != (e = cfgdb_add(n))) {
+    free(n);
+    goto fail;
+  }
+  if (ec_success != (e = json_flush(NW_NODES_CFG_FILE))) {
+    goto fail;
+  }
+
+  fail:
+  if (e != ec_success) {
+    cfgdb_remove(n, 1);
+    json_object_put(obj);
+  }
+  return ec_success;
+}
+
+static err_t write_nodes(int wrtype,
+                         const void *key,
+                         void *data)
+{
+  switch (wrtype) {
+    case wrt_add_node:
+      return _backlog_node_add(data);
+      break;
+    default:
+      return err(ec_param_invalid);
+  }
+  return ec_success;
+}
+
+err_t json_cfg_write(int cfg_fd,
+                     int wrtype,
+                     const void *key,
+                     void *data)
+{
+  json_object **root;
+  char **fp;
+  if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
+    return err(ec_param_invalid);
+  }
+  fp = fp_from_fd(cfg_fd);
+  root = root_from_fd(cfg_fd);
+  if (!*root || !*fp) {
+    return err(ec_json_null);
+  }
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    return write_nodes(wrtype, key, data);
+  }
+  return err(ec_param_invalid);
+}

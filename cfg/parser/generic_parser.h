@@ -14,6 +14,14 @@ extern "C"
 #include "err.h"
 #include "cfg_keys.h"
 
+enum {
+  /* Adding a node to backlog */
+  wrt_add_node,
+  wrt_errbits,
+  wrt_node_addr,
+  wrt_done,
+};
+
 /* cfg_fd */
 enum {
   PROV_CFG_FILE,

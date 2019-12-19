@@ -110,6 +110,11 @@ err_t str2cbuf(const char src[],
                uint8_t rev,
                char dest[],
                size_t destLen);
+int cbuf2str(const char src[],
+             size_t srcLen,
+             uint8_t rev,
+             char dest[],
+             size_t destLen);
 
 static inline void alloc_copy(uint8_t **p,
                               const void *src,

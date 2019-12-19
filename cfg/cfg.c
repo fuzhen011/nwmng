@@ -118,6 +118,11 @@ static void cfg_test(void)
                     NULL);
   elog(e);
 
+  e = json_cfg_write(NW_NODES_CFG_FILE,
+                     wrt_add_node,
+                     NULL,
+                     "\x01\x02\x03\x04\x05\x06\x07\x07\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10");
+  elog(e);
   json_close(NW_NODES_CFG_FILE);
   json_close(PROV_CFG_FILE);
 }

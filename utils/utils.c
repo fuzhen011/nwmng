@@ -81,6 +81,39 @@ static inline char __asmbhex(char h, char l)
   return h * 16 + l;
 }
 
+int cbuf2str(const char src[],
+             size_t srcLen,
+             uint8_t rev,
+             char dest[],
+             size_t destLen)
+{
+  int len;
+  const unsigned char *p;
+
+  p = (const unsigned char *)src;
+  if (p == NULL) {
+    return err(ec_param_invalid);
+  }
+  len = srcLen;
+
+  if (destLen < len * 2) {
+    return err(ec_not_exist);
+  }
+
+  for (int i = 0; i < len; i++) {
+    if (rev) {
+      dest[len * 2 - 1 - i * 2] = hex_value_to_char(*p % 16);
+      dest[len * 2 - 2 - i * 2] = hex_value_to_char(*p / 16);
+    } else {
+      dest[i * 2] = hex_value_to_char(*p / 16);
+      dest[i * 2 + 1] = hex_value_to_char(*p % 16);
+    }
+    p++;
+  }
+
+  return ec_success;
+}
+
 err_t str2cbuf(const char src[],
                uint8_t rev,
                char dest[],
