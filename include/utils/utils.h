@@ -37,6 +37,11 @@ enum {
 
 #define SAFE_FREE(p) do { if (p) { free(p); p = NULL; } } while (0)
 
+#ifndef ASSERT
+#define ASSERT(x) do { if (!x) { LOGA(""); abort(); } } while (0)
+#define ASSERT_MSG(x, fmt, ...) do { if (!x) { LOGA(fmt, ##__VA_ARGS__); abort(); } } while (0)
+#endif
+
 #ifndef MAX
 #define MAX(a, b)                                   ((a) > (b) ? (a) : (b))
 #endif

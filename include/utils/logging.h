@@ -125,7 +125,8 @@ err_t __log(const char *file_name,
 /*
  * Below 7 LOGx macros are used for logging data in specific level.
  */
-#define LOGA(fmt, ...) LOG(LVL_AST, (fmt), ##__VA_ARGS__)
+#define LOGA(fmt, ...) \
+  do { LOG(LVL_AST, (fmt), ##__VA_ARGS__); abort(); } while (0)
 #define LOGE(fmt, ...) LOG(LVL_ERR, (fmt), ##__VA_ARGS__)
 #define LOGW(fmt, ...) LOG(LVL_WRN, (fmt), ##__VA_ARGS__)
 #define LOGM(fmt, ...) LOG(LVL_MSG, (fmt), ##__VA_ARGS__)

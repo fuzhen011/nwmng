@@ -16,7 +16,12 @@
       "Publish To": {
         "Address": "0xC001",
         "AppKey": "0x0000",
-        "Period": "0x00002710"
+        "Period": "0x00002710",
+        "TTL": "0x11",
+        "TX Parameters": {
+          "Count": "0x03",
+          "Interval": "0x001E"
+        }
       },
       "Secure Network Beacon": "0x01",
       "TX Parameters": {

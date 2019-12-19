@@ -24,19 +24,34 @@
 
 /* Static Functions Declaractions ************************************* */
 extern void cfgdb_test(void);
-static void test_print_ttl(int k)
+
+static void dump_tmpl(int k)
 {
   tmpl_t *t;
   t = cfgdb_tmpl_get(k);
   if (!t) {
-    LOGE("key %d is not in the hash table\n", k);
+    LOGE("KEY[0x%x] is not in the hash table\n", k);
     /* cfgdb_test(); */
     return;
   }
+  LOGD("Template [0x%x] Dump:\n", k);
+
   if (t->ttl) {
-    LOGD("ttl of refid %d is %d\n", k, *t->ttl);
+    LOGD("\tttl of refid %d is %d\n", k, *t->ttl);
   } else {
-    LOGD("ttl of refid %d is NULL\n", k);
+    LOGD("\tttl of refid %d is NULL\n", k);
+  }
+
+  if (t->pub) {
+    LOGD("\tPublication: \n");
+    LOGD("\t\tAddress[0x%x]\n", t->pub->addr);
+    LOGD("\t\tAppkey[0x%x]\n", t->pub->aki);
+    LOGD("\t\tPeriod[0x%x]\n", t->pub->period);
+    LOGD("\t\tTTL[0x%x]\n", t->pub->ttl);
+    LOGD("\t\tTx Parameter[Count[0x%x]:Interval[0x%x]]\n", t->pub->txp.cnt,
+         t->pub->txp.intv);
+  } else {
+    LOGD("\tPublication: NULL\n");
   }
 }
 
@@ -53,8 +68,9 @@ static void cfg_test(void)
                     NULL);
   elog(e);
   json_close(TEMPLATE_FILE);
-  test_print_ttl(1);
-  test_print_ttl(0x21);
+  dump_tmpl(1);
+  dump_tmpl(0x21);
+#if 0
   sleep(5);
   e = json_cfg_open(TEMPLATE_FILE,
                     "/home/zhfu/work/projs/nwmng/tools/mesh_config/templates.json",
@@ -64,6 +80,7 @@ static void cfg_test(void)
   json_close(TEMPLATE_FILE);
   test_print_ttl(1);
   test_print_ttl(0x21);
+#endif
 
   e = json_cfg_open(NW_NODES_CFG_FILE,
                     "/home/zhfu/work/projs/nwmng/tools/mesh_config/test1/nwk.json",

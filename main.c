@@ -89,6 +89,8 @@ int main(int argc, char *argv[])
   EC(ec_success, logging_init("logs/cli.log",
                               0, /* Not output to stdout */
                               LOG_MINIMAL_LVL(LVL_VER)));
+  /* ASSERT_MSG(0, "%s\n", "ssdfasdf"); */
+  /* ASSERT(0); */
 #ifdef SINGLE_PROC
   EC(ec_success, cfg_init());
   cfg_proc();

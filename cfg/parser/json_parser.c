@@ -24,7 +24,7 @@
 
 /* Defines  *********************************************************** */
 #ifndef JSON_ECHO_DBG
-#define JSON_ECHO_DBG 0
+#define JSON_ECHO_DBG 2
 #endif
 /*
  * For each json file, the root holds the pointer to the result of
@@ -55,8 +55,12 @@ typedef struct {
 }json_cfg_t;
 
 /* Global Variables *************************************************** */
-#define DECLLOADER(name) \
+#define DECLLOADER1(name) \
+  static err_t _load_##name(json_object * obj, int cfg_fd, void *out)
+#define DECLLOADER2(name) \
   static err_t __load_##name(json_object * obj, int cfg_fd, void *out)
+#define DECLLOADER3(name) \
+  static err_t ___load_##name(json_object * obj, int cfg_fd, void *out)
 
 /* Static Variables *************************************************** */
 static json_cfg_t jcfg = { 0 };
@@ -77,21 +81,58 @@ typedef struct {
 }key_loader_t;
 #endif
 
-DECLLOADER(ttl);
+DECLLOADER1(ttl);
+DECLLOADER1(pub);
 #if 0
 static const key_loader_t keyloaders[] = {
-  { 1, STR_TTL, __load_ttl, 0 },
+  { 1, STR_TTL, _load_ttl, 0 },
 };
 static const int klsize = sizeof(keyloaders) / sizeof(key_loader_t);
 #endif
 static const __load_func_t loaders[] = {
-  __load_ttl
+  _load_ttl,
+  _load_pub,
 };
+
 /**
  * @defgroup single_key_load
  *
  * Below functions are used to load a single key-value pair in the json file
  * @{ */
+static inline err_t uint8_loader(const char *v, uint8_t *out)
+{
+  ASSERT(v && out);
+  if (ec_success != str2uint(v, strlen(v), out, sizeof(uint8_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+  return ec_success;
+}
+
+static inline err_t uint16_loader(const char *v, uint16_t *out)
+{
+  ASSERT(v && out);
+  if (ec_success != str2uint(v, strlen(v), out, sizeof(uint16_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+  return ec_success;
+}
+static inline err_t uint32_loader(const char *v, uint32_t *out)
+{
+  ASSERT(v && out);
+  if (ec_success != str2uint(v, strlen(v), out, sizeof(uint32_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+  return ec_success;
+}
+
+static inline err_t uint16list_loader(const char *v, uint16list_t *out)
+{
+  return ec_success;
+}
+
 static inline uint8_t **pttl_from_fd(int cfg_fd, void *out)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
@@ -102,12 +143,86 @@ static inline uint8_t **pttl_from_fd(int cfg_fd, void *out)
   assert(0);
 }
 
-static err_t __load_ttl(json_object *obj,
-                        int cfg_fd,
-                        void *out)
+static inline publication_t **ppub_from_fd(int cfg_fd, void *out)
+{
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    return (&((node_t *)out)->config.pub);
+  } else if (cfg_fd == TEMPLATE_FILE) {
+    return (&((tmpl_t *)out)->pub);
+  }
+  assert(0);
+}
+
+static err_t _load_pub(json_object *obj,
+                       int cfg_fd,
+                       void *out)
 {
   err_t e = ec_success;
-  uint8_t ret;
+  publication_t **p = ppub_from_fd(cfg_fd, out);
+  json_object *o;
+
+  if (!json_object_object_get_ex(obj, STR_PUB, &o)) {
+    goto free;
+    e = err(e);
+  }
+  *p = calloc(sizeof(publication_t), 1);
+
+#if (JSON_ECHO_DBG == 0)
+  LOGD("pub obj --- %s", json_object_to_json_string(o));
+  exit(0);
+#endif
+  const char *v;
+  json_object_object_foreach(o, key, val){
+    if (!strcmp(STR_ADDR, key)) {
+      v = json_object_get_string(val);
+      if (ec_success != (e = uint16_loader(v, &(*p)->addr))) {
+        goto free;
+      }
+    } else if (!strcmp(STR_APPKEY, key)) {
+      v = json_object_get_string(val);
+      if (ec_success != (e = uint16_loader(v, &(*p)->aki))) {
+        goto free;
+      }
+    } else if (!strcmp(STR_PERIOD, key)) {
+      v = json_object_get_string(val);
+      if (ec_success != (e = uint32_loader(v, &(*p)->period))) {
+        goto free;
+      }
+    } else if (!strcmp(STR_TTL, key)) {
+      v = json_object_get_string(val);
+      if (ec_success != (e = uint8_loader(v, &(*p)->ttl))) {
+        goto free;
+      }
+    } else if (!strcmp(STR_TXP, key)) {
+      json_object *tmp;
+      if (json_object_object_get_ex(val, STR_CNT, &tmp)) {
+        v = json_object_get_string(tmp);
+        if (ec_success != (e = uint8_loader(v, &(*p)->txp.cnt))) {
+          goto free;
+        }
+      }
+      if (json_object_object_get_ex(val, STR_INTV, &tmp)) {
+        v = json_object_get_string(tmp);
+        if (ec_success != (e = uint16_loader(v, &(*p)->txp.intv))) {
+          goto free;
+        }
+      }
+      /* TODO: sanity check, if invalid, memset to 0 */
+    }
+  }
+  return ec_success;
+
+  free:
+  free(*p);
+  *p = NULL;
+  return e;
+}
+
+static err_t _load_ttl(json_object *obj,
+                       int cfg_fd,
+                       void *out)
+{
+  err_t e = ec_success;
   uint8_t **p = pttl_from_fd(cfg_fd, out);
   json_object *o;
 
@@ -120,15 +235,12 @@ static err_t __load_ttl(json_object *obj,
   LOGD("\n");
 #endif
   const char *v = json_object_get_string(o);
-  if (ec_success != str2uint(v, strlen(v), &ret, sizeof(uint8_t))) {
-    LOGE("STR to UINT error\n");
-    return err(ec_json_format);
-  }
-
   if (!*p) {
-    *p = malloc(1);
+    *p = malloc(sizeof(uint8_t));
   }
-  **p = ret;
+  if (ec_success != (e = uint8_loader(v, *p))) {
+    goto free;
+  }
   return ec_success;
 
   free:
@@ -136,6 +248,7 @@ static err_t __load_ttl(json_object *obj,
   *p = NULL;
   return e;
 }
+
 #if 0
 static err_t load_item(json_object *obj,
                        const char *key,

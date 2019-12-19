@@ -229,9 +229,11 @@ err_t __log(const char *file_name,
             valist);
   if (lcfg.fp) {
     fprintf(lcfg.fp, "%s", lcfg.buf);
+    fflush(lcfg.fp);
   }
   if (lcfg.tostdout) {
     printf("%s", lcfg.buf);
+    fflush(lcfg.fp);
   }
 
   out:
