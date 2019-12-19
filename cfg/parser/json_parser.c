@@ -23,6 +23,15 @@
 #include "utils.h"
 
 /* Defines  *********************************************************** */
+#define JSON_ECHO(msg, obj)              \
+  do{                                    \
+    LOGD("%s Item --- %s\n",             \
+         (msg),                          \
+         json_object_to_json_string_ext( \
+           (obj),                        \
+           JSON_C_TO_STRING_PRETTY));    \
+  }while(0)
+
 #ifndef JSON_ECHO_DBG
 #define JSON_ECHO_DBG 2
 #endif
@@ -221,8 +230,7 @@ static err_t _load_pub(json_object *obj,
   }
 
 #if (JSON_ECHO_DBG == 0)
-  LOGD("pub obj --- %s", json_object_to_json_string(o));
-  exit(0);
+  JSON_ECHO("Pub", o);
 #endif
   const char *v;
   json_object_object_foreach(o, key, val){
@@ -288,7 +296,7 @@ static err_t _load_txp(json_object *obj,
   }
 
 #if (JSON_ECHO_DBG == 1)
-  LOGD("txp obj --- %s", json_object_to_json_string(o));
+  JSON_ECHO("TxP", o);
 #endif
   const char *v;
   json_object *tmp;
@@ -325,8 +333,7 @@ static err_t _load_ttl(json_object *obj,
     e = err(e);
   }
 #if (JSON_ECHO_DBG == 1)
-  LOGD("ttl obj --- %s", json_object_to_json_string(o));
-  LOGD("\n");
+  JSON_ECHO("TTL", o);
 #endif
   const char *v = json_object_get_string(o);
   if (!*p) {
@@ -356,8 +363,7 @@ static err_t _load_snb(json_object *obj,
     e = err(e);
   }
 #if (JSON_ECHO_DBG == 1)
-  LOGD("snb obj --- %s", json_object_to_json_string(o));
-  LOGD("\n");
+  JSON_ECHO("SNB", o);
 #endif
   const char *v = json_object_get_string(o);
   if (!*p) {
@@ -432,7 +438,7 @@ static err_t _load_bindings(json_object *obj,
     e = err(e);
   }
 #if (JSON_ECHO_DBG == 1)
-  LOGD("bindings obj --- %s", json_object_to_json_string(o));
+  JSON_ECHO("Bindings", o);
 #endif
   if (ec_success != (e = __load_uint16list(o, p))) {
     return e;
@@ -464,7 +470,7 @@ static err_t _load_sublist(json_object *obj,
     e = err(e);
   }
 #if (JSON_ECHO_DBG == 1)
-  LOGD("sublist obj --- %s", json_object_to_json_string(o));
+  JSON_ECHO("Sublist", o);
 #endif
   if (ec_success != (e = __load_uint16list(o, p))) {
     return e;
@@ -548,8 +554,7 @@ static err_t load_to_tmpl_item(json_object *obj,
 {
   err_t e;
 #if (JSON_ECHO_DBG == 1)
-  LOGD("tmpl item --- %s\n", json_object_to_json_string(obj));
-  LOGD("\n");
+  JSON_ECHO("Template", obj);
 #endif
   for (int i = 0; i < tmpl_loader_end; i++) {
     e = loaders[i](obj, TEMPLATE_FILE, tmpl);
@@ -565,9 +570,8 @@ static err_t load_to_node_item(json_object *obj,
                                node_t *node)
 {
   err_t e;
-#if (JSON_ECHO_DBG == 1)
-  LOGD("tmpl item --- %s\n", json_object_to_json_string(obj));
-  LOGD("\n");
+#if (JSON_ECHO_DBG == 2)
+  JSON_ECHO("Node", obj);
 #endif
   for (int i = 0; i < node_loader_end; i++) {
     e = loaders[i](obj, NW_NODES_CFG_FILE, node);
@@ -960,9 +964,8 @@ err_t json_flush(int cfg_fd)
   }
 
   if (-1 == json_object_to_file_ext(*fp, *root, JSON_C_TO_STRING_PRETTY)) {
-    /* LOGE("json file save error, reason[%s]\n", */
-    /* json_util_get_last_err()); */
-    LOGE("json file save error\n");
+    LOGE("json file save error, reason[%s]\n",
+         json_util_get_last_err());
     return err(ec_json_save);
   }
   return ec_success;
