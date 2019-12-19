@@ -500,8 +500,8 @@ static void copy_tmpl_to_node(const tmpl_t *t,
   if (t->snb && !n->config.snb) {
     alloc_copy(&n->config.snb, t->snb, sizeof(uint8_t));
   }
-  if (t->relay_txp && !n->config.relay_txp) {
-    alloc_copy((uint8_t **)&n->config.relay_txp, t->relay_txp, sizeof(txparam_t));
+  if (t->relay_txp && !n->config.features.relay_txp) {
+    alloc_copy((uint8_t **)&n->config.features.relay_txp, t->relay_txp, sizeof(txparam_t));
   }
   if (t->pub && !n->config.pub) {
     alloc_copy((uint8_t **)&n->config.pub, t->pub, sizeof(publication_t));

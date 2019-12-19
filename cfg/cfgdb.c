@@ -58,7 +58,7 @@ static void node_free(void *p)
   node_t *n = (node_t *)p;
   SAFE_FREE(n->config.ttl);
   SAFE_FREE(n->config.net_txp);
-  SAFE_FREE(n->config.relay_txp);
+  SAFE_FREE(n->config.features.relay_txp);
   SAFE_FREE(n->config.pub);
   SAFE_FREE(n->config.bindings);
   SAFE_FREE(n->config.sublist);

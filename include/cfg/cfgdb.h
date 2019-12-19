@@ -65,7 +65,6 @@ typedef struct {
     uint8_t *ttl;
     uint8_t *snb;
     txparam_t *net_txp;
-    txparam_t *relay_txp;
     /*
      * when setting the features of the node, do below steps:
      * 1. Check if the feature is enabled in dcd, goto step 2 if yes.
@@ -77,6 +76,7 @@ typedef struct {
       bbitmap_t dcd_status;
       bbitmap_t needset;
       bbitmap_t value;
+      txparam_t *relay_txp;
     }features;
 
     publication_t *pub;
