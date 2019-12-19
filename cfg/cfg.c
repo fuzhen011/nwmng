@@ -57,10 +57,22 @@ static void dump_tmpl(int k)
        t->snb ? (*t->snb ? "On" : "Off") : "NULL");
 
   if (t->net_txp) {
-    LOGD("\t\tNetwork Tx Parameter[Count[0x%x]:Interval[0x%x]]\n", t->net_txp->cnt,
+    LOGD("\tNetwork Tx Parameter[Count[0x%x]:Interval[0x%x]]\n", t->net_txp->cnt,
          t->net_txp->intv);
   } else {
     LOGD("\tNetwork Tx Parameter: NULL\n");
+  }
+
+  if (t->bindings) {
+    LOGD("\tBinding number[%d]\n", t->bindings->len);
+  } else {
+    LOGD("\tBinding: NULL\n");
+  }
+
+  if (t->sublist) {
+    LOGD("\tSubsription number[%d]\n", t->sublist->len);
+  } else {
+    LOGD("\tSubsription: NULL\n");
   }
 
   LOGN();

@@ -15,7 +15,6 @@
 
 #include <unistd.h>
 #include <signal.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <wordexp.h>
@@ -527,7 +526,7 @@ int cli_proc_init(int child_num, const pid_t *pids)
   }
 
   if (child_num) {
-    assert(pids);
+    ASSERT(pids);
     children = calloc(child_num, sizeof(pid_t));
     memcpy(children, pids, child_num * sizeof(pid_t));
     children_num = child_num;

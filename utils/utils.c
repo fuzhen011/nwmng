@@ -14,6 +14,10 @@
 #include "utils.h"
 
 /* Defines  *********************************************************** */
+#define STR_HEX_VALID(x)             \
+  ((((x) >= '0') && ((x) <= '9'))    \
+   || (((x) >= 'a') && ((x) <= 'f')) \
+   || (((x) >= 'A') && ((x) <= 'F')))
 
 /* Global Variables *************************************************** */
 
@@ -70,6 +74,50 @@ int strsuffix(const char *str, const char *suffix)
   }
 
   return strncmp(str + len - suffix_len, suffix, suffix_len);
+}
+
+static inline char __asmbhex(char h, char l)
+{
+  return h * 16 + l;
+}
+
+err_t str2cbuf(const char src[],
+               uint8_t rev,
+               char dest[],
+               size_t destLen)
+{
+  int len;
+  const char *p;
+  char ret;
+
+  p = src;
+  if (!p) {
+    return err(ec_param_invalid);
+  }
+  len = strlen(p);
+
+  if (destLen < len / 2) {
+    return err(ec_length_leak);
+  } else if (len % 2) {
+    return err(ec_param_invalid);
+  }
+
+  for (int i = 0; i < len / 2; i++) {
+    if (STR_HEX_VALID(*p) && STR_HEX_VALID(*(p + 1))) {
+      ret = __asmbhex(hex_char_to_value(*p), hex_char_to_value(*(p + 1)));
+    } else {
+      return err(ec_param_invalid);
+    }
+
+    if (rev) {
+      dest[i] = ret;
+    } else {
+      dest[len / 2 - 1 - i] = ret;
+    }
+    p += 2;
+  }
+
+  return ec_success;
 }
 
 err_t str2uint(const char *input,

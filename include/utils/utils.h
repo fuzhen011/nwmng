@@ -13,6 +13,8 @@ extern "C"
 #endif
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "err.h"
 
@@ -35,11 +37,11 @@ enum {
   BASE_HEX
 };
 
-#define SAFE_FREE(p) do { if (p) { free(p); p = NULL; } } while (0)
+#define SAFE_FREE(p) do { if ((p)) { free((p)); (p) = NULL; } } while (0)
 
 #ifndef ASSERT
-#define ASSERT(x) do { if (!x) { LOGA(""); abort(); } } while (0)
-#define ASSERT_MSG(x, fmt, ...) do { if (!x) { LOGA(fmt, ##__VA_ARGS__); abort(); } } while (0)
+#define ASSERT(x) do { if (!(x)) { LOGA(""); abort(); } } while (0)
+#define ASSERT_MSG(x, fmt, ...) do { if (!(x)) { LOGA(fmt, ##__VA_ARGS__); abort(); } } while (0)
 #endif
 
 #ifndef MAX
@@ -103,6 +105,35 @@ err_t uint2str(uint64_t input,
                uint8_t base_type,
                size_t length,
                char *str);
+
+err_t str2cbuf(const char src[],
+               uint8_t rev,
+               char dest[],
+               size_t destLen);
+
+static inline void alloc_copy(uint8_t **p,
+                              const void *src,
+                              size_t len)
+{
+  if (!p || !len || !src) {
+    return;
+  }
+
+  *p = (uint8_t *)malloc(len);
+  memcpy(*p, src, len);
+}
+
+static inline void alloc_copy_u16list(uint16list_t **p,
+                                      const uint16list_t *src)
+{
+  if (!p || !src || !src->len) {
+    return;
+  }
+  *p = (uint16list_t *)malloc(sizeof(uint16list_t));
+  (*p)->len = src->len;
+  (*p)->data = (uint16_t *)malloc(sizeof(uint16_t) * src->len);
+  memcpy((*p)->data, src->data, sizeof(uint16_t) * src->len);
+}
 
 static inline void addr_to_buf(uint16_t addr, char *buf)
 {

@@ -60,6 +60,7 @@ typedef struct {
   uint16_t addr;
   uint8_t done;
   uint8_t rmorbl; /* Remove or blacklist state */
+  lbitmap_t err;
   struct {
     uint8_t *ttl;
     uint8_t *snb;

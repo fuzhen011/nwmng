@@ -38,7 +38,7 @@
           "UUID": "08080808080808080808080808080808",
           "Address": "0x0001",
           "Err": "0x00000004",
-          "Template ID": "0xFF",
+          "Template ID": "0x01",
           "RM_Blacklist": "0x00",
           "Done": "0x01"
         },
@@ -46,7 +46,7 @@
           "UUID": "000b57ef2b872d7665447362616c6953",
           "Address": "0x0000",
           "Err": "0x00000000",
-          "Template ID": "0xFF",
+          "Template ID": "0x21",
           "RM_Blacklist": "0x00",
           "Done": "0x00"
         }
