@@ -75,6 +75,7 @@ typedef struct {
   uint8_t done;
   uint8_t rmorbl; /* Remove or blacklist state */
   lbitmap_t err;
+  uint8_t *tmpl;
   struct {
     uint8_t *ttl;
     uint8_t *snb;
@@ -132,8 +133,8 @@ typedef struct {
   GHashTable *templates;
   GHashTable *unprov_devs;
   GHashTable *nodes;
+  GHashTable *backlog;
   GQueue *lights;
-  GQueue *backlog;
 } cfg_devdb_t;
 
 typedef struct {
@@ -149,6 +150,8 @@ int cfgdb_devnum(bool proved);
 
 node_t *cfgdb_node_get(uint16_t addr);
 node_t *cfgdb_unprov_dev_get(const uint8_t *uuid);
+node_t *cfgdb_backlog_get(const uint8_t *uuid);
+
 err_t cfgdb_remove(node_t *n, bool destory);
 err_t cfgdb_add(node_t *n);
 /*
@@ -157,6 +160,7 @@ err_t cfgdb_add(node_t *n);
 tmpl_t *cfgdb_tmpl_get(uint16_t refid);
 err_t cfgdb_tmpl_remove(tmpl_t *n);
 err_t cfgdb_tmpl_add(tmpl_t *n);
+
 #ifdef __cplusplus
 }
 #endif

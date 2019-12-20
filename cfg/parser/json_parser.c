@@ -24,13 +24,13 @@
 
 /* Defines  *********************************************************** */
 #define JSON_ECHO(msg, obj)              \
-  do{                                    \
+  do {                                   \
     LOGD("%s Item --- %s\n",             \
          (msg),                          \
          json_object_to_json_string_ext( \
            (obj),                        \
            JSON_C_TO_STRING_PRETTY));    \
-  }while(0)
+  } while (0)
 
 #ifndef JSON_ECHO_DBG
 #define JSON_ECHO_DBG 2
@@ -53,20 +53,23 @@ typedef struct {
 }sbn_t;
 
 typedef struct {
+  bool autoflush;
+  char *fp;
+  json_object *root;
+}cfg_general_t;
+
+typedef struct {
   struct {
-    char *fp;
-    json_object *root;
+    cfg_general_t gen;
   }prov;
   struct {
-    char *fp;
-    json_object *root;
+    cfg_general_t gen;
     int subnet_num;
     sbn_t *subnets;
     json_object *backlog;
   }nw;
   struct {
-    char *fp;
-    json_object *root;
+    cfg_general_t gen;
   }tmpl;
 }json_cfg_t;
 
@@ -585,18 +588,11 @@ static err_t load_to_node_item(json_object *obj,
 
 /**  @} */
 
-static inline char **fp_from_fd(int fd)
+static inline cfg_general_t *gen_from_fd(int fd)
 {
-  return fd == PROV_CFG_FILE ? &jcfg.prov.fp
-         : fd == NW_NODES_CFG_FILE ? &jcfg.nw.fp
-         : fd == TEMPLATE_FILE ? &jcfg.tmpl.fp : NULL;
-}
-
-static inline json_object **root_from_fd(int fd)
-{
-  return fd == PROV_CFG_FILE ? &jcfg.prov.root
-         : fd == NW_NODES_CFG_FILE ? &jcfg.nw.root
-         : fd == TEMPLATE_FILE ? &jcfg.tmpl.root : NULL;
+  return fd == PROV_CFG_FILE ? &jcfg.prov.gen
+         : fd == NW_NODES_CFG_FILE ? &jcfg.nw.gen
+         : fd == TEMPLATE_FILE ? &jcfg.tmpl.gen : NULL;
 }
 
 /**
@@ -607,25 +603,22 @@ static inline json_object **root_from_fd(int fd)
  *
  * @return
  */
-static err_t open_json_file(int cfg_fd)
+static err_t open_json_file(int cfg_fd, bool autoflush)
 {
   err_t e = ec_success;;
-  json_object **root = root_from_fd(cfg_fd);
-  char **fp;
-  fp = fp_from_fd(cfg_fd);
+  cfg_general_t *gen;
+
+  gen = gen_from_fd(cfg_fd);
   json_close(cfg_fd);
-  if (!*fp) {
+  if (!gen) {
     return err(ec_param_invalid);
   }
-  *root = json_object_from_file(*fp);
-  if (!*root) {
-    LOGE("json-c failed to open %s\n", *fp);
-    return err(ec_json_open);
-  }
+  gen->root = json_object_from_file(gen->fp);
+  gen->autoflush = autoflush;
 
   if (cfg_fd == NW_NODES_CFG_FILE) {
     /* Load the subnets, which fills the refid and the json_object nodes */
-    json_object_object_foreach(*root, key, val){
+    json_object_object_foreach(gen->root, key, val){
       if (!strcmp(STR_SUBNETS, key)) {
         jcfg.nw.subnet_num = json_object_array_length(val);
         jcfg.nw.subnets = calloc(jcfg.nw.subnet_num, sizeof(sbn_t));
@@ -654,7 +647,7 @@ static err_t open_json_file(int cfg_fd)
   if (ec_success != e) {
     json_close(cfg_fd);
   } else {
-    LOGD("%s file opened\n", *fp);
+    LOGD("%s file opened\n", gen->fp);
   }
   return e;
 }
@@ -670,10 +663,10 @@ static err_t load_template(void)
   json_object *n, *ptmpl;
   err_t e;
   bool add = false;
-  if (!jcfg.tmpl.root) {
+  if (!jcfg.tmpl.gen.root) {
     return err(ec_json_open);
   }
-  if (!json_object_object_get_ex(jcfg.tmpl.root, STR_TEMPLATES, &ptmpl)) {
+  if (!json_object_object_get_ex(jcfg.tmpl.gen.root, STR_TEMPLATES, &ptmpl)) {
     return err(ec_json_format);
   }
 
@@ -742,7 +735,7 @@ static err_t load_nodes(void)
   bool add = false;
   if (!jcfg.nw.subnets
       || !jcfg.nw.subnets[0].nodes
-      || !jcfg.nw.root) {
+      || !jcfg.nw.gen.root) {
     return err(ec_json_open);
   }
   pnode = jcfg.nw.subnets[0].nodes;
@@ -838,8 +831,7 @@ static err_t load_nodes(void)
 }
 
 static err_t load_json_file(int cfg_fd,
-                            bool clrctlfls,
-                            void *out)
+                            bool clrctlfls)
 {
   /* TODO */
   if (cfg_fd == TEMPLATE_FILE) {
@@ -852,15 +844,15 @@ static err_t load_json_file(int cfg_fd,
 
 void json_close(int cfg_fd)
 {
-  json_object **root = root_from_fd(cfg_fd);
-  if (!*root) {
+  cfg_general_t *gen = gen_from_fd(cfg_fd);
+  if (!gen->root) {
     return;
   }
-  json_object_put(*root);
+  json_object_put(gen->root);
   if (cfg_fd == NW_NODES_CFG_FILE) {
     SAFE_FREE(jcfg.nw.subnets);
   }
-  *root = NULL;
+  gen->root = NULL;
 }
 
 err_t json_cfg_open(int cfg_fd,
@@ -870,38 +862,38 @@ err_t json_cfg_open(int cfg_fd,
 {
   int tmp;
   err_t ret = ec_success;
-  char **fp;
+  cfg_general_t *gen;
 
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
     return err(ec_param_invalid);
   }
-  fp = fp_from_fd(cfg_fd);
+  gen = gen_from_fd(cfg_fd);
 
   /* Ensure the fp is not NULL */
   if (!(flags & FL_CLR_CTLFS)) {
     if (!filepath) {
-      if (!(*fp)) {
+      if (!(gen->fp)) {
         return err(ec_param_invalid);
       }
     } else {
-      if (*fp) {
-        free(*fp);
-        *fp = NULL;
+      if (gen->fp) {
+        free(gen->fp);
+        gen->fp = NULL;
       }
-      *fp = malloc(strlen(filepath) + 1);
-      strcpy(*fp, filepath);
-      (*fp)[strlen(filepath)] = '\0';
+      gen->fp = malloc(strlen(filepath) + 1);
+      strcpy(gen->fp, filepath);
+      gen->fp[strlen(filepath)] = '\0';
     }
-  } else if (!(*fp)) {
+  } else if (!gen->fp) {
     return err(ec_param_invalid);
   }
-  ASSERT(*fp);
+  ASSERT(gen->fp);
 
   /*
    * If need to turncate the file or the file doesn't exist, need to create,
    * do it
    */
-  tmp = access(*fp, F_OK);
+  tmp = access(gen->fp, F_OK);
   if (cfg_fd == TEMPLATE_FILE) {
     if (tmp == -1) {
       return err(ec_not_exist);
@@ -924,13 +916,12 @@ err_t json_cfg_open(int cfg_fd,
     }
   }
 
-  if (ec_success != (ret = open_json_file(cfg_fd))) {
+  if (ec_success != (ret = open_json_file(cfg_fd, 1))) {
     goto fail;
   }
 
   if (ec_success != (ret = load_json_file(cfg_fd,
-                                          !!(flags & FL_CLR_CTLFS),
-                                          out))) {
+                                          !!(flags & FL_CLR_CTLFS)))) {
     goto fail;
   }
 
@@ -938,7 +929,7 @@ err_t json_cfg_open(int cfg_fd,
   if (ec_success != ret) {
     /* TODO: Clean work need? */
     /* jsonConfigDeinit(); */
-    LOGE("JSON[%s] Open failed\n", *fp);
+    LOGE("JSON[%s] Open failed\n", gen->fp);
     elog(ret);
   }
 
@@ -952,20 +943,22 @@ err_t json_cfg_open(int cfg_fd,
 
 err_t json_flush(int cfg_fd)
 {
-  json_object **root;
-  char **fp;
+  cfg_general_t *gen;
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
     return err(ec_param_invalid);
   }
-  fp = fp_from_fd(cfg_fd);
-  root = root_from_fd(cfg_fd);
-  if (!*root || !*fp) {
+  gen = gen_from_fd(cfg_fd);
+  if (!gen || !gen->root || !gen->fp) {
     return err(ec_json_null);
   }
 
-  if (-1 == json_object_to_file_ext(*fp, *root, JSON_C_TO_STRING_PRETTY)) {
+  if (-1 == json_object_to_file_ext(gen->fp, gen->root, JSON_C_TO_STRING_PRETTY)) {
+#if __APPLE__ == 1
     LOGE("json file save error, reason[%s]\n",
          json_util_get_last_err());
+#else
+    LOGE("json file save error, reason[Not available in this platform]\n");
+#endif
     return err(ec_json_save);
   }
   return ec_success;
@@ -987,8 +980,13 @@ err_t json_flush(int cfg_fd)
  *   - Done*
  *   - Pub groups
  *   - Sub groups
+ * Where * means it could duplicate in multiple fields, in this case, it can be
+ * used for both network key and application key, so it's insufficient to
+ * address them without additional field.
  *
  * How to address a specific key-value pair in the json file?
+ * With the pair [cfg_fd, wrtype(opcode), key, value]
+ *
  * - In node scope:
  *   1> find the node by UUID
  *   2> find the key-value pair by the key
@@ -1019,6 +1017,65 @@ err_t json_flush(int cfg_fd)
  *
  *
  */
+
+/* NOTE: It's the caller's responsbility to make sure no same UUID being added
+ * for multiple times */
+static void __kv_replace(json_object *obj,
+                         const void *key,
+                         void *value)
+{
+  json_object_object_del(obj, key);
+  json_object_object_add(obj, key, json_object_new_string((char *)value));
+}
+
+static json_object *find_node(const uint8_t *uuid,
+                              bool reload)
+{
+  if (!uuid) {
+    return NULL;
+  }
+  if (reload) {
+    load_json_file(NW_NODES_CFG_FILE, 0);
+  }
+  if (!jcfg.nw.subnets[0].nodes) {
+    return NULL;
+  }
+
+  json_array_foreach(i, n, jcfg.nw.subnets[0].nodes){
+    json_object *tmp, *n;
+    const char *v;
+    uint8_t uuid_buf[16];
+    n = json_object_array_get_idx(jcfg.nw.subnets[0].nodes, i);
+    json_object_object_get_ex(n, STR_UUID, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2cbuf(v, 0, (char *)uuid_buf, 16)) {
+      LOGE("STR to CBUF error\n");
+      continue;
+    }
+    if (!memcmp(uuid, uuid_buf, 16)) {
+      return n;
+    }
+  }
+  return NULL;
+}
+
+static err_t modify_node_field(const uint8_t *uuid,
+                               const void *key,
+                               char *value)
+{
+  json_object *obj;
+  ASSERT(uuid && key && value);
+  obj = find_node(uuid, 0);
+  if (!obj) {
+    return err(ec_not_exist);
+  }
+  __kv_replace(obj, key, value);
+  if (jcfg.nw.gen.autoflush) {
+    return json_flush(NW_NODES_CFG_FILE);
+  }
+  return ec_success;
+}
+
 static err_t _backlog_node_add(const uint8_t *uuid)
 {
   err_t e;
@@ -1034,7 +1091,7 @@ static err_t _backlog_node_add(const uint8_t *uuid)
   json_object_object_add(obj, STR_UUID, json_object_new_string(uuid_str));
   json_object_object_add(obj, STR_ADDR, json_object_new_string("0x0000"));
   json_object_object_add(obj, STR_ERRBITS, json_object_new_string("0x00000000"));
-  json_object_object_add(obj, STR_TMPL, json_object_new_string("0xFF"));
+  json_object_object_add(obj, STR_TMPL, json_object_new_string("0x00"));
   json_object_object_add(obj, STR_RMORBL, json_object_new_string("0x00"));
   json_object_object_add(obj, STR_DONE, json_object_new_string("0x00"));
 
@@ -1046,8 +1103,11 @@ static err_t _backlog_node_add(const uint8_t *uuid)
     free(n);
     goto fail;
   }
-  if (ec_success != (e = json_flush(NW_NODES_CFG_FILE))) {
-    goto fail;
+
+  if (jcfg.nw.gen.autoflush) {
+    if (ec_success != (e = json_flush(NW_NODES_CFG_FILE))) {
+      goto fail;
+    }
   }
 
   fail:
@@ -1058,6 +1118,21 @@ static err_t _backlog_node_add(const uint8_t *uuid)
   return ec_success;
 }
 
+static err_t set_node_addr(const void *key,
+                           void *data)
+{
+  /* Key is uuid and data is the address */
+  char buf[7] = { 0 };
+
+  if (!key || !data) {
+    return err(ec_param_invalid);
+  }
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint16_tostr(*(uint16_t *)data, buf + 2);
+  return modify_node_field(key, STR_ADDR, buf);
+}
+
 static err_t write_nodes(int wrtype,
                          const void *key,
                          void *data)
@@ -1065,6 +1140,9 @@ static err_t write_nodes(int wrtype,
   switch (wrtype) {
     case wrt_add_node:
       return _backlog_node_add(data);
+      break;
+    case wrt_node_addr:
+      set_node_addr(key, data);
       break;
     default:
       return err(ec_param_invalid);
@@ -1077,14 +1155,12 @@ err_t json_cfg_write(int cfg_fd,
                      const void *key,
                      void *data)
 {
-  json_object **root;
-  char **fp;
+  cfg_general_t *gen;
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
     return err(ec_param_invalid);
   }
-  fp = fp_from_fd(cfg_fd);
-  root = root_from_fd(cfg_fd);
-  if (!*root || !*fp) {
+  gen = gen_from_fd(cfg_fd);
+  if (!gen || !gen->root || !gen->fp) {
     return err(ec_json_null);
   }
   if (cfg_fd == NW_NODES_CFG_FILE) {

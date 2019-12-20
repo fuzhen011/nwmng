@@ -117,7 +117,16 @@ static void cfg_test(void)
                     0,
                     NULL);
   elog(e);
-#if 1
+
+#if 0
+  node_t *n = cfgdb_node_get(0x0001);
+  if (n) {
+    n->addr = 0x2;
+    json_cfg_write(NW_NODES_CFG_FILE, wrt_node_addr, n->uuid, &n->addr);
+  }
+#endif
+
+#if 0
   e = json_cfg_write(NW_NODES_CFG_FILE,
                      wrt_add_node,
                      NULL,

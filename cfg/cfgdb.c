@@ -26,14 +26,25 @@
 #define CHECK_VOID_RET() \
   do { if (!db.initialized) { return; } } while (0)
 
+/* Unprovisioned and backlog devices use UUID as key */
 #define KEY_FROM_UUID(uuid) ((gpointer)(uuid))
 #define UNPROV_DEV_KEY(n) (KEY_FROM_UUID((n)->uuid))
+#define BACKLOG_DEV_KEY(n) (KEY_FROM_UUID((n)->uuid))
+
+/* Provisioned nodes use unicast address as key */
 #define KEY_FROM_ADDR(addr) ((gpointer)(&addr))
 #define NODE_KEY(n) (KEY_FROM_ADDR(n->addr))
-#define G_KEY(n) ((n)->addr == 0 ? UNPROV_DEV_KEY((n)) : NODE_KEY((n)))
-#define __HTB(x) ((x) ? db.devdb.nodes : db.devdb.unprov_devs)
-#define G_HTB(n) (__HTB(n->addr))
+
 #define TMPL_KEY(refid) ((gpointer)(&(refid)))
+/* Get the hash table by address and template ID fields */
+#define __HTB(addr, tmpl)                       \
+  ((addr) ? db.devdb.nodes                      \
+   : ((tmpl) && *(tmpl)) ? db.devdb.unprov_devs \
+   : db.devdb.backlog)
+#define _HTB(addr) ((addr) ? db.devdb.nodes : db.devdb.unprov_devs)
+
+#define G_KEY(n) ((n)->addr == 0 ? UNPROV_DEV_KEY((n)) : NODE_KEY((n)))
+#define G_HTB(n) (__HTB(n->addr, n->tmpl))
 /* Static Variables *************************************************** */
 static cfgdb_t db = { 0 };
 
@@ -56,7 +67,9 @@ static void node_free(void *p)
     return;
   }
   node_t *n = (node_t *)p;
+  SAFE_FREE(n->tmpl);
   SAFE_FREE(n->config.ttl);
+  SAFE_FREE(n->config.snb);
   SAFE_FREE(n->config.net_txp);
   SAFE_FREE(n->config.features.relay_txp);
   SAFE_FREE(n->config.pub);
@@ -104,7 +117,7 @@ err_t cfgdb_init(void)
   db.devdb.nodes = g_hash_table_new_full(u16_hash, u16_equal, NULL, node_free);
   db.devdb.templates = g_hash_table_new_full(u16_hash, u16_equal, NULL, tmpl_free);
   db.devdb.lights = g_queue_new();
-  db.devdb.backlog = g_queue_new();
+  db.devdb.backlog = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, node_free);
   db.initialized = 1;
 
   return ec_success;
@@ -128,7 +141,8 @@ void cfgdb_deinit(void)
     db.self.subnets = NULL;
   }
   if (db.devdb.backlog) {
-    g_queue_free_full(db.devdb.backlog, free);
+    g_hash_table_remove_all(db.devdb.backlog);
+    g_hash_table_unref(db.devdb.backlog);
     db.devdb.backlog = NULL;
   }
   if (db.devdb.lights) {
@@ -165,7 +179,7 @@ int cfgdb_contains(const node_t *n)
 int cfgdb_devnum(bool proved)
 {
   CHECK_STATE(0);
-  return g_hash_table_size(__HTB(proved));
+  return g_hash_table_size(_HTB(proved));
 }
 
 node_t *cfgdb_node_get(uint16_t addr)
@@ -182,6 +196,16 @@ node_t *cfgdb_unprov_dev_get(const uint8_t *uuid)
     return NULL;
   }
   return (node_t *)g_hash_table_lookup(db.devdb.unprov_devs,
+                                       KEY_FROM_UUID(uuid));
+}
+
+node_t *cfgdb_backlog_get(const uint8_t *uuid)
+{
+  CHECK_NULL_RET();
+  if (!uuid) {
+    return NULL;
+  }
+  return (node_t *)g_hash_table_lookup(db.devdb.backlog,
                                        KEY_FROM_UUID(uuid));
 }
 

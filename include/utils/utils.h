@@ -96,6 +96,35 @@ static inline char hex_char_to_value(char x)
   }
 }
 
+static inline void uint32_tostr(uint32_t v, char *p)
+{
+  p[7] = hex_value_to_char(v & 0x0000000F);
+  p[6] = hex_value_to_char((v & 0x000000F0) >> 4);
+  p[5] = hex_value_to_char((v & 0x00000F00) >> 8);
+  p[4] = hex_value_to_char((v & 0x0000F000) >> 12);
+  p[3] = hex_value_to_char((v & 0x000F0000) >> 16);
+  p[2] = hex_value_to_char((v & 0x00F00000) >> 20);
+  p[1] = hex_value_to_char((v & 0x0F000000) >> 24);
+  p[0] = hex_value_to_char((v & 0xF0000000) >> 28);
+  p[8] = 0;
+}
+
+static inline void uint16_tostr(uint16_t v, char *p)
+{
+  p[3] = hex_value_to_char(v & 0x000F);
+  p[2] = hex_value_to_char((v & 0x00F0) >> 4);
+  p[1] = hex_value_to_char((v & 0x0F00) >> 8);
+  p[0] = hex_value_to_char((v & 0xF000) >> 12);
+  p[4] = 0;
+}
+
+static inline void uint8_tostr(uint8_t v, char *p)
+{
+  p[1] = hex_value_to_char(v & 0x0F);
+  p[0] = hex_value_to_char((v & 0xF0) >> 4);
+  p[2] = 0;
+}
+
 err_t str2uint(const char *input,
                size_t length,
                void *p_ret,
