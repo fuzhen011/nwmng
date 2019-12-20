@@ -82,6 +82,7 @@ DECLARE_VAGET_FUN(addrs);
 DECLARE_CB(sync);
 DECLARE_CB(reset);
 DECLARE_CB(list);
+DECLARE_CB(info);
 DECLARE_CB(help);
 DECLARE_CB(quit);
 DECLARE_CB(ct);
@@ -99,6 +100,9 @@ static const command_t commands[] = {
     "Print help" },
   { "list", NULL, clicb_list,
     "List all devices in the database" },
+  { "info", "[addr...]", clicb_info,
+    "Show the device information in the database",
+    NULL, NULL, vaget_addrs },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -622,6 +626,12 @@ static err_t clicb_reset(int argc, char *argv[])
 }
 
 static err_t clicb_list(int argc, char *argv[])
+{
+  printf("%s\n", __FUNCTION__);
+  return err(ec_param_invalid);
+}
+
+static err_t clicb_info(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return err(ec_param_invalid);

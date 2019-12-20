@@ -93,13 +93,11 @@ int main(int argc, char *argv[])
 #ifdef SINGLE_PROC
   EC(ec_success, cfg_init());
   cfg_proc();
-  goto out;
 #endif
 
   cli_proc_init(0, NULL);
   cli_proc();
 
-  out:
   /* For free allocated memory if the program returns */
   logging_deinit();
   cfgdb_deinit();

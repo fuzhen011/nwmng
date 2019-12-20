@@ -25,7 +25,7 @@
 /* Static Functions Declaractions ************************************* */
 extern void cfgdb_test(void);
 
-static void dump_tmpl(int k)
+void dump_tmpl(int k)
 {
   tmpl_t *t;
   t = cfgdb_tmpl_get(k);
