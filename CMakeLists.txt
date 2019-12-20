@@ -44,20 +44,38 @@ endif()
 # if(JSON_SUP EQUAL 1) add_definitions(-DJSON_SUP=1) set(SRC_LIST ${SRC_LIST}
 # ${CMAKE_SOURCE_DIR}/src/common/json_parser.c) endif()
 
+# **Source files** for the project
 set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
-
 set(MNG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c)
-
-# aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/utils UTILS_SRC_LIST)
-
+set(CFG_SRC_LIST
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/generic_parser.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/json_parser.c)
 set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c
+    ${CMAKE_CURRENT_LIST_DIR}/utils/shash.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c)
 
-set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST}
+set(SRC_LIST ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST} ${CFG_SRC_LIST}
              ${CMAKE_CURRENT_LIST_DIR}/main.c)
+
+if(APPLE)
+  set(CMAKE_C_LINK_FLAGS
+      "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
+  )
+  set(EXTRA_INC_PATH
+      /usr/local/Cellar/glib/2.62.3/include/glib-2.0
+      /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include
+      /usr/local/Cellar/json-c/0.13.1/include/json-c)
+  set(LIBS readline.dylib json-c)
+else()
+  set(EXTRA_INC_PATH
+      /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include
+      /usr/include/json-c)
+  set(LIBS readline.so json-c)
+endif()
 
 include_directories(
   ${CMAKE_CURRENT_LIST_DIR}
@@ -66,20 +84,13 @@ include_directories(
   ${CMAKE_CURRENT_LIST_DIR}/include/cli
   ${CMAKE_CURRENT_LIST_DIR}/include/mng
   ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-  ${RL_INC})
+  ${RL_INC}
+  ${EXTRA_INC_PATH})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 
-if(APPLE)
-  set(CMAKE_C_LINK_FLAGS
-      "-L/usr/local/Cellar/readline/8.0.1/lib ${CMAKE_C_LINK_FLAGS}")
-  set(LIBS readline.dylib)
-else()
-  set(LIBS readline.so)
-endif()
-
 target_link_libraries(
-  ${CMAKE_PROJECT_NAME} m ${LIBS}
+  ${CMAKE_PROJECT_NAME} m glib-2.0 ${LIBS}
   # pthread json-c
 )
 

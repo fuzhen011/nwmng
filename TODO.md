@@ -28,16 +28,32 @@
   - [] Set light onoff.
   - [] Set light lightness.
   - [] Set light color temperature.
+- [] Whenever start provision a new device, check if it's in backlog, if yes,
+  delete it;
 
 ## CFG
 
 - [] Read node by "key"
-  - [] Device database as a hash table, key is the string of address e.g.
-    "0x0003", value is the structure of device item.
+  - [] Device database as a hash table, key is the hex format address e.g.
+    0x0003, value is the structure of device item.
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
+- [] Config File loaders
+  - [x] TTL
+  - [] Features
+    - [] Low Power
+    - [] Proxy
+    - [] Friend
+    - [] Relay and its setting
+  - [] Pub
+  - [] Secure network beacn
+  - [] Tx parameters
+  - [] Binding Appkeys
+  - [] Subscribe from
 
 ## Utils
+
+- [] define ASSERT, ASSERT_MSG
 
 ### Logging
 
@@ -45,6 +61,7 @@
 - [x] Time
 - [x] File and line
 - [x] Information
+- [] file length and line number length settable
 
 ### Error Code
 

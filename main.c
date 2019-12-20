@@ -13,10 +13,15 @@
 
 #include <sys/wait.h>
 
+#include "projconfig.h"
 #include "cli/cli.h"
 #include "mng/mng.h"
 #include "utils.h"
 
+#ifdef SINGLE_PROC
+#include "cfg.h"
+#include "cfgdb.h"
+#endif
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -32,7 +37,6 @@ pid_t pids[10] = { 0 };
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-
 int main(int argc, char *argv[])
 {
 #if 0
@@ -81,11 +85,23 @@ int main(int argc, char *argv[])
   }
 #endif
   err_t e;
-  EC(ec_success, logging_init("logs/cli.log",
+  EC(ec_success, logging_init(LOG_FILE_PATH,
                               0, /* Not output to stdout */
                               LOG_MINIMAL_LVL(LVL_VER)));
+  /* ASSERT_MSG(0, "%s\n", "ssdfasdf"); */
+  /* ASSERT(0); */
+#ifdef SINGLE_PROC
+  EC(ec_success, cfg_init());
+  cfg_proc();
+  goto out;
+#endif
+
   cli_proc_init(0, NULL);
   cli_proc();
 
+  out:
+  /* For free allocated memory if the program returns */
+  logging_deinit();
+  cfgdb_deinit();
   return 0;
 }

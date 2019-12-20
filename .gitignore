@@ -10,3 +10,4 @@ cppcheck.xml
 .clangd
 .history
 .gdb*
+node_modules
