@@ -2,9 +2,9 @@
   "COMMENT": "The following parameters are configurable at run time, users can set it to proper value",
   "Address": "0x0000",
   "TTL": "0x09",
-  "Tx Parameters": {
-    "Count": "0d03",
-    "Interval": "0d50"
+  "TX Parameters": {
+    "Count": "0x03",
+    "Interval": "0x001E"
   },
 
   "COMMENT": "The following parameters are non-configurable at run time, DO NOT MODIFY THEM",

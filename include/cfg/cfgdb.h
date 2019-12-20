@@ -109,7 +109,7 @@ typedef struct {
   uint16_t refid;
   uint16_t id;
   uint8_t done;
-  uint16_t val[16];
+  uint8_t val[16];
 }meshkey_t;
 
 typedef struct {
@@ -122,11 +122,10 @@ typedef struct {
   uint16_t addr;
   time_t sync_time;
   uint32_t ivi;
-  /* TODO: Add queue to each item */
-  GList *pubgroups;
-  GList *subgroups;
   uint8_t subnet_num;
   subnet_t *subnets;
+  uint8_t *ttl;
+  txparam_t *net_txp;
 }provcfg_t;
 
 typedef struct {
@@ -135,6 +134,9 @@ typedef struct {
   GHashTable *nodes;
   GHashTable *backlog;
   GQueue *lights;
+  /* TODO: Add queue to each item */
+  GList *pubgroups;
+  GList *subgroups;
 } cfg_devdb_t;
 
 typedef struct {
@@ -161,6 +163,7 @@ tmpl_t *cfgdb_tmpl_get(uint16_t refid);
 err_t cfgdb_tmpl_remove(tmpl_t *n);
 err_t cfgdb_tmpl_add(tmpl_t *n);
 
+provcfg_t *get_provcfg(void);
 #ifdef __cplusplus
 }
 #endif

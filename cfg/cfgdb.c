@@ -128,13 +128,13 @@ void cfgdb_deinit(void)
   if (!db.initialized) {
     return;
   }
-  if (db.self.pubgroups) {
-    g_list_free_full(db.self.pubgroups, free);
-    db.self.pubgroups = NULL;
+  if (db.devdb.pubgroups) {
+    g_list_free_full(db.devdb.pubgroups, free);
+    db.devdb.pubgroups = NULL;
   }
-  if (db.self.subgroups) {
-    g_list_free_full(db.self.subgroups, free);
-    db.self.pubgroups = NULL;
+  if (db.devdb.subgroups) {
+    g_list_free_full(db.devdb.subgroups, free);
+    db.devdb.pubgroups = NULL;
   }
   if (db.self.subnets) {
     free(db.self.subnets);
@@ -164,6 +164,10 @@ void cfgdb_deinit(void)
     g_hash_table_unref(db.devdb.templates);
     db.devdb.templates = NULL;
   }
+  SAFE_FREE(db.self.net_txp);
+  SAFE_FREE(db.self.subnets);
+  SAFE_FREE(db.self.ttl);
+  memset(&db.self, 0, sizeof(provcfg_t));
   db.initialized = 0;
 }
 
@@ -297,4 +301,9 @@ err_t cfgdb_remove(node_t *n, bool destory)
   }
   /* TODO: Also update the lists */
   return ec_success;
+}
+
+provcfg_t *get_provcfg(void)
+{
+  return &db.self;
 }

@@ -143,9 +143,9 @@ err_t str2cbuf(const char src[],
     }
 
     if (rev) {
-      dest[i] = ret;
-    } else {
       dest[len / 2 - 1 - i] = ret;
+    } else {
+      dest[i] = ret;
     }
     p += 2;
   }

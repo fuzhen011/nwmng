@@ -163,6 +163,8 @@ static inline uint8_t **pttl_from_fd(int cfg_fd, void *out)
     return (&((node_t *)out)->config.ttl);
   } else if (cfg_fd == TEMPLATE_FILE) {
     return (&((tmpl_t *)out)->ttl);
+  } else if (cfg_fd == PROV_CFG_FILE) {
+    return &((provcfg_t *)out)->ttl;
   }
   ASSERT(0);
 }
@@ -183,7 +185,10 @@ static inline txparam_t **ptxp_from_fd(int cfg_fd, void *out)
     return (&((node_t *)out)->config.net_txp);
   } else if (cfg_fd == TEMPLATE_FILE) {
     return (&((tmpl_t *)out)->net_txp);
+  } else if (cfg_fd == PROV_CFG_FILE) {
+    return &((provcfg_t *)out)->net_txp;
   }
+
   ASSERT(0);
 }
 
@@ -728,106 +733,130 @@ static bool _node_valid_check(json_object *obj)
   return true;
 }
 
+static err_t load_key(json_object *obj,
+                      meshkey_t *key)
+{
+  json_object *n;
+  const char *v;
+
+#if (JSON_ECHO_DBG == 1)
+  JSON_ECHO("Key", obj);
+#endif
+  json_object_object_get_ex(obj, STR_REFID, &n);
+  v = json_object_get_string(n);
+  if (ec_success != str2uint(v,
+                             strlen(v),
+                             &key->refid,
+                             sizeof(uint16_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+  json_object_object_get_ex(obj, STR_ID, &n);
+  v = json_object_get_string(n);
+  if (ec_success != str2uint(v,
+                             strlen(v),
+                             &key->id,
+                             sizeof(uint16_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+  json_object_object_get_ex(obj, STR_VALUE, &n);
+  v = json_object_get_string(n);
+  if (ec_success != str2cbuf(v, 0, (char *)key->val, 16)) {
+    LOGE("STR to CBUF error\n");
+    return err(ec_json_format);
+  }
+
+  json_object_object_get_ex(obj, STR_DONE, &n);
+  v = json_object_get_string(n);
+  if (ec_success != str2uint(v,
+                             strlen(v),
+                             &key->done,
+                             sizeof(uint8_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+  return ec_success;
+}
+
 static err_t load_provself(void)
 {
   /* NOTE: Only first subnet will be loaded */
-  json_object *n, *pnode;
+  json_object *n, *primary_subnet, *appkeys;
   err_t e;
-  bool add = false;
+  provcfg_t *provcfg = get_provcfg();
+  int appkey_num;
+  const char *v;
+
   if (!jcfg.prov.gen.root) {
     return err(ec_json_open);
   }
-  pnode = jcfg.prov.gen.root;
 
+  json_object_object_get_ex(jcfg.prov.gen.root, STR_ADDR, &n);
+  v = json_object_get_string(n);
+  if (ec_success != str2uint(v, strlen(v), &provcfg->addr, sizeof(uint16_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
 
-  json_array_foreach(i, num, pnode)
+  json_object_object_get_ex(jcfg.prov.gen.root, STR_SYNC_TIME, &n);
+  v = json_object_get_string(n);
+  if (ec_success != str2uint(v, strlen(v), &provcfg->sync_time, sizeof(uint32_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+
+  json_object_object_get_ex(jcfg.prov.gen.root, STR_IVI, &n);
+  v = json_object_get_string(n);
+  if (ec_success != str2uint(v, strlen(v), &provcfg->ivi, sizeof(uint32_t))) {
+    LOGE("STR to UINT error\n");
+    return err(ec_json_format);
+  }
+
+  _load_ttl(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
+  _load_txp(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
+
+  /* Load Primary Subnet */
+  if (!json_object_object_get_ex(jcfg.prov.gen.root, STR_SUBNETS, &n)) {
+    return err(ec_json_format);
+  }
+  if (json_object_array_length(n)) {
+    /* Turncate to only load the first one */
+    provcfg->subnet_num = 1;
+  }
+
+  primary_subnet = json_object_array_get_idx(n, 0);
+  json_object_object_get_ex(primary_subnet, STR_APPKEY, &appkeys);
+  appkey_num = json_object_array_length(appkeys);
+  if (provcfg->subnets && provcfg->subnets->appkey_num < appkey_num) {
+    provcfg->subnets = realloc(provcfg->subnets,
+                               sizeof(subnet_t) + appkey_num * sizeof(meshkey_t));
+    memset(provcfg->subnets, 0, sizeof(subnet_t) + appkey_num * sizeof(meshkey_t));
+  } else if (!provcfg->subnets) {
+    provcfg->subnets = calloc(1, sizeof(subnet_t) + appkey_num * sizeof(meshkey_t));
+  }
+  provcfg->subnets[0].appkey_num = appkey_num;
+
+  if (ec_success != (e = load_key(primary_subnet, &provcfg->subnets[0].netkey))) {
+    goto free;
+  }
+
+  json_array_foreach(i, num, appkeys)
   {
     json_object *tmp;
-    n = json_object_array_get_idx(pnode, i);
-    if (!_node_valid_check(n)) {
-      LOGE("Node[%d] invalid, pass.\n", i);
-      continue;
-    }
-
-    if (!json_object_object_get_ex(n, STR_UUID, &tmp)) {
-      /* No reference ID, ignore it */
-      continue;
-    }
-    /*
-     * Check if it's already provisioned to know which hash table to find the
-     * node
-     */
-    const char *addr_str, *uuid_str, *rmbl_str, *done_str, *err_str;
-    uint8_t uuid[16] = { 0 };
-    uint32_t errbits;
-    uint16_t addr;
-    uint8_t rmbl, done;
-    node_t *t;
-
-    json_object_object_get_ex(n, STR_ADDR, &tmp);
-    addr_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_UUID, &tmp);
-    uuid_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_RMORBL, &tmp);
-    rmbl_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_DONE, &tmp);
-    done_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_ERRBITS, &tmp);
-    err_str = json_object_get_string(tmp);
-
-    if (ec_success != str2cbuf(uuid_str, 0, (char *)uuid, 16)) {
-      LOGE("STR to CBUF error\n");
-      continue;
-    }
-    if (ec_success != str2uint(err_str, strlen(err_str), &errbits, sizeof(uint32_t))) {
-      LOGE("STR to UINT error\n");
-      continue;
-    }
-    if (ec_success != str2uint(addr_str, strlen(addr_str), &addr, sizeof(uint16_t))) {
-      LOGE("STR to UINT error\n");
-      continue;
-    }
-    if (ec_success != str2uint(rmbl_str, strlen(rmbl_str), &rmbl, sizeof(uint8_t))) {
-      LOGE("STR to UINT error\n");
-      continue;
-    }
-    if (ec_success != str2uint(done_str, strlen(done_str), &done, sizeof(uint8_t))) {
-      LOGE("STR to UINT error\n");
-      continue;
-    }
-
-    if (addr) {
-      t = cfgdb_node_get(addr);
-    } else {
-      t = cfgdb_unprov_dev_get((const uint8_t *)uuid);
-    }
-    if (!t) {
-      t = (node_t *)calloc(sizeof(node_t), 1);
-      ASSERT(t);
-      add = true;
-    }
-
-    e = load_to_node_item(n, t);
-    elog(e);
-
-    if (add) {
-      if (e == ec_success) {
-        t->addr = addr;
-        memcpy(t->uuid, uuid, 16);
-        t->done = done;
-        t->rmorbl = rmbl;
-        t->err = errbits;
-        EC(ec_success, cfgdb_add(t));
-      } else {
-        free(t);
-      }
+    tmp = json_object_array_get_idx(appkeys, i);
+    if (ec_success != (e = load_key(tmp, &provcfg->subnets[0].appkey[i]))) {
+      goto free;
     }
   }
-  return ec_success;
+  free:
+  if (ec_success != e) {
+    if (provcfg->subnets) {
+      free(provcfg->subnets);
+      provcfg->subnet_num = 0;
+    }
+  }
+  return e;
 }
 
 static err_t load_nodes(void)
@@ -941,8 +970,10 @@ static err_t load_json_file(int cfg_fd,
     return load_template();
   } else if (cfg_fd == NW_NODES_CFG_FILE) {
     return load_nodes();
+  } else if (cfg_fd == PROV_CFG_FILE) {
+    return load_provself();
   }
-  return ec_success;
+  return err(ec_param_invalid);
 }
 
 void json_close(int cfg_fd)

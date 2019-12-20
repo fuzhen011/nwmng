@@ -81,9 +81,6 @@ static void dump_tmpl(int k)
 static void cfg_test(void)
 {
   err_t e;
-  char cwd[100] = { 0 };
-  getcwd(cwd, 100);
-  LOGD("CWD - %s\n", cwd);
   /* LOGD("%d devices in DB.\n", cfgdb_devnum(0)); */
   /* LOGD("%d nodes in DB.\n", cfgdb_devnum(1)); */
 
@@ -93,8 +90,8 @@ static void cfg_test(void)
                     NULL);
   elog(e);
   json_close(TEMPLATE_FILE);
-  dump_tmpl(1);
-  dump_tmpl(0x21);
+  /* dump_tmpl(1); */
+  /* dump_tmpl(0x21); */
 #if 0
   sleep(5);
   e = json_cfg_open(TEMPLATE_FILE,
