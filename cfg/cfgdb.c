@@ -323,3 +323,4 @@ int get_ng_addrs(uint16_t *addrs)
   g_hash_table_foreach(db.devdb.nodes, copy_addr_to_user, addrs);
   return offs;
 }
+

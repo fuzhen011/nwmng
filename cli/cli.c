@@ -132,6 +132,7 @@ static int addr_in_cfg(const char *straddr,
     LOGD("str2uint failed\n");
     return -1;
   }
+
   if (addrtmp == 0x1003
       || addrtmp == 0xc005
       || addrtmp == 0x120c
@@ -140,18 +141,8 @@ static int addr_in_cfg(const char *straddr,
     *addr = addrtmp;
     return 0;
   }
-  return -1;
-}
 
-static int dummy_get_addrs(uint16_t *addrs)
-{
-  addrs[0] = 0x1003;
-  addrs[1] = 0xc005;
-  addrs[2] = 0x120c;
-  addrs[3] = 0x100e;
-  addrs[4] = 0x1;
-  /* addrs[4] = 0x1003; */
-  return 5;
+  return -1;
 }
 
 #define ADDRULEN  7
