@@ -118,6 +118,9 @@ static void cfg_test(void)
                     NULL);
   elog(e);
 
+  node_t *n = cfgdb_node_get(0x0001);
+  n->err++;
+  json_cfg_write(NW_NODES_CFG_FILE, wrt_errbits, n->uuid, &n->err);
 #if 0
   node_t *n = cfgdb_node_get(0x0001);
   if (n) {

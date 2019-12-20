@@ -112,6 +112,7 @@ static const __load_func_t loaders[] = {
   _load_sublist,
   /* Used only for node */
   _load_tmpl,
+  /* Used only for provself */
 };
 
 static const int tmpl_loader_end = 6;
@@ -727,6 +728,108 @@ static bool _node_valid_check(json_object *obj)
   return true;
 }
 
+static err_t load_provself(void)
+{
+  /* NOTE: Only first subnet will be loaded */
+  json_object *n, *pnode;
+  err_t e;
+  bool add = false;
+  if (!jcfg.prov.gen.root) {
+    return err(ec_json_open);
+  }
+  pnode = jcfg.prov.gen.root;
+
+
+  json_array_foreach(i, num, pnode)
+  {
+    json_object *tmp;
+    n = json_object_array_get_idx(pnode, i);
+    if (!_node_valid_check(n)) {
+      LOGE("Node[%d] invalid, pass.\n", i);
+      continue;
+    }
+
+    if (!json_object_object_get_ex(n, STR_UUID, &tmp)) {
+      /* No reference ID, ignore it */
+      continue;
+    }
+    /*
+     * Check if it's already provisioned to know which hash table to find the
+     * node
+     */
+    const char *addr_str, *uuid_str, *rmbl_str, *done_str, *err_str;
+    uint8_t uuid[16] = { 0 };
+    uint32_t errbits;
+    uint16_t addr;
+    uint8_t rmbl, done;
+    node_t *t;
+
+    json_object_object_get_ex(n, STR_ADDR, &tmp);
+    addr_str = json_object_get_string(tmp);
+
+    json_object_object_get_ex(n, STR_UUID, &tmp);
+    uuid_str = json_object_get_string(tmp);
+
+    json_object_object_get_ex(n, STR_RMORBL, &tmp);
+    rmbl_str = json_object_get_string(tmp);
+
+    json_object_object_get_ex(n, STR_DONE, &tmp);
+    done_str = json_object_get_string(tmp);
+
+    json_object_object_get_ex(n, STR_ERRBITS, &tmp);
+    err_str = json_object_get_string(tmp);
+
+    if (ec_success != str2cbuf(uuid_str, 0, (char *)uuid, 16)) {
+      LOGE("STR to CBUF error\n");
+      continue;
+    }
+    if (ec_success != str2uint(err_str, strlen(err_str), &errbits, sizeof(uint32_t))) {
+      LOGE("STR to UINT error\n");
+      continue;
+    }
+    if (ec_success != str2uint(addr_str, strlen(addr_str), &addr, sizeof(uint16_t))) {
+      LOGE("STR to UINT error\n");
+      continue;
+    }
+    if (ec_success != str2uint(rmbl_str, strlen(rmbl_str), &rmbl, sizeof(uint8_t))) {
+      LOGE("STR to UINT error\n");
+      continue;
+    }
+    if (ec_success != str2uint(done_str, strlen(done_str), &done, sizeof(uint8_t))) {
+      LOGE("STR to UINT error\n");
+      continue;
+    }
+
+    if (addr) {
+      t = cfgdb_node_get(addr);
+    } else {
+      t = cfgdb_unprov_dev_get((const uint8_t *)uuid);
+    }
+    if (!t) {
+      t = (node_t *)calloc(sizeof(node_t), 1);
+      ASSERT(t);
+      add = true;
+    }
+
+    e = load_to_node_item(n, t);
+    elog(e);
+
+    if (add) {
+      if (e == ec_success) {
+        t->addr = addr;
+        memcpy(t->uuid, uuid, 16);
+        t->done = done;
+        t->rmorbl = rmbl;
+        t->err = errbits;
+        EC(ec_success, cfgdb_add(t));
+      } else {
+        free(t);
+      }
+    }
+  }
+  return ec_success;
+}
+
 static err_t load_nodes(void)
 {
   /* NOTE: Only first subnet will be loaded */
@@ -1133,6 +1236,36 @@ static err_t set_node_addr(const void *key,
   return modify_node_field(key, STR_ADDR, buf);
 }
 
+static err_t set_node_errbits(const void *key,
+                              void *data)
+{
+  /* Key is uuid and data is the errbits */
+  char buf[11] = { 0 };
+
+  if (!key || !data) {
+    return err(ec_param_invalid);
+  }
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint32_tostr(*(uint32_t *)data, buf + 2);
+  return modify_node_field(key, STR_ERRBITS, buf);
+}
+
+static err_t set_node_done(const void *key,
+                           void *data)
+{
+  /* Key is uuid and data is the done */
+  char buf[5] = { 0 };
+
+  if (!key || !data) {
+    return err(ec_param_invalid);
+  }
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint8_tostr(*(uint8_t *)data, buf + 2);
+  return modify_node_field(key, STR_DONE, buf);
+}
+
 static err_t write_nodes(int wrtype,
                          const void *key,
                          void *data)
@@ -1141,8 +1274,14 @@ static err_t write_nodes(int wrtype,
     case wrt_add_node:
       return _backlog_node_add(data);
       break;
+    case wrt_errbits:
+      return set_node_errbits(key, data);
+      break;
     case wrt_node_addr:
       set_node_addr(key, data);
+      break;
+    case wrt_done:
+      set_node_done(key, data);
       break;
     default:
       return err(ec_param_invalid);
