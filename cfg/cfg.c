@@ -151,14 +151,29 @@ err_t cfg_init(void)
 {
   err_t e;
   e = cfgdb_init();
+  elog(e);
+  e = json_cfg_open(TEMPLATE_FILE,
+                    TMPLATE_FILE_PATH,
+                    0,
+                    NULL);
+  elog(e);
+  e = json_cfg_open(NW_NODES_CFG_FILE,
+                    NWNODES_FILE_PATH,
+                    0,
+                    NULL);
+  elog(e);
+  e = json_cfg_open(PROV_CFG_FILE,
+                    SELFCFG_FILE_PATH,
+                    0,
+                    NULL);
+  elog(e);
   return e;
 }
 
 void cfg_proc(void)
 {
-  cfg_test();
-  while(1)
-  {
+  /* cfg_test(); */
+  while (1) {
     sleep(1);
   }
 }

@@ -18,6 +18,7 @@ err_t cfg_init(void);
 void cfg_proc(void);
 void *cfg_mainloop(void *p);
 
+int get_ng_addrs(uint16_t *addrs);
 #ifdef __cplusplus
 }
 #endif

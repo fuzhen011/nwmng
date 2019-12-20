@@ -987,6 +987,7 @@ void json_close(int cfg_fd)
     SAFE_FREE(jcfg.nw.subnets);
   }
   gen->root = NULL;
+  LOGM("%s file closed.\n", gen->fp);
 }
 
 err_t json_cfg_open(int cfg_fd,

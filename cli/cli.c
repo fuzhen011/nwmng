@@ -27,6 +27,7 @@
 #include "err.h"
 #include "logging.h"
 
+#include "cfg.h"
 /* Defines  *********************************************************** */
 #define __DUMP_PARAMS
 #ifdef __DUMP_PARAMS
@@ -166,7 +167,7 @@ static err_t vaget_addrs(void *vap,
 
   *ulen = ADDRULEN;
   uint16_t *addrs = calloc(VAP_LEN / ADDRULEN, sizeof(uint16_t));
-  int num = dummy_get_addrs(addrs);
+  int num = get_ng_addrs(addrs);
   if (num * (*ulen) > inbuflen ) {
     num = inbuflen / (*ulen);
   }

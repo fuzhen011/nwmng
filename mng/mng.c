@@ -31,8 +31,7 @@
 void __mng_exit(void)
 {
   /* gecko_cmd_system_reset(0); */
-  printf("MNG Exit\n");
-  fflush(stdout);
+  LOGD("MNG Exit\n");
 }
 
 int mng_proc(void)
@@ -133,6 +132,7 @@ err_t mng_init(bool enc)
   bguart_init(false, PORT, NULL);
   conn_ncptarget();
   sync_host_and_ncp_target();
+  atexit(__mng_exit);
   return ec_success;
 }
 
