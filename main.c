@@ -18,6 +18,7 @@
 #include "mng/mng.h"
 #include "utils.h"
 
+#include "startup.h"
 #ifdef SINGLE_PROC
 #include "cfg.h"
 #include "cfgdb.h"
@@ -91,6 +92,8 @@ int main(int argc, char *argv[])
   /* ASSERT_MSG(0, "%s\n", "ssdfasdf"); */
   /* ASSERT(0); */
 #ifdef SINGLE_PROC
+  startup(NULL);
+  goto out;
   EC(ec_success, cfg_init());
   cfg_proc();
 #endif
@@ -99,6 +102,7 @@ int main(int argc, char *argv[])
   cli_proc();
 
   /* For free allocated memory if the program returns */
+out:
   logging_deinit();
   cfgdb_deinit();
   return 0;

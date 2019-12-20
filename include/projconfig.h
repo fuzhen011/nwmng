@@ -29,6 +29,12 @@ extern "C"
 
 #define LOG_FILE_PATH PROJ_DIR "logs/cli.log"
 
+#ifndef CLIENT_ENCRYPTED_PATH
+#define CLIENT_ENCRYPTED_PATH                       "/tmp/client_encrypted"
+#endif
+#define ENC_SOCK_FILE_PATH                          "/tmp/enc_sock"
+#define PORT                                        "/dev/ttyACM0"
+
 #ifdef __cplusplus
 }
 #endif

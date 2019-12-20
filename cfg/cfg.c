@@ -157,4 +157,15 @@ err_t cfg_init(void)
 void cfg_proc(void)
 {
   cfg_test();
+  while(1)
+  {
+    sleep(1);
+  }
+}
+
+void *cfg_mainloop(void *p)
+{
+  cfg_init();
+  cfg_proc();
+  return NULL;
 }

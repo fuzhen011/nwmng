@@ -11,7 +11,12 @@
 extern "C"
 {
 #endif
+#include <stdbool.h>
+#include "err.h"
+
+err_t mng_init(bool enc);
 int mng_proc(void);
+void *mng_mainloop(void *p);
 
 #ifdef __cplusplus
 }

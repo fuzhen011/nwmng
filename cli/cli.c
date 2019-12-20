@@ -564,6 +564,13 @@ int cli_proc(void)
   return 0;
 }
 
+void *cli_mainloop(void *pIn)
+{
+  cli_proc_init(0, NULL);
+  cli_proc();
+  return NULL;
+}
+
 void bt_shell_printf(const char *fmt, ...)
 {
   va_list args;
