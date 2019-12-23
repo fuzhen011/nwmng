@@ -15,6 +15,10 @@ extern "C"
 #include "cfg_keys.h"
 
 enum {
+  cft_json,
+};
+
+enum {
   /* Adding a node to backlog */
   wrt_add_node,
   wrt_errbits,
@@ -52,13 +56,15 @@ typedef err_t (*gp_open_func_t)(int cfg_fd,
                                 const char *filepath,
                                 unsigned int flags,
                                 void *out);
-typedef err_t (*gp_read_func_t)(int rdtype,
+typedef err_t (*gp_read_func_t)(int cfg_fd,
+                                int rdtype,
                                 const void *key,
                                 void *data);
-typedef err_t (*gp_write_func_t)(int wrtype,
+typedef err_t (*gp_write_func_t)(int cfg_fd,
+                                 int wrtype,
                                  const void *key,
-                                 const void *data);
-typedef err_t (*gp_close_func_t)(int cfg_fd);
+                                 void *data);
+typedef void (*gp_close_func_t)(int cfg_fd);
 
 typedef err_t (*gp_flush_func_t)(int cfg_fd);
 

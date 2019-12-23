@@ -615,7 +615,7 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
   cfg_general_t *gen;
 
   gen = gen_from_fd(cfg_fd);
-  json_close(cfg_fd);
+  json_cfg_close(cfg_fd);
   if (!gen) {
     return err(ec_param_invalid);
   }
@@ -651,7 +651,7 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
 
   out:
   if (ec_success != e) {
-    json_close(cfg_fd);
+    json_cfg_close(cfg_fd);
   } else {
     LOGD("%s file opened\n", gen->fp);
   }
@@ -976,7 +976,7 @@ static err_t load_json_file(int cfg_fd,
   return err(ec_param_invalid);
 }
 
-void json_close(int cfg_fd)
+void json_cfg_close(int cfg_fd)
 {
   cfg_general_t *gen = gen_from_fd(cfg_fd);
   if (!gen->root) {
@@ -1076,7 +1076,7 @@ err_t json_cfg_open(int cfg_fd,
 #endif
 }
 
-err_t json_flush(int cfg_fd)
+err_t json_cfg_flush(int cfg_fd)
 {
   cfg_general_t *gen;
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
@@ -1206,7 +1206,7 @@ static err_t modify_node_field(const uint8_t *uuid,
   }
   __kv_replace(obj, key, value);
   if (jcfg.nw.gen.autoflush) {
-    return json_flush(NW_NODES_CFG_FILE);
+    return json_cfg_flush(NW_NODES_CFG_FILE);
   }
   return ec_success;
 }
@@ -1240,7 +1240,7 @@ static err_t _backlog_node_add(const uint8_t *uuid)
   }
 
   if (jcfg.nw.gen.autoflush) {
-    if (ec_success != (e = json_flush(NW_NODES_CFG_FILE))) {
+    if (ec_success != (e = json_cfg_flush(NW_NODES_CFG_FILE))) {
       goto fail;
     }
   }
@@ -1338,4 +1338,12 @@ err_t json_cfg_write(int cfg_fd,
     return write_nodes(wrtype, key, data);
   }
   return err(ec_param_invalid);
+}
+
+err_t json_cfg_read(int cfg_fd,
+                    int rdtype,
+                    const void *key,
+                    void *data)
+{
+  return ec_success;
 }

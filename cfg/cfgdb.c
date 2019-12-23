@@ -308,6 +308,10 @@ provcfg_t *get_provcfg(void)
   return &db.self;
 }
 
+void set_provcfg(const provcfg_t *src)
+{
+}
+
 static int offs = 0;
 void copy_addr_to_user(gpointer key,
                        gpointer value,
@@ -323,4 +327,3 @@ int get_ng_addrs(uint16_t *addrs)
   g_hash_table_foreach(db.devdb.nodes, copy_addr_to_user, addrs);
   return offs;
 }
-

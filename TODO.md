@@ -42,17 +42,28 @@
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
 - [] Config File loaders
+
   - [x] TTL
   - [] Features
     - [] Low Power
     - [] Proxy
     - [] Friend
     - [] Relay and its setting
-  - [] Pub
-  - [] Secure network beacn
-  - [] Tx parameters
-  - [] Binding Appkeys
-  - [] Subscribe from
+  - [x] Pub
+  - [x] Secure network beacn
+  - [x] Tx parameters
+  - [x] Binding Appkeys
+  - [x] Subscribe from
+
+- [] Config file writes
+  - [] nwk.json
+    - [] node address (key: UUID)
+    - [] node errbits (key: address)
+    - [] node rmorbl (key: address)
+    - [] node done (key: address)
+    - [x] add node to backlog
+  - [] prov.json
+    - []
 
 ## Utils
 

@@ -19,8 +19,10 @@ extern "C"
 
 #if __APPLE__ == 1
 #define PROJ_DIR  "/Users/zhfu/work/projs/nwmng/"
+#define PORT      "/dev/tty.usbmodem0004400502021"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
+#define PORT      "/dev/ttyACM0"
 #endif
 
 #define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"
@@ -33,7 +35,7 @@ extern "C"
 #define CLIENT_ENCRYPTED_PATH                       "/tmp/client_encrypted"
 #endif
 #define ENC_SOCK_FILE_PATH                          "/tmp/enc_sock"
-#define PORT                                        "/dev/ttyACM0"
+
 
 /*
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions

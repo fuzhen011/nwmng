@@ -6,9 +6,10 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
-/* #include "nwk.h" */
+#include <unistd.h>
+
+#include "nwk.h"
 #include "mng.h"
-#include "err.h"
 #include "logging.h"
 #include "gecko_bglib.h"
 #include "bg_uart_cbs.h"
@@ -21,14 +22,32 @@
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-err_t nwk_init(void)
+static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t *e);
+
+err_t nwk_init(mng_t *mng)
 {
   uint16_t ret;
+  struct gecko_cmd_packet *evt;
+
   if (bg_err_success != (ret = gecko_cmd_mesh_prov_init()->result)) {
     LOGE("Error (0x%04x) Happened when trying initializing provisioner\n", ret);
     return err(ec_bgrsp);
   }
-  return ec_success;
+
+  while (1) {
+    evt = gecko_peek_event();
+    if (NULL == evt
+        || BGLIB_MSG_ID(evt->header) != gecko_evt_mesh_prov_initialized_id) {
+      usleep(500);
+      continue;
+    }
+    mng->state = initialized;
+    err_t e = on_initialized_config(&evt->data.evt_mesh_prov_initialized);
+    if (ec_success == e) {
+      mng->state = configured;
+    }
+    return e;
+  }
 }
 
 static err_t new_netkey(mng_t *mng, bool *change)
@@ -128,7 +147,7 @@ static void self_config(const mng_t *mng)
   }
 }
 
-static err_t onMeshInitialized(struct gecko_msg_mesh_prov_initialized_evt_t *e)
+static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t *e)
 {
   err_t err;
   bool change = false;
