@@ -35,6 +35,17 @@ extern "C"
 #define ENC_SOCK_FILE_PATH                          "/tmp/enc_sock"
 #define PORT                                        "/dev/ttyACM0"
 
+/*
+ * NOTE: Make sure this value is NOT greater than the Max Prov Sessions
+ * definition on the NCP target side
+ */
+#define MAX_PROV_SESSIONS 3
+/*
+ * NOTE: Make sure this value is NOT greater than the Max Foundation Client Cmds
+ * definition on the NCP target side
+ */
+#define MAX_CONCURRENT_CONFIG_NODES 6
+
 #ifdef __cplusplus
 }
 #endif

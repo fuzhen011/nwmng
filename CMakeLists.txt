@@ -52,8 +52,10 @@ set(HAL_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/hal/bg_uart_cbs.c
     ${CMAKE_CURRENT_LIST_DIR}/hal/socket_handler.c)
 set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
-set(MNG_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
-    ${CMAKE_CURRENT_LIST_DIR}/mng/bgevt_hdr.c)
+set(MNG_SRC_LIST
+    ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/bgevt_hdr.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/nwk.c)
 set(CFG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c
     ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c

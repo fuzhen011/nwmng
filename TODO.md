@@ -33,6 +33,9 @@
 
 ## CFG
 
+- [] Add both timeout for node and lpn to prov.json
+- [] Consider the pos and cons of replacing the hash table by the balanced
+  binary tree
 - [] Read node by "key"
   - [] Device database as a hash table, key is the hex format address e.g.
     0x0003, value is the structure of device item.
