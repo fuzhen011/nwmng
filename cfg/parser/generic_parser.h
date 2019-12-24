@@ -83,6 +83,10 @@ typedef err_t (*gp_flush_func_t)(int cfg_fd);
 
 typedef err_t (*gp_free_cfg_func_t)(void **);
 
+/******************************************************************
+ * IPC Callbacks
+ * ***************************************************************/
+err_t prov_clrctl(int len, const char *arg);
 #ifdef __cplusplus
 }
 #endif

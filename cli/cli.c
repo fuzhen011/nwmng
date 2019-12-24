@@ -560,7 +560,6 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
     return err(ec_sock);
   }
   LOGM("Socket connected\n");
-  sleep(3);
   test_ipc();
   return 0;
 }

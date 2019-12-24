@@ -64,3 +64,8 @@ void gp_deinit(void)
 {
   memset(&gp, 0, sizeof(gp_t));
 }
+
+err_t prov_clrctl(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_clrctl, NULL, NULL);
+}

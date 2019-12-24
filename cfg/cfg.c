@@ -23,8 +23,16 @@
 #include <unistd.h>
 #include <stdlib.h>
 /* Defines  *********************************************************** */
-
+typedef struct {
+  opc_t opc;
+  err_t (*hdr)(int len, const char *arg);
+}opchdr_t;
 /* Global Variables *************************************************** */
+static const opchdr_t ops[] = {
+  { CPS_CLRCTL, prov_clrctl },
+};
+
+static const int ops_num = sizeof(ops) / sizeof(opchdr_t);
 
 /* Static Variables *************************************************** */
 static int listenfd, clntfd;
@@ -96,6 +104,7 @@ static void cfg_test(void)
                     0);
   elog(e);
   json_cfg_close(TEMPLATE_FILE);
+
   /* dump_tmpl(1); */
   /* dump_tmpl(0x21); */
 #if 0
@@ -222,4 +231,58 @@ void *cfg_mainloop(void *p)
   cfg_init();
   cfg_proc();
   return NULL;
+}
+
+int handle_cmd(err_t *eout)
+{
+  char r[6] = { 0 };
+  char *buf;
+  int n, len, pos;
+  err_t e = ec_not_supported;
+  if (-1 == (n = recv(clntfd, r, 2, 0))) {
+    LOGE("recv err[%s]\n", strerror(errno));
+    return -1;
+  }
+  if (r[1]) {
+    buf = malloc(r[1]);
+    len = r[1];
+    while (len) {
+      n = recv(clntfd, buf, len, 0);
+      if (-1 == n) {
+        LOGE("recv err[%s]\n", strerror(errno));
+        return -1;
+      }
+      len -= n;
+    }
+  }
+  for (int i = 0; i < ops_num; i++) {
+    if (ops[i].opc != r[0]) {
+      continue;
+    }
+    e = ops[i].hdr(r[1], buf);
+  }
+  if (r[1]) {
+    free(buf);
+  }
+
+  memset(r, 0, 5);
+  if (e == ec_success) {
+    r[0] = RSP_OK;
+    len = 2;
+  } else {
+    r[0] = RSP_ERR;
+    r[1] = 4;
+    memcpy(r + 2, &e, 4);
+    len = 6;
+  }
+
+  pos = 0;
+  while (pos != len) {
+    if (-1 == (n = send(clntfd, r + pos, len - pos, 0))) {
+      LOGE("send [%s]\n", strerror(errno));
+      return -1;
+    }
+    pos += n;
+  }
+  return 0;
 }

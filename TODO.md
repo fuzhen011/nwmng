@@ -38,7 +38,7 @@
   binary tree
 - [x] Read node by "key"
   - [x] Device database as a hash table, key is the hex format address e.g.
-    0x0003, value is the structure of device item.
+        0x0003, value is the structure of device item.
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
 - [] Config File loaders
@@ -55,7 +55,7 @@
   - [x] Binding Appkeys
   - [x] Subscribe from
 
-- [] Config file writes
+- [] IPC - Config file writes
   - [] nwk.json
     - [] node address (key: UUID)
     - [] node errbits (key: address)
@@ -63,7 +63,13 @@
     - [] node done (key: address)
     - [x] add node to backlog
   - [] prov.json
-    - []
+    - [] clear all control fields (key: NULL)
+    - [] addr (key: NULL)
+    - [] sync time (key: NULL)
+    - [] netkey id (key: NULL)
+    - [] netkey done flag (key: NULL)
+    - [] appkey id (key: refid)
+    - [] appkey done flag (key: refid)
 
 ## Utils
 
