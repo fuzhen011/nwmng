@@ -1394,6 +1394,16 @@ static inline void __provself_setaddr(provcfg_t *pc, void *data)
   pc->addr = *(uint16_t *)data;
 }
 
+static inline void __provself_setsynctime(provcfg_t *pc, void *data)
+{
+  pc->sync_time = *(uint32_t *)data;
+}
+
+static inline void __provself_setnetkeydone(provcfg_t *pc, void *data)
+{
+  pc->subnets[0].netkey.done = *(uint8_t *)data;
+}
+
 static err_t write_provself(int wrtype,
                             const void *key,
                             void *data)
@@ -1405,6 +1415,12 @@ static err_t write_provself(int wrtype,
       break;
     case wrt_prov_addr:
       __provself_setaddr(provcfg, data);
+      break;
+    case wrt_prov_synctime:
+      __provself_setsynctime(provcfg, data);
+      break;
+    case wrt_prov_netkey_done:
+      __provself_setnetkeydone(provcfg, data);
       break;
     default:
       return err(ec_param_invalid);
