@@ -6,6 +6,10 @@
     "Count": "0x03",
     "Interval": "0x001E"
   },
+  "Config Timeout": {
+    "Normal": "0x1388",
+    "LPN": "0x1D4C0"
+  },
 
   "COMMENT": "The following parameters are non-configurable at run time, DO NOT MODIFY THEM",
   "SyncTime": "0x00000000",

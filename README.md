@@ -20,32 +20,17 @@
 
 ## Architecture
 
-Current Limitation - Only one subnet is supported, I haven't seen any
-requirements for using more than one subnets so I don't want to waste time on
-it, leave it to future.
 [ProcessOn](https://www.processon.com/diagraming/5a581bfae4b0332f15299433)
 
-3 parts: CLI, MNG, CFG
+Limitation of this design - Only one subnet is supported, I haven't seen any
+requirements for using more than one subnets so I don't want to waste time on
+it, leave it to future.
 
-These 3 parts can be completely separated.
+3 parts: CLI, MNG, CFG, CLI and MNG are in the same process while CFG runs on a separated process.
 
 ### IPC Strategy
 
-Unix domain socket.
-
-Header types:
-
-| Header | Description    |
-| ------ | -------------- |
-| 0x01   | Command Start  |
-| 0x02   | Response       |
-| 0x03   | Command End    |
-| 0x04   | Anonmous Event |
-
-IPC between CLI and MNG.
-
-It's always the CLI process which sends the "Command Start", then it waits for
-"Response" and "Command End" either in blocking or non-blocking mode.
+Unix domain socket, network socket.
 
 IPC protocol between cli-mng and cfg processes, where cli-mng as socket client and cfg as socket server, using the basic command-response-event mechanism.
 

@@ -329,6 +329,54 @@ static err_t _load_txp(json_object *obj,
   return e;
 }
 
+static err_t _load_timeout(json_object *obj,
+                           int cfg_fd,
+                           void *out)
+{
+  err_t e = ec_success;
+  json_object *o;
+  provcfg_t *prov = (provcfg_t *)out;
+
+  if (cfg_fd != PROV_CFG_FILE) {
+    e = err(ec_param_invalid);
+    goto free;
+  }
+
+  if (!json_object_object_get_ex(obj, STR_TIMEOUT, &o)) {
+    goto free;
+    e = err(e);
+  }
+  if (!prov->timeout) {
+    prov->timeout = calloc(1, sizeof(timeout_t));
+  }
+
+#if (JSON_ECHO_DBG == 1)
+  JSON_ECHO("Timeout", o);
+#endif
+  const char *v;
+  json_object *tmp;
+  if (json_object_object_get_ex(o, STR_TIMEOUT_NORMAL, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (ec_success != (e = uint32_loader(v, &prov->timeout->normal))) {
+      goto free;
+    }
+  }
+  if (json_object_object_get_ex(o, STR_TIMEOUT_LPN, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (ec_success != (e = uint32_loader(v, &prov->timeout->lpn))) {
+      goto free;
+    }
+  }
+  return ec_success;
+
+  free:
+  if (prov->timeout) {
+    free(prov->timeout);
+    prov->timeout = NULL;
+  }
+  return e;
+}
+
 static err_t _load_ttl(json_object *obj,
                        int cfg_fd,
                        void *out)
@@ -815,6 +863,7 @@ static err_t load_provself(void)
 
   _load_ttl(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
   _load_txp(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
+  _load_timeout(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
 
   /* Load Primary Subnet */
   if (!json_object_object_get_ex(jcfg.prov.gen.root, STR_SUBNETS, &n)) {
@@ -1321,6 +1370,58 @@ static err_t write_nodes(int wrtype,
   return ec_success;
 }
 
+static err_t modify_provself_field(const uint8_t *uuid,
+                                   const void *key,
+                                   char *value)
+{
+}
+
+static inline void __provself_clrctl(provcfg_t *pc)
+{
+  pc->addr = 0;
+  pc->ivi = 0;
+  pc->sync_time = time(NULL);
+  pc->subnets[0].netkey.done = 0;
+  pc->subnets[0].netkey.id = 0;
+  for (int i = 0; i < pc->subnets[0].active_appkey_num; i++) {
+    pc->subnets[0].appkey[i].done = 0;
+    pc->subnets[0].appkey[i].id = 0;
+  }
+}
+
+static inline void __provself_setaddr(provcfg_t *pc, void *data)
+{
+  pc->addr = *(uint16_t *)data;
+}
+
+static err_t write_provself(int wrtype,
+                            const void *key,
+                            void *data)
+{
+  provcfg_t *provcfg = get_provcfg();
+  switch (wrtype) {
+    case wrt_clrctl:
+      __provself_clrctl(provcfg);
+      break;
+    case wrt_prov_addr:
+      __provself_setaddr(provcfg, data);
+      break;
+    default:
+      return err(ec_param_invalid);
+  }
+  if (jcfg.prov.gen.autoflush) {
+    return json_cfg_flush(PROV_CFG_FILE);
+  }
+  return ec_success;
+}
+
+static err_t write_template(int wrtype,
+                            const void *key,
+                            void *data)
+{
+  return err(ec_not_supported);
+}
+
 err_t json_cfg_write(int cfg_fd,
                      int wrtype,
                      const void *key,
@@ -1334,10 +1435,13 @@ err_t json_cfg_write(int cfg_fd,
   if (!gen || !gen->root || !gen->fp) {
     return err(ec_json_null);
   }
+
   if (cfg_fd == NW_NODES_CFG_FILE) {
     return write_nodes(wrtype, key, data);
+  } else if (cfg_fd == PROV_CFG_FILE) {
+    return write_provself(wrtype, key, data);
   }
-  return err(ec_param_invalid);
+  return write_template(wrtype, key, data);
 }
 
 err_t json_cfg_read(int cfg_fd,

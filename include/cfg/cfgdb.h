@@ -35,6 +35,11 @@ typedef struct {
   uint16_t intv;
 }txparam_t;
 
+typedef struct {
+  uint32_t normal;
+  uint32_t lpn;
+}timeout_t;
+
 typedef struct publication{
   uint16_t addr;
   uint16_t aki;
@@ -131,10 +136,7 @@ typedef struct {
   subnet_t *subnets;
   uint8_t *ttl;
   txparam_t *net_txp;
-  struct {
-    uint32_t node;
-    uint32_t lpn;
-  } *timeout;
+  timeout_t *timeout;
 }provcfg_t;
 
 typedef struct {

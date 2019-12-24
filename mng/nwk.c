@@ -136,13 +136,13 @@ static void self_config(const mng_t *mng)
   }
   if (mng->cfg.timeout) {
     if (bg_err_success != (ret = gecko_cmd_mesh_config_client_set_default_timeout(
-                             mng->cfg.timeout->node,
+                             mng->cfg.timeout->normal,
                              mng->cfg.timeout->lpn)->result)) {
       LOGBGE("Set local timeouts", ret);
       return;
     }
     LOGM("Set config client timeout [normal node/LPN] = [%dms/%dms] Success\n",
-         mng->cfg.timeout->node,
+         mng->cfg.timeout->normal,
          mng->cfg.timeout->lpn);
   }
 }

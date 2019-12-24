@@ -33,6 +33,9 @@ extern "C"
 #define STR_VALUE                         "Value"
 #define STR_SYNC_TIME                     "SyncTime"
 #define STR_IVI                           "IVI"
+#define STR_TIMEOUT                       "Config Timeout"
+#define STR_TIMEOUT_NORMAL                "Normal"
+#define STR_TIMEOUT_LPN                   "LPN"
 
 /*
  * String keys only in the network & nodes config file

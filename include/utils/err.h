@@ -24,12 +24,11 @@ typedef enum {
   ec_param_invalid = 6,
   ec_format = 7,
   ec_state = 8,
+  ec_not_supported = 9,
 
-  ec_pub_data_not_set = 9,
   ec_all_try_done_still_fail = 10,
   ec_already_exist = 11,
   ec_timeout = 12,
-  ec_not_supported = 13,
   /* Json related error code */
   ec_json_null = 30,
   ec_json_open = 31,

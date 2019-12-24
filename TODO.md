@@ -33,11 +33,11 @@
 
 ## CFG
 
-- [] Add both timeout for node and lpn to prov.json
+- [x] Add both timeout for configuring normal nodes and lpns to prov.json
 - [] Consider the pos and cons of replacing the hash table by the balanced
   binary tree
-- [] Read node by "key"
-  - [] Device database as a hash table, key is the hex format address e.g.
+- [x] Read node by "key"
+  - [x] Device database as a hash table, key is the hex format address e.g.
     0x0003, value is the structure of device item.
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.

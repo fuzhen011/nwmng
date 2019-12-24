@@ -19,11 +19,14 @@ enum {
 };
 
 enum {
+  wrt_clrctl,
   /* Adding a node to backlog */
   wrt_add_node,
   wrt_errbits,
   wrt_node_addr,
   wrt_done,
+  /* For prov cfg file */
+  wrt_prov_addr,
 };
 
 /* cfg_fd */
