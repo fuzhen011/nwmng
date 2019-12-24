@@ -19,6 +19,8 @@
 
 #include <wordexp.h>
 
+#include <sys/socket.h>
+
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -78,6 +80,7 @@ typedef struct {
 }command_t;
 
 /* Global Variables *************************************************** */
+static int sockfd;
 
 /* Static Variables *************************************************** */
 DECLARE_VAGET_FUN(addrs);
@@ -519,6 +522,24 @@ void readcmd(void)
   wordfree(&w);
 }
 
+void test_ipc(void)
+{
+  const char s[] = "hello, cfg";
+  char r[50] = { 0 };
+  int n;
+  if (-1 == (n = send(sockfd, s, sizeof(s), 0))) {
+    LOGE("send [%s]\n", strerror(errno));
+  } else {
+    LOGM("Send [%d:%s]\n", n, s);
+  }
+  if (-1 == (n = recv(sockfd, r, 50, 0))) {
+    LOGE("recv [%s]\n", strerror(errno));
+  } else {
+    LOGM("CLI received [%d:%s] from client.\n", n, r);
+  }
+  LOGM("CLI Socket TEST DONE\n");
+}
+
 err_t cli_proc_init(int child_num, const pid_t *pids)
 {
   if (children) {
@@ -533,12 +554,14 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
   }
 
   cli_init();
-  usleep(500);
-  if (0 > cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH)) {
+  usleep(20 * 1000);
+  if (0 > (sockfd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
     LOGE("Client connects server error[%s]\n", strerror(errno));
     return err(ec_sock);
   }
   LOGM("Socket connected\n");
+  sleep(3);
+  test_ipc();
   return 0;
 }
 

@@ -227,6 +227,7 @@ int cli_conn(const char *self, const char *srv)
 
   /* create a UNIX domain stream socket */
   if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+    LOGE("socket\n");
     return(-1);
   }
 
@@ -240,10 +241,12 @@ int cli_conn(const char *self, const char *srv)
 
   unlink(un.sun_path);    /* in case it already exists */
   if (bind(fd, (struct sockaddr *)&un, len) < 0) {
+    LOGE("bind\n");
     rval = -2;
     goto errout;
   }
   if (chmod(un.sun_path, CLI_PERM) < 0) {
+    LOGE("chmod\n");
     rval = -3;
     do_unlink = 1;
     goto errout;
@@ -255,6 +258,7 @@ int cli_conn(const char *self, const char *srv)
   strcpy(sun.sun_path, srv);
   len = offsetof(struct sockaddr_un, sun_path) + strlen(srv);
   if (connect(fd, (struct sockaddr *)&sun, len) < 0) {
+    LOGE("connect\n");
     rval = -4;
     do_unlink = 1;
     goto errout;

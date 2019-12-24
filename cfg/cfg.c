@@ -8,6 +8,8 @@
 /* Includes *********************************************************** */
 #include <errno.h>
 
+#include <sys/socket.h>
+
 #include "projconfig.h"
 #include "cfg.h"
 #include "cfgdb.h"
@@ -149,6 +151,24 @@ static void cfg_test(void)
   json_cfg_close(PROV_CFG_FILE);
 }
 
+static void cfgtest_ipc(void)
+{
+  const char s[] = "hello, cli";
+  char r[50] = { 0 };
+  int n;
+  if (-1 == (n = recv(clntfd, r, 50, 0))) {
+    LOGE("recv[fd:%d] [%s]\n", clntfd, strerror(errno));
+  } else {
+    LOGM("CFG received [%d:%s] from client.\n", n, r);
+  }
+  if (-1 == (n = send(clntfd, s, sizeof(s), 0))) {
+    LOGE("send [%s]\n", strerror(errno));
+  } else {
+    LOGM("Send [%d:%s]\n", n, s);
+  }
+  LOGM("CFG Socket TEST DONE\n");
+}
+
 err_t cfg_init(void)
 {
   err_t e;
@@ -178,7 +198,7 @@ err_t cfg_init(void)
     return err(ec_sock);
   }
   LOGM("Socket connected\n");
-
+  cfgtest_ipc();
   return e;
 }
 
