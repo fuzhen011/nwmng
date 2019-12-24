@@ -1389,6 +1389,30 @@ static inline void __provself_clrctl(provcfg_t *pc)
   }
 }
 
+static inline void __provself_setappkeyid(provcfg_t *pc,
+                                          const void *key,
+                                          void *data)
+{
+  for (int i = 0; i < pc->subnets[0].active_appkey_num; i++) {
+    if (pc->subnets[0].appkey[i].refid != *(uint16_t *)key) {
+      continue;
+    }
+    pc->subnets[0].appkey[i].id = *(uint16_t *)data;
+  }
+}
+
+static inline void __provself_setappkeydone(provcfg_t *pc,
+                                            const void *key,
+                                            void *data)
+{
+  for (int i = 0; i < pc->subnets[0].active_appkey_num; i++) {
+    if (pc->subnets[0].appkey[i].refid != *(uint16_t *)key) {
+      continue;
+    }
+    pc->subnets[0].appkey[i].done = *(uint8_t *)data;
+  }
+}
+
 static inline void __provself_setaddr(provcfg_t *pc, void *data)
 {
   pc->addr = *(uint16_t *)data;
@@ -1429,6 +1453,12 @@ static err_t write_provself(int wrtype,
       break;
     case wrt_prov_netkey_done:
       __provself_setnetkeydone(provcfg, data);
+      break;
+    case wrt_prov_appkey_id:
+      __provself_setappkeyid(provcfg, key, data);
+      break;
+    case wrt_prov_appkey_done:
+      __provself_setappkeydone(provcfg, key, data);
       break;
     default:
       return err(ec_param_invalid);

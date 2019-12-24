@@ -30,6 +30,8 @@ enum {
   wrt_prov_synctime,
   wrt_prov_netkey_id,
   wrt_prov_netkey_done,
+  wrt_prov_appkey_id,
+  wrt_prov_appkey_done,
 };
 
 /* cfg_fd */
