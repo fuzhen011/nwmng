@@ -28,6 +28,7 @@ enum {
   /* For prov cfg file */
   wrt_prov_addr,
   wrt_prov_synctime,
+  wrt_prov_netkey_id,
   wrt_prov_netkey_done,
 };
 

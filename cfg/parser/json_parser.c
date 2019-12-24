@@ -1399,6 +1399,11 @@ static inline void __provself_setsynctime(provcfg_t *pc, void *data)
   pc->sync_time = *(uint32_t *)data;
 }
 
+static inline void __provself_setnetkeyid(provcfg_t *pc, void *data)
+{
+  pc->subnets[0].netkey.id = *(uint16_t *)data;
+}
+
 static inline void __provself_setnetkeydone(provcfg_t *pc, void *data)
 {
   pc->subnets[0].netkey.done = *(uint8_t *)data;
@@ -1418,6 +1423,9 @@ static err_t write_provself(int wrtype,
       break;
     case wrt_prov_synctime:
       __provself_setsynctime(provcfg, data);
+      break;
+    case wrt_prov_netkey_id:
+      __provself_setnetkeyid(provcfg, data);
       break;
     case wrt_prov_netkey_done:
       __provself_setnetkeydone(provcfg, data);
