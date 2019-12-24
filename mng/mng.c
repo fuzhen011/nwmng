@@ -35,7 +35,7 @@ mng_t *get_mng(void)
 
 void __mng_exit(void)
 {
-  /* gecko_cmd_system_reset(0); */
+  gecko_cmd_system_reset(0);
   LOGD("MNG Exit\n");
 }
 

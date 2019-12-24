@@ -36,6 +36,11 @@ extern "C"
 #endif
 #define ENC_SOCK_FILE_PATH                          "/tmp/enc_sock"
 
+/*
+ * Socket file path for communication between cli-mng and cfg processes.
+ */
+#define CC_SOCK_SERV_PATH "/tmp/ccs_serv"
+#define CC_SOCK_CLNT_PATH "/tmp/ccs_clnt"
 
 /*
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions

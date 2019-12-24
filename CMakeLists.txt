@@ -5,6 +5,7 @@ if(APPLE)
 else()
   set(CMAKE_C_COMPILER gcc)
 endif()
+
 project(nwmng C)
 
 if(NOT CWD)
@@ -65,7 +66,8 @@ set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c
-    ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c)
+    ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c
+    ${CMAKE_CURRENT_LIST_DIR}/ipc/ccipc.c)
 
 set(SRC_LIST
     ${CLI_SRC_LIST}
@@ -85,13 +87,13 @@ if(APPLE)
       /usr/local/Cellar/glib/2.62.3/include/glib-2.0
       /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include
       /usr/local/Cellar/json-c/0.13.1/include/json-c)
-  set(LIBS readline.dylib json-c)
+  set(RL_LIB readline.dylib)
 else()
   set(EXTRA_INC_PATH
       /usr/include/glib-2.0
       /usr/lib/x86_64-linux-gnu/glib-2.0/include
       /usr/include/json-c)
-  set(LIBS readline.so json-c)
+  set(RL_LIB readline.so)
 endif()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}
@@ -100,6 +102,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${CMAKE_CURRENT_LIST_DIR}/include/cli
                     ${CMAKE_CURRENT_LIST_DIR}/include/mng
                     ${CMAKE_CURRENT_LIST_DIR}/include/cfg
+                    ${CMAKE_CURRENT_LIST_DIR}/include/ipc
                     ${CMAKE_CURRENT_LIST_DIR}/hal
                     ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/common
                     ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/host
@@ -110,8 +113,21 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${EXTRA_INC_PATH})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
+target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${RL_LIB} pthread json-c)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${LIBS} pthread)
+if(0)
+  target_compile_definitions(cli-mng PUBLIC CLI_MNG)
+  add_executable(cli-mng
+                 ${HAL_SRC_LIST}
+                 ${CLI_SRC_LIST}
+                 ${MNG_SRC_LIST}
+                 ${UTILS_SRC_LIST})
+  target_link_libraries(cli-mng m ${RL_LIB})
+
+  target_compile_definitions(cfg PUBLIC CFG)
+  add_executable(cfg ${CFG_SRC_LIST} ${UTILS_SRC_LIST})
+  target_link_libraries(cfg m json-c glib-2.0)
+endif()
 
 add_custom_command(
   TARGET ${CMAKE_PROJECT_NAME} POST_BUILD

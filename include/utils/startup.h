@@ -11,7 +11,7 @@
 extern "C"
 {
 #endif
-void startup(void *args);
+void startup(int argc, char *argv[]);
 
 #ifdef __cplusplus
 }

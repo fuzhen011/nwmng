@@ -6,13 +6,17 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <errno.h>
+
 #include "projconfig.h"
 #include "cfg.h"
 #include "cfgdb.h"
 #include "logging.h"
+#include "ccipc.h"
 
 #include "parser/generic_parser.h"
 #include "parser/json_parser.h"
+
 /* TEST */
 #include <unistd.h>
 #include <stdlib.h>
@@ -21,6 +25,7 @@
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
+static int listenfd, clntfd;
 
 /* Static Functions Declaractions ************************************* */
 extern void cfgdb_test(void);
@@ -86,8 +91,7 @@ static void cfg_test(void)
 
   e = json_cfg_open(TEMPLATE_FILE,
                     TMPLATE_FILE_PATH,
-                    0,
-                    NULL);
+                    0);
   elog(e);
   json_cfg_close(TEMPLATE_FILE);
   /* dump_tmpl(1); */
@@ -106,13 +110,11 @@ static void cfg_test(void)
 
   e = json_cfg_open(NW_NODES_CFG_FILE,
                     NWNODES_FILE_PATH,
-                    0,
-                    NULL);
+                    0);
   elog(e);
   e = json_cfg_open(PROV_CFG_FILE,
                     SELFCFG_FILE_PATH,
-                    0,
-                    NULL);
+                    0);
   elog(e);
 
   node_t *n = cfgdb_node_get(0x0001);
@@ -150,29 +152,46 @@ static void cfg_test(void)
 err_t cfg_init(void)
 {
   err_t e;
-  e = cfgdb_init();
-  elog(e);
+  uid_t uid;
+  EC(ec_success, cfgdb_init());
+
+  if (0 > (listenfd = serv_listen(CC_SOCK_SERV_PATH))) {
+    LOGE("Serv[%s] Listen error [%s]\n", CC_SOCK_CLNT_PATH, strerror(errno));
+    return err(ec_sock);
+  }
+
   e = json_cfg_open(TEMPLATE_FILE,
                     TMPLATE_FILE_PATH,
-                    0,
-                    NULL);
+                    0);
   elog(e);
   e = json_cfg_open(NW_NODES_CFG_FILE,
                     NWNODES_FILE_PATH,
-                    0,
-                    NULL);
+                    0);
   elog(e);
   e = json_cfg_open(PROV_CFG_FILE,
                     SELFCFG_FILE_PATH,
-                    0,
-                    NULL);
+                    0);
   elog(e);
+  LOGD("CFG wait for socket connection\n");
+  if (0 > (clntfd = serv_accept(listenfd, &uid))) {
+    LOGE("Serv Accept error [ret:%d][%s]\n", clntfd, strerror(errno));
+    return err(ec_sock);
+  }
+  LOGM("Socket connected\n");
+
   return e;
 }
 
-void cfg_proc(void)
+int cfg_proc(void)
 {
-  /* cfg_test(); */
+  err_t e;
+  LOGM("CFG process started up.\n");
+  e = cfg_init();
+  if (ec_success != e) {
+    elog(e);
+    exit(EXIT_FAILURE);
+  }
+
   while (1) {
     sleep(1);
   }

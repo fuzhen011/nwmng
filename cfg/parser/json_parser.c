@@ -1041,8 +1041,7 @@ void json_cfg_close(int cfg_fd)
 
 err_t json_cfg_open(int cfg_fd,
                     const char *filepath,
-                    unsigned int flags,
-                    void *out)
+                    unsigned int flags)
 {
   int tmp;
   err_t ret = ec_success;
@@ -1368,12 +1367,6 @@ static err_t write_nodes(int wrtype,
       return err(ec_param_invalid);
   }
   return ec_success;
-}
-
-static err_t modify_provself_field(const uint8_t *uuid,
-                                   const void *key,
-                                   char *value)
-{
 }
 
 static inline void __provself_clrctl(provcfg_t *pc)

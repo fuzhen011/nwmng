@@ -22,10 +22,12 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "cli/cli.h"
+#include "projconfig.h"
+#include "ccipc.h"
 #include "utils.h"
 #include "err.h"
 #include "logging.h"
+#include "cli/cli.h"
 
 #include "cfg.h"
 /* Defines  *********************************************************** */
@@ -158,7 +160,9 @@ static err_t vaget_addrs(void *vap,
 
   *ulen = ADDRULEN;
   uint16_t *addrs = calloc(VAP_LEN / ADDRULEN, sizeof(uint16_t));
-  int num = get_ng_addrs(addrs);
+  /* int num = get_ng_addrs(addrs); */
+  int num = 1;
+  /* TODO: Add it when ipc done */
   if (num * (*ulen) > inbuflen ) {
     num = inbuflen / (*ulen);
   }
@@ -515,7 +519,7 @@ void readcmd(void)
   wordfree(&w);
 }
 
-int cli_proc_init(int child_num, const pid_t *pids)
+err_t cli_proc_init(int child_num, const pid_t *pids)
 {
   if (children) {
     free(children);
@@ -529,6 +533,12 @@ int cli_proc_init(int child_num, const pid_t *pids)
   }
 
   cli_init();
+  usleep(500);
+  if (0 > cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH)) {
+    LOGE("Client connects server error[%s]\n", strerror(errno));
+    return err(ec_sock);
+  }
+  LOGM("Socket connected\n");
   return 0;
 }
 

@@ -1,7 +1,7 @@
 /*************************************************************************
     > File Name: ccipc.h
     > Author: Kevin
-    > Created Time: 2019-12-23
+    > Created Time: 2019-12-24
     > Description: 
  ************************************************************************/
 
@@ -11,8 +11,11 @@
 extern "C"
 {
 #endif
+#define MAXSLEEP 128
 
-
+int serv_listen(const char *name);
+int serv_accept(int listenfd, uid_t *uidptr);
+int cli_conn(const char *self, const char *srv);
 #ifdef __cplusplus
 }
 #endif
