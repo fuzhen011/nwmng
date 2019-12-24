@@ -25,7 +25,7 @@
 /* Static Functions Declaractions ************************************* */
 extern void cfgdb_test(void);
 
-static void dump_tmpl(int k)
+void dump_tmpl(int k)
 {
   tmpl_t *t;
   t = cfgdb_tmpl_get(k);
@@ -89,7 +89,7 @@ static void cfg_test(void)
                     0,
                     NULL);
   elog(e);
-  json_close(TEMPLATE_FILE);
+  json_cfg_close(TEMPLATE_FILE);
   /* dump_tmpl(1); */
   /* dump_tmpl(0x21); */
 #if 0
@@ -99,7 +99,7 @@ static void cfg_test(void)
                     0,
                     NULL);
   elog(e);
-  json_close(TEMPLATE_FILE);
+  json_cfg_close(TEMPLATE_FILE);
   test_print_ttl(1);
   test_print_ttl(0x21);
 #endif
@@ -143,18 +143,44 @@ static void cfg_test(void)
                      "\x21\x02\x03\x04\x05\x06\x07\x07\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10");
   elog(e);
 #endif
-  json_close(NW_NODES_CFG_FILE);
-  json_close(PROV_CFG_FILE);
+  json_cfg_close(NW_NODES_CFG_FILE);
+  json_cfg_close(PROV_CFG_FILE);
 }
 
 err_t cfg_init(void)
 {
   err_t e;
   e = cfgdb_init();
+  elog(e);
+  e = json_cfg_open(TEMPLATE_FILE,
+                    TMPLATE_FILE_PATH,
+                    0,
+                    NULL);
+  elog(e);
+  e = json_cfg_open(NW_NODES_CFG_FILE,
+                    NWNODES_FILE_PATH,
+                    0,
+                    NULL);
+  elog(e);
+  e = json_cfg_open(PROV_CFG_FILE,
+                    SELFCFG_FILE_PATH,
+                    0,
+                    NULL);
+  elog(e);
   return e;
 }
 
 void cfg_proc(void)
 {
-  cfg_test();
+  /* cfg_test(); */
+  while (1) {
+    sleep(1);
+  }
+}
+
+void *cfg_mainloop(void *p)
+{
+  cfg_init();
+  cfg_proc();
+  return NULL;
 }

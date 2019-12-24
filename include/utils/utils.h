@@ -15,7 +15,7 @@ extern "C"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <unistd.h>
 #include "err.h"
 
 typedef struct {
@@ -185,6 +185,28 @@ static inline void addr_to_buf(uint16_t addr, char *buf)
 #else
   uint2str(addr, BASE_HEX, 6, buf);
 #endif
+}
+
+static inline void errExit(const char *pMsg)
+{
+  perror(pMsg);
+  exit(EXIT_FAILURE);
+}
+
+static inline void err_exit(const char *pMsg)
+{
+  perror(pMsg);
+#ifdef __WIN32__
+  return;
+#else
+  _exit(EXIT_FAILURE);
+#endif
+}
+
+static inline void errExitEN(int errnum, const char *pMsg)
+{
+  fprintf(stderr, "%s | error code = %d\n", pMsg, errnum);
+  exit(EXIT_FAILURE);
 }
 #ifdef __cplusplus
 }

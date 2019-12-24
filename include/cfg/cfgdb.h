@@ -114,6 +114,11 @@ typedef struct {
 
 typedef struct {
   meshkey_t netkey;
+  /* It's possibly the appkey number is greater than the maximum appkey number
+   * supported by the provisioner, {active_appkey_num} holds the number of
+   * appkeys which are really created, while {appkey_num} holds the number in
+   * config file  */
+  uint8_t active_appkey_num;
   uint8_t appkey_num;
   meshkey_t appkey[];
 }subnet_t;
@@ -126,6 +131,10 @@ typedef struct {
   subnet_t *subnets;
   uint8_t *ttl;
   txparam_t *net_txp;
+  struct {
+    uint32_t node;
+    uint32_t lpn;
+  } *timeout;
 }provcfg_t;
 
 typedef struct {

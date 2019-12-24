@@ -27,6 +27,7 @@
 #include "err.h"
 #include "logging.h"
 
+#include "cfg.h"
 /* Defines  *********************************************************** */
 #define __DUMP_PARAMS
 #ifdef __DUMP_PARAMS
@@ -82,6 +83,7 @@ DECLARE_VAGET_FUN(addrs);
 DECLARE_CB(sync);
 DECLARE_CB(reset);
 DECLARE_CB(list);
+DECLARE_CB(info);
 DECLARE_CB(help);
 DECLARE_CB(quit);
 DECLARE_CB(ct);
@@ -99,6 +101,9 @@ static const command_t commands[] = {
     "Print help" },
   { "list", NULL, clicb_list,
     "List all devices in the database" },
+  { "info", "[addr...]", clicb_info,
+    "Show the device information in the database",
+    NULL, NULL, vaget_addrs },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -127,6 +132,7 @@ static int addr_in_cfg(const char *straddr,
     LOGD("str2uint failed\n");
     return -1;
   }
+
   if (addrtmp == 0x1003
       || addrtmp == 0xc005
       || addrtmp == 0x120c
@@ -135,18 +141,8 @@ static int addr_in_cfg(const char *straddr,
     *addr = addrtmp;
     return 0;
   }
-  return -1;
-}
 
-static int dummy_get_addrs(uint16_t *addrs)
-{
-  addrs[0] = 0x1003;
-  addrs[1] = 0xc005;
-  addrs[2] = 0x120c;
-  addrs[3] = 0x100e;
-  addrs[4] = 0x1;
-  /* addrs[4] = 0x1003; */
-  return 5;
+  return -1;
 }
 
 #define ADDRULEN  7
@@ -162,7 +158,7 @@ static err_t vaget_addrs(void *vap,
 
   *ulen = ADDRULEN;
   uint16_t *addrs = calloc(VAP_LEN / ADDRULEN, sizeof(uint16_t));
-  int num = dummy_get_addrs(addrs);
+  int num = get_ng_addrs(addrs);
   if (num * (*ulen) > inbuflen ) {
     num = inbuflen / (*ulen);
   }
@@ -560,6 +556,13 @@ int cli_proc(void)
   return 0;
 }
 
+void *cli_mainloop(void *pIn)
+{
+  cli_proc_init(0, NULL);
+  cli_proc();
+  return NULL;
+}
+
 void bt_shell_printf(const char *fmt, ...)
 {
   va_list args;
@@ -622,6 +625,12 @@ static err_t clicb_reset(int argc, char *argv[])
 }
 
 static err_t clicb_list(int argc, char *argv[])
+{
+  printf("%s\n", __FUNCTION__);
+  return err(ec_param_invalid);
+}
+
+static err_t clicb_info(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
   return err(ec_param_invalid);

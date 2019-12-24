@@ -1,25 +1,19 @@
 /*************************************************************************
-    > File Name: cfg.h
+    > File Name: startup.h
     > Author: Kevin
-    > Created Time: 2019-12-17
+    > Created Time: 2019-12-20
     > Description:
  ************************************************************************/
 
-#ifndef CFG_H
-#define CFG_H
+#ifndef STARTUP_H
+#define STARTUP_H
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+void startup(void *args);
 
-#include "err.h"
-
-err_t cfg_init(void);
-void cfg_proc(void);
-void *cfg_mainloop(void *p);
-
-int get_ng_addrs(uint16_t *addrs);
 #ifdef __cplusplus
 }
 #endif
-#endif //CFG_H
+#endif //STARTUP_H

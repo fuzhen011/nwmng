@@ -16,6 +16,7 @@ int get_children(pid_t **p);
 
 int cli_proc_init(int child_num, const pid_t *pids);
 int cli_proc(void);
+void *cli_mainloop(void *pIn);
 
 void bt_shell_printf(const char *fmt, ...);
 #ifdef __cplusplus

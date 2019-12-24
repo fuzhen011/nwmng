@@ -136,6 +136,8 @@ void log_n(void);
 #define LOGD(fmt, ...) LOG(LVL_DBG, (fmt), ##__VA_ARGS__)
 #define LOGV(fmt, ...) LOG(LVL_VER, (fmt), ##__VA_ARGS__)
 
+#define LOGBGE(what, err) LOGE(what " returns Error[0x%04x]\n", (err))
+
 void set_logging_tostdout(int enable);
 int get_logging_tostdout(void);
 void set_logging_lvl_threshold(unsigned int lvl);

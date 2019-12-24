@@ -33,23 +33,37 @@
 
 ## CFG
 
+- [] Add both timeout for node and lpn to prov.json
+- [] Consider the pos and cons of replacing the hash table by the balanced
+  binary tree
 - [] Read node by "key"
   - [] Device database as a hash table, key is the hex format address e.g.
     0x0003, value is the structure of device item.
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
 - [] Config File loaders
+
   - [x] TTL
   - [] Features
     - [] Low Power
     - [] Proxy
     - [] Friend
     - [] Relay and its setting
-  - [] Pub
-  - [] Secure network beacn
-  - [] Tx parameters
-  - [] Binding Appkeys
-  - [] Subscribe from
+  - [x] Pub
+  - [x] Secure network beacn
+  - [x] Tx parameters
+  - [x] Binding Appkeys
+  - [x] Subscribe from
+
+- [] Config file writes
+  - [] nwk.json
+    - [] node address (key: UUID)
+    - [] node errbits (key: address)
+    - [] node rmorbl (key: address)
+    - [] node done (key: address)
+    - [x] add node to backlog
+  - [] prov.json
+    - []
 
 ## Utils
 
