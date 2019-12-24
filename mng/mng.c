@@ -20,14 +20,38 @@
 #include "bgevt_hdr.h"
 #include "mng.h"
 #include "nwk.h"
+#include "ccipc.h"
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
+extern sock_status_t sock;
 
 /* Static Variables *************************************************** */
 static mng_t mng = { 0 };
 
 /* Static Functions Declaractions ************************************* */
+static int __provcfg_field(opc_t opc, uint8_t len, const char *buf)
+{
+  switch(opc)
+  {
+
+  }
+  return (opc == RSP_OK || opc == RSP_ERR);
+}
+
+static err_t ipc_get_provcfg(void)
+{
+  err_t e;
+  if (sock.connected) {
+    return err(ec_state);
+  }
+  EC(ec_success, sock_send(&sock, CPG_ALL, 0, NULL));
+
+  while (1) {
+  }
+  return e;
+}
+
 mng_t *get_mng(void)
 {
   return &mng;

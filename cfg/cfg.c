@@ -11,10 +11,9 @@
 #include <sys/socket.h>
 
 #include "projconfig.h"
-#include "cfg.h"
 #include "cfgdb.h"
 #include "logging.h"
-#include "ccipc.h"
+#include "cfg.h"
 
 #include "parser/generic_parser.h"
 #include "parser/json_parser.h"
@@ -23,6 +22,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 /* Defines  *********************************************************** */
+sock_status_t sock = { 0 };
 typedef struct {
   opc_t opc;
   err_t (*hdr)(int len, const char *arg);
@@ -30,12 +30,13 @@ typedef struct {
 /* Global Variables *************************************************** */
 static const opchdr_t ops[] = {
   { CPS_CLRCTL, prov_clrctl },
+  { CPG_ALL, prov_get },
 };
 
 static const int ops_num = sizeof(ops) / sizeof(opchdr_t);
 
 /* Static Variables *************************************************** */
-static int listenfd, clntfd;
+static int listenfd;
 
 /* Static Functions Declaractions ************************************* */
 extern void cfgdb_test(void);
@@ -165,12 +166,12 @@ static void cfgtest_ipc(void)
   const char s[] = "hello, cli";
   char r[50] = { 0 };
   int n;
-  if (-1 == (n = recv(clntfd, r, 50, 0))) {
-    LOGE("recv[fd:%d] [%s]\n", clntfd, strerror(errno));
+  if (-1 == (n = recv(sock.fd, r, 50, 0))) {
+    LOGE("recv[fd:%d] [%s]\n", sock.fd, strerror(errno));
   } else {
     LOGM("CFG received [%d:%s] from client.\n", n, r);
   }
-  if (-1 == (n = send(clntfd, s, sizeof(s), 0))) {
+  if (-1 == (n = send(sock.fd, s, sizeof(s), 0))) {
     LOGE("send [%s]\n", strerror(errno));
   } else {
     LOGM("Send [%d:%s]\n", n, s);
@@ -202,10 +203,11 @@ err_t cfg_init(void)
                     0);
   elog(e);
   LOGD("CFG wait for socket connection\n");
-  if (0 > (clntfd = serv_accept(listenfd, &uid))) {
-    LOGE("Serv Accept error [ret:%d][%s]\n", clntfd, strerror(errno));
+  if (0 > (sock.fd = serv_accept(listenfd, &uid))) {
+    LOGE("Serv Accept error [ret:%d][%s]\n", sock.fd, strerror(errno));
     return err(ec_sock);
   }
+  sock.connected = true;
   LOGM("Socket connected\n");
   cfgtest_ipc();
   return e;
@@ -239,7 +241,7 @@ int handle_cmd(err_t *eout)
   char *buf;
   int n, len, pos;
   err_t e = ec_not_supported;
-  if (-1 == (n = recv(clntfd, r, 2, 0))) {
+  if (-1 == (n = recv(sock.fd, r, 2, 0))) {
     LOGE("recv err[%s]\n", strerror(errno));
     return -1;
   }
@@ -247,7 +249,7 @@ int handle_cmd(err_t *eout)
     buf = malloc(r[1]);
     len = r[1];
     while (len) {
-      n = recv(clntfd, buf, len, 0);
+      n = recv(sock.fd, buf, len, 0);
       if (-1 == n) {
         LOGE("recv err[%s]\n", strerror(errno));
         return -1;
@@ -278,11 +280,16 @@ int handle_cmd(err_t *eout)
 
   pos = 0;
   while (pos != len) {
-    if (-1 == (n = send(clntfd, r + pos, len - pos, 0))) {
+    if (-1 == (n = send(sock.fd, r + pos, len - pos, 0))) {
       LOGE("send [%s]\n", strerror(errno));
       return -1;
     }
     pos += n;
   }
   return 0;
+}
+
+err_t sendto_client(opc_t opc, uint8_t len, const void *buf)
+{
+  return sock_send(&sock, opc, len, buf);
 }

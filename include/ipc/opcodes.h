@@ -25,6 +25,8 @@ extern "C"
  *
  *
  * CPS - Command Prov Set
+ * CPG - Command Prov Get
+ *
  */
 enum {
   CPS_CLRCTL,
@@ -35,10 +37,16 @@ enum {
   CPS_APPKEYID,
   CPS_APPKEYDONE,
 
-  OPC_SET_PROV,
-  OPC_SET,
+  CPG_ALL,
+
+  RSP_PROV_BASIC,
+  RSP_PROV_SUBNETS,
+  RSP_PROV_TTL,
+  RSP_PROV_TXP,
+  RSP_PROV_TIMEOUT,
 
   RPS_CTL_START = 0xe0,
+  RSP_EVT,
   RSP_ERR,
   RSP_OK,
   OPC_MAX = 0xff

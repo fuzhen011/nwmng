@@ -80,7 +80,7 @@ typedef struct {
 }command_t;
 
 /* Global Variables *************************************************** */
-static int sockfd;
+sock_status_t sock = { 0 };
 
 /* Static Variables *************************************************** */
 DECLARE_VAGET_FUN(addrs);
@@ -527,12 +527,12 @@ void test_ipc(void)
   const char s[] = "hello, cfg";
   char r[50] = { 0 };
   int n;
-  if (-1 == (n = send(sockfd, s, sizeof(s), 0))) {
+  if (-1 == (n = send(sock.fd, s, sizeof(s), 0))) {
     LOGE("send [%s]\n", strerror(errno));
   } else {
     LOGM("Send [%d:%s]\n", n, s);
   }
-  if (-1 == (n = recv(sockfd, r, 50, 0))) {
+  if (-1 == (n = recv(sock.fd, r, 50, 0))) {
     LOGE("recv [%s]\n", strerror(errno));
   } else {
     LOGM("CLI received [%d:%s] from client.\n", n, r);
@@ -555,12 +555,13 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
 
   cli_init();
   usleep(20 * 1000);
-  if (0 > (sockfd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
+  if (0 > (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
     LOGE("Client connects server error[%s]\n", strerror(errno));
     return err(ec_sock);
   }
+  sock.connected = true;
   LOGM("Socket connected\n");
-  test_ipc();
+  /* test_ipc(); */
   return 0;
 }
 

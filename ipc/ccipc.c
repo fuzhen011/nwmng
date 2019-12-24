@@ -274,3 +274,31 @@ int cli_conn(const char *self, const char *srv)
   errno = err;
   return(rval);
 }
+
+err_t sock_send(const sock_status_t *sock,
+                opc_t opc, uint8_t len, const void *buf)
+{
+  err_t e = ec_success;
+  int sl = len + 2, pos = 0, n;
+  char *p;
+  if (sock->connected) {
+    return err(ec_state);
+  }
+  p = malloc(2 + len);
+  p[0] = opc;
+  p[1] = len;
+  if (len) {
+    memcpy(p + 2, buf, len);
+  }
+  while (pos != sl) {
+    if (-1 == (n = send(sock->fd, p + pos, sl - pos, 0))) {
+      LOGE("send [%s]\n", strerror(errno));
+      e = err(ec_sock);
+      break;
+    }
+    pos += n;
+  }
+
+  free(p);
+  return e;
+}

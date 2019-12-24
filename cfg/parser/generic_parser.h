@@ -87,6 +87,7 @@ typedef err_t (*gp_free_cfg_func_t)(void **);
  * IPC Callbacks
  * ***************************************************************/
 err_t prov_clrctl(int len, const char *arg);
+err_t prov_get(int len, const char *arg);
 #ifdef __cplusplus
 }
 #endif
