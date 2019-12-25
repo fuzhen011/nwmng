@@ -32,7 +32,7 @@ typedef struct {
 typedef err_t (*init_func_t)(void *p);
 int offsetof_initfunc(init_func_t fn);
 
-typedef int (*ipcevt_hdr_t)(opc_t opc, uint8_t len, const char *buf);
+typedef int (*ipcevt_hdr_t)(opc_t opc, uint8_t len, const uint8_t *buf);
 
 void on_sock_disconn(void);
 

@@ -95,3 +95,7 @@
 ## UTest
 
 - [] basic porting
+
+## IPC
+
+- [] address already in use problem when backoff connect to server

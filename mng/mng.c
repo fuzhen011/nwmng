@@ -38,8 +38,8 @@ err_t handle_rsp(ipcevt_hdr_t hdr)
 {
   err_t e = ec_success;
   bool err = false;
-  char r[2] = { 0 };
-  char *buf = NULL;
+  uint8_t r[2] = { 0 };
+  uint8_t *buf = NULL;
   int n, len;
 
   while (1) {
@@ -68,6 +68,7 @@ err_t handle_rsp(ipcevt_hdr_t hdr)
         len -= n;
       }
     }
+    /* LOGM("r[0] = %d\n", r[0]); */
     if (r[0] == RSP_OK) {
       return e;
     } else if (r[0] == RSP_ERR) {
@@ -76,7 +77,9 @@ err_t handle_rsp(ipcevt_hdr_t hdr)
       return e;
     }
     if (hdr) {
-      hdr(r[0], r[1], buf);
+      if (!hdr(r[0], r[1], buf)) {
+        LOGE("Recv unexpected CMD[%u:%u]\n", r[0], r[1]);
+      }
     }
     if (buf) {
       free(buf);
@@ -94,14 +97,56 @@ err_t handle_rsp(ipcevt_hdr_t hdr)
   return e;
 }
 
-static int __provcfg_field(opc_t opc, uint8_t len, const char *buf)
+static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf)
 {
+  int i = 0;
   switch (opc) {
-    default:
-      LOGM("recv opc[%d] with len[%d] payload\n", opc, len);
+    case RSP_PROV_BASIC:
+      memcpy(&mng.cfg.addr, buf + i, sizeof(uint16_t));
+      i += sizeof(uint16_t);
+      memcpy(&mng.cfg.sync_time, buf + i, sizeof(time_t));
+      i += sizeof(time_t);
+      memcpy(&mng.cfg.ivi, buf + i, sizeof(uint32_t));
+      i += sizeof(uint32_t);
+      memcpy(&mng.cfg.subnet_num, buf + i, sizeof(uint8_t));
+      /* i += sizeof(uint8_t); */
       break;
+    case RSP_PROV_SUBNETS:
+      if (mng.cfg.subnets) {
+        free(mng.cfg.subnets);
+      }
+      /* buf[0] is the appkey_num */
+      mng.cfg.subnets = malloc(sizeof(subnet_t) + sizeof(meshkey_t) * buf[0]);
+      memcpy(mng.cfg.subnets, buf + i, sizeof(subnet_t));
+      i += sizeof(subnet_t);
+      if (buf[0]) {
+        memcpy(mng.cfg.subnets[0].appkey, buf + i,
+               sizeof(meshkey_t) * buf[0]);
+        i += sizeof(meshkey_t) * buf[0];
+      }
+      break;
+    case RSP_PROV_TTL:
+      if (!mng.cfg.ttl) {
+        mng.cfg.ttl = malloc(sizeof(uint8_t));
+      }
+      *mng.cfg.ttl = buf[0];
+      break;
+    case RSP_PROV_TXP:
+      if (!mng.cfg.net_txp) {
+        mng.cfg.net_txp = malloc(sizeof(txparam_t));
+      }
+      memcpy(mng.cfg.net_txp, buf, sizeof(txparam_t));
+      break;
+    case RSP_PROV_TIMEOUT:
+      if (!mng.cfg.timeout) {
+        mng.cfg.timeout = malloc(sizeof(timeout_t));
+      }
+      memcpy(mng.cfg.timeout, buf, sizeof(timeout_t));
+      break;
+    default:
+      return 0;
   }
-  return (0);
+  return 1;
 }
 
 err_t ipc_get_provcfg(void *p)

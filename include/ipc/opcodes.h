@@ -55,11 +55,9 @@ enum {
   RSP_PROV_TXP,
   RSP_PROV_TIMEOUT,
 
-  RPS_CTL_START = 0xe0,
-  RSP_EVT,
-  RSP_ERR,
-  RSP_OK,
-  OPC_MAX = 0xff
+  RSP_ERR = 253,
+  RSP_OK = 254,
+  OPC_MAX = 255 
 };
 
 typedef uint8_t opc_t;
