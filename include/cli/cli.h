@@ -15,6 +15,7 @@ extern "C"
 #include <stdbool.h>
 #include "projconfig.h"
 #include "err.h"
+#include "opcodes.h"
 
 typedef struct {
   bool initialized;
@@ -30,6 +31,8 @@ typedef struct {
 
 typedef err_t (*init_func_t)(void *p);
 int offsetof_initfunc(init_func_t fn);
+
+typedef int (*ipcevt_hdr_t)(opc_t opc, uint8_t len, const char *buf);
 
 void on_sock_disconn(void);
 

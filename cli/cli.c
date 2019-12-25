@@ -93,7 +93,8 @@ static err_t conn_socksrv(void *p);
 static init_func_t initfs[] = {
   cli_init,
   init_ncp,
-  conn_socksrv
+  conn_socksrv,
+  ipc_get_provcfg,
 };
 
 static const int inits_num = ARR_LEN(initfs);

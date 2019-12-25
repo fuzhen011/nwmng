@@ -30,6 +30,7 @@ err_t init_ncp(void *p);
 void *mng_mainloop(void *p);
 mng_t *get_mng(void);
 
+err_t ipc_get_provcfg(void *p);
 #ifdef __cplusplus
 }
 #endif

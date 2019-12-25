@@ -8,7 +8,10 @@
 /* Includes *********************************************************** */
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 /* #include <sys/prctl.h> */
+
+#include <sys/socket.h>
 
 #include "hal/bg_uart_cbs.h"
 #include "host_gecko.h"
@@ -31,12 +34,74 @@ extern sock_status_t sock;
 static mng_t mng = { 0 };
 
 /* Static Functions Declaractions ************************************* */
-#if NOTODO
+err_t handle_rsp(ipcevt_hdr_t hdr)
+{
+  err_t e = ec_success;
+  bool err = false;
+  char r[2] = { 0 };
+  char *buf = NULL;
+  int n, len;
+
+  while (1) {
+    n = recv(sock.fd, r, 2, 0);
+    if (-1 == n) {
+      LOGE("recv err[%s]\n", strerror(errno));
+      err = true;
+      goto sock_err;
+    } else if (0 == n) {
+      err = true;
+      goto sock_err;
+    }
+    if (r[1]) {
+      buf = malloc(r[1]);
+      len = r[1];
+      while (len) {
+        n = recv(sock.fd, buf, len, 0);
+        if (-1 == n) {
+          LOGE("recv err[%s]\n", strerror(errno));
+          err = true;
+          goto sock_err;
+        } else if (0 == n) {
+          err = true;
+          goto sock_err;
+        }
+        len -= n;
+      }
+    }
+    if (r[0] == RSP_OK) {
+      return e;
+    } else if (r[0] == RSP_ERR) {
+      e = *(err_t *)buf;
+      free(buf);
+      return e;
+    }
+    if (hdr) {
+      hdr(r[0], r[1], buf);
+    }
+    if (buf) {
+      free(buf);
+      buf = NULL;
+    }
+  }
+
+  sock_err:
+  if (buf) {
+    free(buf);
+  }
+  if (err) {
+    on_sock_disconn();
+  }
+  return e;
+}
+
 static int __provcfg_field(opc_t opc, uint8_t len, const char *buf)
 {
   switch (opc) {
+    default:
+      LOGM("recv opc[%d] with len[%d] payload\n", opc, len);
+      break;
   }
-  return (opc == RSP_OK || opc == RSP_ERR);
+  return (0);
 }
 
 err_t ipc_get_provcfg(void *p)
@@ -46,12 +111,9 @@ err_t ipc_get_provcfg(void *p)
     return err(ec_state);
   }
   EC(ec_success, sock_send(&sock, CPG_ALL, 0, NULL));
-
-  while (1) {
-  }
+  EC(ec_success, handle_rsp(__provcfg_field));
   return e;
 }
-#endif
 
 mng_t *get_mng(void)
 {
