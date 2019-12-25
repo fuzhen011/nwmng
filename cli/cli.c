@@ -143,6 +143,22 @@ static char *line = NULL;
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
 
+int offsetof_initfunc(init_func_t fn)
+{
+  int i;
+  for (i = 0; i < inits_num; i++) {
+    if (initfs[i] == fn) {
+      break;
+    }
+  }
+  return i;
+}
+
+void on_sock_disconn(void)
+{
+  longjmp(jmpbuffer, offsetof_initfunc(init_ncp));
+}
+
 static int addr_in_cfg(const char *straddr,
                        uint16_t *addr)
 {

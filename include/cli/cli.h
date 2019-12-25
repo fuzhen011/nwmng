@@ -29,6 +29,9 @@ typedef struct {
 }proj_args_t;
 
 typedef err_t (*init_func_t)(void *p);
+int offsetof_initfunc(init_func_t fn);
+
+void on_sock_disconn(void);
 
 const proj_args_t *getprojargs(void);
 
@@ -39,6 +42,7 @@ int cli_proc(int argc, char *argv[]);
 void *cli_mainloop(void *pIn);
 
 void bt_shell_printf(const char *fmt, ...);
+
 #ifdef __cplusplus
 }
 #endif

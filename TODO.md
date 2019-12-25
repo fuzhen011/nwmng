@@ -73,7 +73,7 @@
 
 ## Utils
 
-- [] define ASSERT, ASSERT_MSG
+- [x] define ASSERT, ASSERT_MSG
 
 ### Logging
 

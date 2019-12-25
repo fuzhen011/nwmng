@@ -39,7 +39,7 @@ static int __provcfg_field(opc_t opc, uint8_t len, const char *buf)
   return (opc == RSP_OK || opc == RSP_ERR);
 }
 
-static err_t ipc_get_provcfg(void)
+err_t ipc_get_provcfg(void *p)
 {
   err_t e;
   if (sock.fd < 0) {
@@ -52,24 +52,16 @@ static err_t ipc_get_provcfg(void)
   return e;
 }
 #endif
+
 mng_t *get_mng(void)
 {
   return &mng;
 }
 
-void __mng_exit(void)
+void __ncp_exit(void)
 {
   gecko_cmd_system_reset(0);
   LOGD("MNG Exit\n");
-}
-
-int mng_proc(void)
-{
-  /* prctl(PR_SET_PDEATHSIG, SIGKILL); */
-  atexit(__mng_exit);
-  for (;;) {
-    sleep(1);
-  }
 }
 
 err_t init_ncp(void *p)
@@ -85,7 +77,7 @@ err_t init_ncp(void *p)
 
   conn_ncptarget();
   sync_host_and_ncp_target();
-  atexit(__mng_exit);
+  atexit(__ncp_exit);
   LOGD("ncp init done\n");
   return ec_success;
 }

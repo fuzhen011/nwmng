@@ -301,6 +301,7 @@ static err_t handle_cmd(void)
   }
   return e;
 }
+
 void *cfg_mainloop(void *p)
 {
   /* cfg_init(); */
