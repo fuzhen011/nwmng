@@ -20,11 +20,10 @@ typedef enum {
   ec_param_null = 2,
   ec_not_exist = 3,
   ec_file_ope = 4,
-  ec_sock = 5,
+  ec_not_supported = 5,
   ec_param_invalid = 6,
   ec_format = 7,
   ec_state = 8,
-  ec_not_supported = 9,
 
   ec_all_try_done_still_fail = 10,
   ec_already_exist = 11,
@@ -37,6 +36,11 @@ typedef enum {
 
   ec_bgrsp = 50,
   ec_bgevt = 51,
+  
+  ec_sock = 60,
+  ec_sock_closed = 61,
+
+  ec_errno = 70
 }error_code_t;
 
 /* const char *get_error_str(error_code_t e); */

@@ -29,7 +29,8 @@ extern "C"
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/test1/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/test1/nwk.json"
 
-#define LOG_FILE_PATH PROJ_DIR "logs/cli.log"
+#define CLI_LOG_FILE_PATH PROJ_DIR "logs/cli.log"
+#define CFG_LOG_FILE_PATH PROJ_DIR "logs/cfg.log"
 
 #ifndef CLIENT_ENCRYPTED_PATH
 #define CLIENT_ENCRYPTED_PATH                       "/tmp/client_encrypted"

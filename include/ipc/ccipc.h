@@ -18,8 +18,8 @@ extern "C"
 #define MAXSLEEP 128
 
 typedef struct {
-  bool connected;
   int fd;
+  int listenfd;
 }sock_status_t;
 
 int serv_listen(const char *name);

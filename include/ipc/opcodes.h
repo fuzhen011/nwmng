@@ -13,16 +13,26 @@ extern "C"
 #endif
 #include <stdint.h>
 /*
- * Set xxx to config file, where xxx could be:
+ * Simple IPC protocol design, there are only 2 types of messages:
+ * - Command
+ *   - Set
+ *   - Get
+ * - Response
+ *
+ * Currently, there are only 2 config files can be set/gotten:
  *  - provcfg
  *  - node
  *
- * Sequence:
- * - Set xxx
- * - Set yyy
- * - ...
- * - Exec set [provcfg | node]
+ * All command-response communication pair should end with **RSP_OK**.
  *
+ * Set command sequence:
+ * Set -> [Response...] -> [RSP_OK]
+ *
+ * Get command sequence:
+ * Get -> [Response...] -> [RSP_OK]
+ *
+ * Autonomous event sequence:
+ * Response...
  *
  * CPS - Command Prov Set
  * CPG - Command Prov Get

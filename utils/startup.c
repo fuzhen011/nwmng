@@ -75,30 +75,19 @@ void startup(int argc, char *argv[])
 {
 #if defined(CLI_MNG)
   err_t e;
-  if (ec_success != (e = logging_init(LOG_FILE_PATH,
-                                      0, /* Not output to stdout */
-                                      LOG_MINIMAL_LVL(LVL_VER)))) {
-    fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
+  if (ec_success != (e = cli_proc_init(0, NULL))) {
+    elog(e);
     return;
   }
-  cli_proc_init(0, NULL);
-  cli_proc();
-  out:
+  cli_proc(); /* should never return */
+
   logging_deinit();
 #elif defined(CFG)
-  err_t e;
-  if (ec_success != (e = logging_init(LOG_FILE_PATH,
-                                      0, /* Not output to stdout */
-                                      LOG_MINIMAL_LVL(LVL_VER)))) {
-    fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
-    return;
-  }
-  EC(ec_success, cfg_init());
-  cfg_proc();
-  out:
+  /* cfg_init is called inside */
+  cfg_proc(); /* should never return */
+
   logging_deinit();
   cfgdb_deinit();
-  return 0;
 #else
   /* Single exec - fork the cfg process */
   err_t e;
@@ -112,13 +101,6 @@ void startup(int argc, char *argv[])
       break;
     }
     pids[proc_num - 1 - i] = pid;
-  }
-
-  if (ec_success != (e = logging_init(LOG_FILE_PATH,
-                                      0, /* Not output to stdout */
-                                      LOG_MINIMAL_LVL(LVL_VER)))) {
-    fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
-    return;
   }
 
   if (i == proc_num - 1) {

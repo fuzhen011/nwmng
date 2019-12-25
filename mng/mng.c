@@ -30,11 +30,10 @@ extern sock_status_t sock;
 static mng_t mng = { 0 };
 
 /* Static Functions Declaractions ************************************* */
+
 static int __provcfg_field(opc_t opc, uint8_t len, const char *buf)
 {
-  switch(opc)
-  {
-
+  switch (opc) {
   }
   return (opc == RSP_OK || opc == RSP_ERR);
 }
@@ -42,7 +41,7 @@ static int __provcfg_field(opc_t opc, uint8_t len, const char *buf)
 static err_t ipc_get_provcfg(void)
 {
   err_t e;
-  if (sock.connected) {
+  if (sock.fd < 0) {
     return err(ec_state);
   }
   EC(ec_success, sock_send(&sock, CPG_ALL, 0, NULL));

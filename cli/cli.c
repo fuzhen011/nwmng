@@ -542,10 +542,17 @@ void test_ipc(void)
 
 err_t cli_proc_init(int child_num, const pid_t *pids)
 {
+  err_t e;
+  if (ec_success != (e = logging_init(CLI_LOG_FILE_PATH,
+                                      0, /* Not output to stdout */
+                                      LOG_MINIMAL_LVL(LVL_VER)))) {
+    fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
+    return e;
+  }
+
   if (children) {
     free(children);
   }
-
   if (child_num) {
     ASSERT(pids);
     children = calloc(child_num, sizeof(pid_t));
@@ -559,9 +566,8 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
     LOGE("Client connects server error[%s]\n", strerror(errno));
     return err(ec_sock);
   }
-  sock.connected = true;
   LOGM("Socket connected\n");
-  /* test_ipc(); */
+  test_ipc();
   return 0;
 }
 

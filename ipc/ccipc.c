@@ -22,7 +22,7 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-#define SRV_QLEN  5
+#define SRV_QLEN  0
 
 /* Global Variables *************************************************** */
 
@@ -281,7 +281,7 @@ err_t sock_send(const sock_status_t *sock,
   err_t e = ec_success;
   int sl = len + 2, pos = 0, n;
   char *p;
-  if (sock->connected) {
+  if (sock->fd < 0) {
     return err(ec_state);
   }
   p = malloc(2 + len);
