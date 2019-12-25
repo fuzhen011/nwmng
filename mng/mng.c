@@ -86,6 +86,7 @@ err_t init_ncp(void *p)
   conn_ncptarget();
   sync_host_and_ncp_target();
   atexit(__mng_exit);
+  LOGD("ncp init done\n");
   return ec_success;
 }
 

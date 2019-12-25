@@ -84,6 +84,9 @@ int32_t uartOpen(int8_t* port, uint32_t baudRate, uint32_t rtsCts, int32_t timeo
 
 int32_t uartClose(void)
 {
+  if (serialHandle == -1) {
+    return 0;
+  }
   return uartCloseSerial(serialHandle);
 }
 

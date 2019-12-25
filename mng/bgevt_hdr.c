@@ -51,9 +51,10 @@ void conn_ncptarget(void)
     /* } */
     /* } */
   } else {
+    uartClose();
     if (0 != uartOpen((int8_t *)u->ser_sockpath, 115200, 1, 100)) {
-      LOGE("Open %s failed. Exiting..\n", u->ser_sockpath);
-      exit(EXIT_FAILURE);
+      LOGW("Open %s failed. Exiting..\n", u->ser_sockpath);
+      /* exit(EXIT_FAILURE); */
     }
   }
 }

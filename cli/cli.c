@@ -199,6 +199,7 @@ static err_t cli_init(void *p)
   rl_attempted_completion_function = shell_completion;
   using_history();
   read_history(RL_HISTORY);
+  LOGD("cli init done\n");
   return ec_success;
 }
 
@@ -589,12 +590,26 @@ static err_t conn_socksrv(void *p)
   }
 
   usleep(20 * 1000);
-  if (0 > (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
-    LOGE("Client connects server error[%s]\n", strerror(errno));
-    return err(ec_sock);
+
+  for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
+    if (0 <= (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
+      break;
+    }
+    LOGW("Connect server failed [%s]\n", strerror(errno));
+    /*
+     * Delay before trying again.
+     */
+    if (numsec <= MAXSLEEP / 2) {
+      sleep(numsec);
+    }
+  }
+  if (sock.fd < 0) {
+    LOGE("Connect server timeout. Exit.\n");
+    exit(EXIT_FAILURE);
   }
   LOGM("Socket connected\n");
   test_ipc();
+  LOGD("sock conn done\n");
   return ec_success;
 }
 
@@ -625,6 +640,7 @@ int cli_proc(int argc, char *argv[])
   }
 
   ret = setjmp(jmpbuffer);
+  LOGM("Init cli-mng from %d\n", ret);
   for (int i = ret; i < inits_num; i++) {
     if (ec_success != (e = initfs[i](NULL))) {
       elog(e);
@@ -743,7 +759,14 @@ static err_t clicb_sync(int argc, char *argv[])
 
 static err_t clicb_reset(int argc, char *argv[])
 {
+  int r = -1;
+  if (argc > 1) {
+    r = atoi(argv[1]);
+  }
   printf("%s\n", __FUNCTION__);
+  if (r != -1) {
+    longjmp(jmpbuffer, r);
+  }
   return 0;
 }
 
