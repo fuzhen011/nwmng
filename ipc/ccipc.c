@@ -218,7 +218,7 @@ int cli_conn(const char *self, const char *srv)
 {
   int         fd, len, err, rval;
   struct sockaddr_un  un, sun;
-  int         do_unlink = 0;
+  int         do_unlink = 0, reuse = 1;
 
   if (strlen(self) >= sizeof(un.sun_path)) {
     errno = ENAMETOOLONG;
@@ -229,6 +229,10 @@ int cli_conn(const char *self, const char *srv)
   if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
     /* LOGE("socket\n"); */
     return(-1);
+  }
+  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0) {
+    rval = -5;
+    goto errout;
   }
 
   /* fill socket address structure with our address */

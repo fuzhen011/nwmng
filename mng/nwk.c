@@ -8,6 +8,7 @@
 /* Includes *********************************************************** */
 #include <unistd.h>
 
+#include "cli.h"
 #include "nwk.h"
 #include "mng.h"
 #include "logging.h"
@@ -24,11 +25,12 @@
 /* Static Functions Declaractions ************************************* */
 static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t *e);
 
-err_t nwk_init(mng_t *mng)
+err_t nwk_init(void *p)
 {
   uint16_t ret;
   struct gecko_cmd_packet *evt;
 
+  mng_t *mng = get_mng();
   if (bg_err_success != (ret = gecko_cmd_mesh_prov_init()->result)) {
     LOGE("Error (0x%04x) Happened when trying initializing provisioner\n", ret);
     return err(ec_bgrsp);
@@ -41,6 +43,7 @@ err_t nwk_init(mng_t *mng)
       usleep(500);
       continue;
     }
+    LOGM("NCP: prov initialized\n");
     mng->state = initialized;
     err_t e = on_initialized_config(&evt->data.evt_mesh_prov_initialized);
     if (ec_success == e) {
@@ -52,20 +55,20 @@ err_t nwk_init(mng_t *mng)
 
 static err_t new_netkey(mng_t *mng, bool *change)
 {
-  uint16_t ret;
+  /* uint16_t ret; */
   struct gecko_msg_mesh_prov_create_network_rsp_t *rsp;
 
   if (mng->cfg.subnets[0].netkey.done) {
     return ec_success;
   }
 
-  if (mng->cfg.addr || mng->cfg.ivi) {
-    ret = gecko_cmd_mesh_prov_initialize_network(mng->cfg.addr, mng->cfg.ivi)->result;
-    if (bg_err_success != ret) {
-      LOGBGE("init network", ret);
-      return err(ec_bgrsp);
-    }
-  }
+  /* if (mng->cfg.addr || mng->cfg.ivi) { */
+    /* ret = gecko_cmd_mesh_prov_initialize_network(mng->cfg.addr, mng->cfg.ivi)->result; */
+    /* if (bg_err_success != ret) { */
+      /* LOGBGE("init network", ret); */
+      /* return err(ec_bgrsp); */
+    /* } */
+  /* } */
   rsp = gecko_cmd_mesh_prov_create_network(16,
                                            mng->cfg.subnets[0].netkey.val);
 
@@ -166,6 +169,9 @@ static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t 
       LOGBGE("init network", ret);
       return err(ec_bgrsp);
     }
+  } else if (e->networks && (!mng->cfg.subnets || !mng->cfg.subnets[0].netkey.done)) {
+    bt_shell_printf("NETKEY MISMATCH, NEED FACTORY RESET?\n");
+    return err(ec_state);
   }
 
   /* Network Keys */

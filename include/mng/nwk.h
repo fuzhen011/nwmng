@@ -25,7 +25,7 @@ enum {
   blacklisting_devices_em
 };
 
-err_t nwk_init(mng_t *mng);
+err_t nwk_init(void *p);
 #ifdef __cplusplus
 }
 #endif

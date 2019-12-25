@@ -32,6 +32,7 @@
 #include "logging.h"
 #include "cli/cli.h"
 #include "mng.h"
+#include "nwk.h"
 
 /* Defines  *********************************************************** */
 #define __DUMP_PARAMS
@@ -82,7 +83,7 @@ typedef struct {
 }command_t;
 
 /* Global Variables *************************************************** */
-jmp_buf jmpbuffer;
+jmp_buf initjmpbuf;
 sock_status_t sock = { -1, -1 };
 static proj_args_t projargs = { 0 };
 
@@ -157,7 +158,7 @@ int offsetof_initfunc(init_func_t fn)
 
 void on_sock_disconn(void)
 {
-  longjmp(jmpbuffer, offsetof_initfunc(init_ncp));
+  longjmp(initjmpbuf, offsetof_initfunc(init_ncp));
 }
 
 static int addr_in_cfg(const char *straddr,
@@ -612,7 +613,7 @@ static err_t conn_socksrv(void *p)
     if (0 <= (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
       break;
     }
-    LOGW("Connect server failed [%s]\n", strerror(errno));
+    LOGW("Connect server failed ret[%d] reason[%s]\n", sock.fd, strerror(errno));
     /*
      * Delay before trying again.
      */
@@ -656,7 +657,7 @@ int cli_proc(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  ret = setjmp(jmpbuffer);
+  ret = setjmp(initjmpbuf);
   LOGM("Init cli-mng from %d\n", ret);
   for (int i = ret; i < inits_num; i++) {
     if (ec_success != (e = initfs[i](NULL))) {
@@ -664,6 +665,8 @@ int cli_proc(int argc, char *argv[])
       exit(EXIT_FAILURE);
     }
   }
+  e = nwk_init(NULL);
+  elog(e);
 
   cli_mainloop(NULL);
   return 0;
@@ -782,7 +785,7 @@ static err_t clicb_reset(int argc, char *argv[])
   }
   printf("%s\n", __FUNCTION__);
   if (r != -1) {
-    longjmp(jmpbuffer, r);
+    longjmp(initjmpbuf, r);
   }
   return 0;
 }
