@@ -112,12 +112,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${RL_INC}
                     ${EXTRA_INC_PATH})
 
-add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
-target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${RL_LIB} pthread json-c)
-
-if(0)
-
-endif()
 add_executable(cli-mng
                ${HAL_SRC_LIST}
                ${CLI_SRC_LIST}
@@ -127,6 +121,9 @@ add_executable(cli-mng
                ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
 target_link_libraries(cli-mng m ${RL_LIB})
 target_compile_definitions(cli-mng PUBLIC CLI_MNG)
+
+add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
+target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${RL_LIB} pthread json-c)
 
 add_executable(cfg
                ${CFG_SRC_LIST}

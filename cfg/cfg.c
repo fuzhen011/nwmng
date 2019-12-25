@@ -208,7 +208,7 @@ err_t cfg_init(void)
   return e;
 }
 
-int cfg_proc(void)
+int cfg_proc(int argc, char *argv[])
 {
   err_t e;
   LOGM("CFG Process Started Up.\n");

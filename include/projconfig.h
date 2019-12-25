@@ -14,6 +14,7 @@ extern "C"
 #ifndef SINGLE_PROC
 #define SINGLE_PROC
 #endif
+#define FILE_PATH_MAX 108
 
 #define GC_EXP_DEV_NUM  128
 

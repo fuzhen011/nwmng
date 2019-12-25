@@ -31,43 +31,12 @@
 pthread_t cfg_tid;
 
 /* Static Functions Declaractions ************************************* */
-
-#if 0
-void startup(void *args)
-{
-  err_t e;
-  int ret;
-  printf("\nStart mng \n");
-  LOGD("Sync NCP target \n");
-  if (ec_success != (e = mng_init(false))) {
-    exit(EXIT_FAILURE);
-  }
-
-  printf("\nStart cli \n");
-
-  if (0 != (ret = pthread_create(&cfg_tid,
-                                 NULL,
-                                 cfg_mainloop,
-                                 NULL))) {
-    errExitEN(ret, "pthread_create Console");
-  }
-
-  cli_mainloop(NULL);
-
-  if (0 != (ret = pthread_join(cfg_tid, NULL))) {
-    errExitEN(ret, "pthread_join");
-  }
-
-  ASSERT(0);
-}
-#endif
-
 #if !defined(CLI_MNG) && !defined(CFG)
-typedef int (*proc)(void);
-static proc procs[] = {
+typedef int (*proc_t)(int argc, char *argv[]);
+static proc_t procs[] = {
   cli_proc, cfg_proc
 };
-static const int proc_num = sizeof(procs) / sizeof(proc);
+static const int proc_num = sizeof(procs) / sizeof(proc_t);
 static pid_t pids[10] = { 0 };
 #endif
 
@@ -79,12 +48,12 @@ void startup(int argc, char *argv[])
     elog(e);
     return;
   }
-  cli_proc(); /* should never return */
+  cli_proc(argc, argv); /* should never return */
 
   logging_deinit();
 #elif defined(CFG)
   /* cfg_init is called inside */
-  cfg_proc(); /* should never return */
+  cfg_proc(argc, argv); /* should never return */
 
   logging_deinit();
   cfgdb_deinit();
@@ -108,7 +77,7 @@ void startup(int argc, char *argv[])
     elog(e);
   }
 
-  procs[proc_num - 1 - i]();
+  procs[proc_num - 1 - i](argc, argv);
 
   if (i == proc_num - 1) {
     wait(NULL);

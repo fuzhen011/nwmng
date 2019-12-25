@@ -16,7 +16,7 @@ extern "C"
 #include "err.h"
 
 err_t cfg_init(void);
-int cfg_proc(void);
+int cfg_proc(int argc, char *argv[]);
 void *cfg_mainloop(void *p);
 
 int get_ng_addrs(uint16_t *addrs);

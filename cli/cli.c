@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include <setjmp.h>
 
 #include <wordexp.h>
 
@@ -30,8 +31,8 @@
 #include "err.h"
 #include "logging.h"
 #include "cli/cli.h"
+#include "mng.h"
 
-#include "cfg.h"
 /* Defines  *********************************************************** */
 #define __DUMP_PARAMS
 #ifdef __DUMP_PARAMS
@@ -46,7 +47,7 @@
 #endif
 #define DECLARE_CB(name)  static err_t clicb_##name(int argc, char *argv[])
 
-#define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWmng$ " RTT_CTRL_RESET
+#define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWK-Mng$ " RTT_CTRL_RESET
 #define RL_HISTORY  ".history"
 #define DECLARE_VAGET_FUN(name) static err_t vaget_##name(void *vap, int inbuflen, int *ulen, int *rlen)
 
@@ -62,6 +63,7 @@
          (cmd)->doc)
 
 #define foreach_cmds(i) for (int i = 0; i < cmd_num; i++)
+
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
@@ -80,9 +82,22 @@ typedef struct {
 }command_t;
 
 /* Global Variables *************************************************** */
-sock_status_t sock = { 0 };
+jmp_buf jmpbuffer;
+sock_status_t sock = { -1, -1 };
+static proj_args_t projargs = { 0 };
 
 /* Static Variables *************************************************** */
+static err_t cli_init(void *p);
+static err_t conn_socksrv(void *p);
+
+static init_func_t initfs[] = {
+  cli_init,
+  init_ncp,
+  conn_socksrv
+};
+
+static const int inits_num = ARR_LEN(initfs);
+
 DECLARE_VAGET_FUN(addrs);
 
 DECLARE_CB(sync);
@@ -178,12 +193,13 @@ static err_t vaget_addrs(void *vap,
   return ec_success;
 }
 
-static void cli_init(void)
+static err_t cli_init(void *p)
 {
   /* Tell the completer that we want a crack first. */
   rl_attempted_completion_function = shell_completion;
   using_history();
   read_history(RL_HISTORY);
+  return ec_success;
 }
 
 /* Generator function for command completion.  STATE lets us know whether
@@ -539,7 +555,10 @@ void test_ipc(void)
   }
   LOGM("CLI Socket TEST DONE\n");
 }
-
+/*
+ * cli-mng process boot sequence
+ *
+ */
 err_t cli_proc_init(int child_num, const pid_t *pids)
 {
   err_t e;
@@ -559,8 +578,16 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
     memcpy(children, pids, child_num * sizeof(pid_t));
     children_num = child_num;
   }
+  return e;
+}
 
-  cli_init();
+static err_t conn_socksrv(void *p)
+{
+  if (sock.fd >= 0) {
+    close(sock.fd);
+    sock.fd = -1;
+  }
+
   usleep(20 * 1000);
   if (0 > (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
     LOGE("Client connects server error[%s]\n", strerror(errno));
@@ -568,37 +595,94 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
   }
   LOGM("Socket connected\n");
   test_ipc();
-  return 0;
+  return ec_success;
 }
 
-/* static void rl_handler(char *input) */
-/* { */
-/* printf("111\n"); */
-/* } */
-
-int cli_proc(void)
+const proj_args_t *getprojargs(void)
 {
-  LOGD("CLI started\n");
-  for (;;) {
-    readcmd();
+  return &projargs;
+}
+
+static int setprojargs(int argc, char *argv[])
+{
+#if 0
+#else
+  projargs.enc = false;
+  memcpy(projargs.port, PORT, sizeof(PORT));
+  projargs.initialized = true;
+  return 0;
+#endif
+}
+
+int cli_proc(int argc, char *argv[])
+{
+  int ret;
+  err_t e;
+  LOGD("CLI-MNG Process Started Up\n");
+  if (0 != setprojargs(argc, argv)) {
+    LOGE("Set project args error.\n");
+    exit(EXIT_FAILURE);
   }
-  /* rl_readline_name = SHELL_NAME; */
-  /* setlinebuf(stdout); */
-  /* rl_attempted_completion_function = shell_completion; */
-  /* rl_erase_empty_line = 1; */
-  /* rl_callback_handler_install(NULL, rl_handler); */
-  /* using_history(); */
-  /* read_history(RL_HISTORY); */
-  /* while (1) */
-  /* { */
-  /* } */
+
+  ret = setjmp(jmpbuffer);
+  for (int i = ret; i < inits_num; i++) {
+    if (ec_success != (e = initfs[i](NULL))) {
+      elog(e);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  cli_mainloop(NULL);
   return 0;
 }
 
 void *cli_mainloop(void *pIn)
 {
-  cli_proc_init(0, NULL);
-  cli_proc();
+  /* cli_proc_init(0, NULL); */
+  /* cli_proc(); */
+
+  char *str;
+  int ret;
+  wordexp_t w;
+
+  while (1) {
+    if (line) {
+      free(line);
+      line = NULL;
+    }
+    if (NULL == (line = readline(SHELL_NAME))) {
+      continue;
+    }
+    /* Remove leading and trailing whitespace from the line.
+     * Then, if there is anything left, add it to the history list
+     * and execute it. */
+    str = stripwhite(line);
+    if (wordexp(str, &w, WRDE_NOCMD)) {
+      continue;
+    }
+    if (!str || str[0] == '\0') {
+      goto out;
+    }
+    ret = find_cmd_index(str);
+    if (ret == -1) {
+      output_nspt(w.we_wordv[0]);
+      goto out;
+    }
+    DUMP_PARAMS(w.we_wordc, w.we_wordv);
+    /* Handle the command - call the callback */
+    ret = commands[ret].fn(w.we_wordc, w.we_wordv);
+    if (ec_param_invalid == ret) {
+      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+      print_cmd_usage(&commands[ret]);
+      goto out;
+    }
+    out:
+    if (*str) {
+      add_history(str);
+      write_history(RL_HISTORY);
+    }
+    wordfree(&w);
+  }
   return NULL;
 }
 

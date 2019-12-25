@@ -21,6 +21,7 @@
 #include "mng.h"
 #include "nwk.h"
 #include "ccipc.h"
+#include "cli.h"
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -30,7 +31,7 @@ extern sock_status_t sock;
 static mng_t mng = { 0 };
 
 /* Static Functions Declaractions ************************************* */
-
+#if NOTODO
 static int __provcfg_field(opc_t opc, uint8_t len, const char *buf)
 {
   switch (opc) {
@@ -50,7 +51,7 @@ static err_t ipc_get_provcfg(void)
   }
   return e;
 }
-
+#endif
 mng_t *get_mng(void)
 {
   return &mng;
@@ -71,15 +72,19 @@ int mng_proc(void)
   }
 }
 
-err_t mng_init(bool enc)
+err_t init_ncp(void *p)
 {
-  err_t e;
-  bguart_init(false, PORT, NULL);
+  const proj_args_t *pg = getprojargs();
+  if (!pg->initialized) {
+    return err(ec_state);
+  }
+
+  bguart_init(pg->enc,
+              pg->enc ? (char *)pg->sock.srv : (char *)pg->port,
+              pg->enc ? (char *)pg->sock.clt : NULL);
+
   conn_ncptarget();
   sync_host_and_ncp_target();
-
-  EC(ec_success, nwk_init(&mng));
-
   atexit(__mng_exit);
   return ec_success;
 }

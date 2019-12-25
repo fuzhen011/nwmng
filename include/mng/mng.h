@@ -25,7 +25,8 @@ typedef struct {
   }status;
 }mng_t;
 
-err_t mng_init(bool enc);
+err_t init_ncp(void *p);
+
 int mng_proc(void);
 void *mng_mainloop(void *p);
 mng_t *get_mng(void);
