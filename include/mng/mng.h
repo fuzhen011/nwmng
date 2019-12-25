@@ -18,6 +18,7 @@ extern "C"
 
 typedef struct {
   int state;
+  uint8_t conn;
   provcfg_t cfg;
   struct{
     bool scanning;
@@ -26,6 +27,7 @@ typedef struct {
 }mng_t;
 
 err_t init_ncp(void *p);
+err_t clr_all(void *p);
 
 void *mng_mainloop(void *p);
 mng_t *get_mng(void);

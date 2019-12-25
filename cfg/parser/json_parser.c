@@ -1253,9 +1253,6 @@ static err_t modify_node_field(const uint8_t *uuid,
     return err(ec_not_exist);
   }
   __kv_replace(obj, key, value);
-  if (jcfg.nw.gen.autoflush) {
-    return json_cfg_flush(NW_NODES_CFG_FILE);
-  }
   return ec_success;
 }
 
@@ -1285,12 +1282,6 @@ static err_t _backlog_node_add(const uint8_t *uuid)
   if (ec_success != (e = cfgdb_add(n))) {
     free(n);
     goto fail;
-  }
-
-  if (jcfg.nw.gen.autoflush) {
-    if (ec_success != (e = json_cfg_flush(NW_NODES_CFG_FILE))) {
-      goto fail;
-    }
   }
 
   fail:
@@ -1346,27 +1337,40 @@ static err_t set_node_done(const void *key,
   return modify_node_field(key, STR_DONE, buf);
 }
 
+static err_t nodes_clrctl(void)
+{
+  /* TODO */
+  return ec_success;
+}
+
 static err_t write_nodes(int wrtype,
                          const void *key,
                          void *data)
 {
+  err_t e;
   switch (wrtype) {
+    case wrt_clrctl:
+      e = nodes_clrctl();
+      break;
     case wrt_add_node:
-      return _backlog_node_add(data);
+      e = _backlog_node_add(data);
       break;
     case wrt_errbits:
-      return set_node_errbits(key, data);
+      e = set_node_errbits(key, data);
       break;
     case wrt_node_addr:
-      set_node_addr(key, data);
+      e = set_node_addr(key, data);
       break;
     case wrt_done:
-      set_node_done(key, data);
+      e = set_node_done(key, data);
       break;
     default:
       return err(ec_param_invalid);
   }
-  return ec_success;
+  if (jcfg.nw.gen.autoflush && e == ec_success) {
+    return json_cfg_flush(NW_NODES_CFG_FILE);
+  }
+  return e;
 }
 
 static inline void __provself_clrctl(provcfg_t *pc)

@@ -26,12 +26,15 @@
 #include "ccipc.h"
 #include "cli.h"
 /* Defines  *********************************************************** */
+#define INVALID_CONN_HANDLE 0xff
 
 /* Global Variables *************************************************** */
 extern sock_status_t sock;
 
 /* Static Variables *************************************************** */
-static mng_t mng = { 0 };
+static mng_t mng = {
+  .conn = 0xff
+};
 
 /* Static Functions Declaractions ************************************* */
 err_t handle_rsp(ipcevt_hdr_t hdr)
@@ -169,6 +172,28 @@ void __ncp_exit(void)
 {
   gecko_cmd_system_reset(0);
   LOGD("MNG Exit\n");
+}
+
+err_t clr_all(void *p)
+{
+  int ret;
+  /* TODO: IPC to clear the provcfg */
+  /* TODO: IPC to clear all nodes */
+
+  if (mng.conn != INVALID_CONN_HANDLE) {
+    if (bg_err_success != (ret = gecko_cmd_le_connection_close(mng.conn)->result)) {
+      LOGBGE("Disconnect", ret);
+      return err(ec_bgrsp);
+    }
+    mng.conn = INVALID_CONN_HANDLE;
+  }
+
+  if (bg_err_success != (ret = gecko_cmd_flash_ps_erase_all()->result)) {
+    LOGBGE("Erase all", ret);
+    return err(ec_bgrsp);
+  }
+  usleep(300 * 1000);
+  return ec_success;
 }
 
 err_t init_ncp(void *p)

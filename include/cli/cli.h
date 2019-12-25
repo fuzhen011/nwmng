@@ -17,6 +17,19 @@ extern "C"
 #include "err.h"
 #include "opcodes.h"
 
+#define FULL_RESET  (BITOF(CLI_INIT) | BITOF(NCP_INIT) \
+                     | BITOF(SOCK_CONN) | BITOF(GET_PROVCFG))
+#define NORMAL_RESET (BITOF(NCP_INIT) | BITOF(GET_PROVCFG))
+#define FACTORY_RESET (BITOF(CLR_ALL) | BITOF(NCP_INIT) | BITOF(GET_PROVCFG))
+
+enum {
+  CLI_INIT,
+  CLR_ALL,
+  NCP_INIT,
+  SOCK_CONN,
+  GET_PROVCFG,
+};
+
 typedef struct {
   bool initialized;
   bool enc;

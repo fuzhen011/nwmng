@@ -93,6 +93,7 @@ static err_t conn_socksrv(void *p);
 
 static init_func_t initfs[] = {
   cli_init,
+  clr_all,
   init_ncp,
   conn_socksrv,
   ipc_get_provcfg,
@@ -659,12 +660,19 @@ int cli_proc(int argc, char *argv[])
 
   ret = setjmp(initjmpbuf);
   LOGM("Init cli-mng from %d\n", ret);
-  for (int i = ret; i < inits_num; i++) {
+  if (ret == 0) {
+    ret = FULL_RESET;
+  }
+  for (int i = 0; i < sizeof(int) * 8; i++) {
+    if (!IS_BIT_SET(ret, i)) {
+      continue;
+    }
     if (ec_success != (e = initfs[i](NULL))) {
       elog(e);
       exit(EXIT_FAILURE);
     }
   }
+
   e = nwk_init(NULL);
   elog(e);
 
@@ -785,7 +793,7 @@ static err_t clicb_reset(int argc, char *argv[])
   }
   printf("%s\n", __FUNCTION__);
   if (r != -1) {
-    longjmp(initjmpbuf, r);
+    longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
   }
   return 0;
 }

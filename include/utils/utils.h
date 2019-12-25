@@ -54,6 +54,7 @@ enum {
 #define MIN(a, b)                                   ((a) < (b) ? (a) : (b))
 #endif
 
+#define BITOF(offs)                                 (1 << (offs))
 #define BIT_SET(v, bit)                             ((v) |= (1 << (bit)))
 #define BIT_CLR(v, bit)                             ((v) &= ~(1 << (bit)))
 #define IS_BIT_SET(v, bit)                          (((v) & (1 << (bit))) ? 1 : 0)

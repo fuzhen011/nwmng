@@ -42,7 +42,6 @@
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
 - [] Config File loaders
-
   - [x] TTL
   - [] Features
     - [] Low Power
@@ -70,6 +69,7 @@
     - [] netkey done flag (key: NULL)
     - [] appkey id (key: refid)
     - [] appkey done flag (key: refid)
+- [] Write node not only write json file also modify the value in the hash table
 
 ## Utils
 
