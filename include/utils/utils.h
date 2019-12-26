@@ -13,13 +13,38 @@ extern "C"
 #endif
 #include <stdio.h>
 #include <stdint.h>
-
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "err.h"
+
+typedef struct {
+  uint8_t len;
+  uint16_t data[];
+}uint16array_t;
+
+typedef struct {
+  uint8_t len;
+  uint16_t *data;
+}uint16list_t;
+
+typedef uint32_t lbitmap_t;
+typedef uint16_t sbitmap_t;
+typedef uint8_t  bbitmap_t;
 
 enum {
   BASE_DEC,
   BASE_HEX
 };
+
+#define ARR_LEN(x) sizeof((x)) / sizeof((x)[0])
+
+#define SAFE_FREE(p) do { if ((p)) { free((p)); (p) = NULL; } } while (0)
+
+#ifndef ASSERT
+#define ASSERT(x) do { if (!(x)) { LOGA(""); abort(); } } while (0)
+#define ASSERT_MSG(x, fmt, ...) do { if (!(x)) { LOGA(fmt, ##__VA_ARGS__); abort(); } } while (0)
+#endif
 
 #ifndef MAX
 #define MAX(a, b)                                   ((a) > (b) ? (a) : (b))
@@ -29,6 +54,7 @@ enum {
 #define MIN(a, b)                                   ((a) < (b) ? (a) : (b))
 #endif
 
+#define BITOF(offs)                                 (1 << (offs))
 #define BIT_SET(v, bit)                             ((v) |= (1 << (bit)))
 #define BIT_CLR(v, bit)                             ((v) &= ~(1 << (bit)))
 #define IS_BIT_SET(v, bit)                          (((v) & (1 << (bit))) ? 1 : 0)
@@ -73,6 +99,35 @@ static inline char hex_char_to_value(char x)
   }
 }
 
+static inline void uint32_tostr(uint32_t v, char *p)
+{
+  p[7] = hex_value_to_char(v & 0x0000000F);
+  p[6] = hex_value_to_char((v & 0x000000F0) >> 4);
+  p[5] = hex_value_to_char((v & 0x00000F00) >> 8);
+  p[4] = hex_value_to_char((v & 0x0000F000) >> 12);
+  p[3] = hex_value_to_char((v & 0x000F0000) >> 16);
+  p[2] = hex_value_to_char((v & 0x00F00000) >> 20);
+  p[1] = hex_value_to_char((v & 0x0F000000) >> 24);
+  p[0] = hex_value_to_char((v & 0xF0000000) >> 28);
+  p[8] = 0;
+}
+
+static inline void uint16_tostr(uint16_t v, char *p)
+{
+  p[3] = hex_value_to_char(v & 0x000F);
+  p[2] = hex_value_to_char((v & 0x00F0) >> 4);
+  p[1] = hex_value_to_char((v & 0x0F00) >> 8);
+  p[0] = hex_value_to_char((v & 0xF000) >> 12);
+  p[4] = 0;
+}
+
+static inline void uint8_tostr(uint8_t v, char *p)
+{
+  p[1] = hex_value_to_char(v & 0x0F);
+  p[0] = hex_value_to_char((v & 0xF0) >> 4);
+  p[2] = 0;
+}
+
 err_t str2uint(const char *input,
                size_t length,
                void *p_ret,
@@ -82,6 +137,40 @@ err_t uint2str(uint64_t input,
                uint8_t base_type,
                size_t length,
                char *str);
+
+err_t str2cbuf(const char src[],
+               uint8_t rev,
+               char dest[],
+               size_t destLen);
+int cbuf2str(const char src[],
+             size_t srcLen,
+             uint8_t rev,
+             char dest[],
+             size_t destLen);
+
+static inline void alloc_copy(uint8_t **p,
+                              const void *src,
+                              size_t len)
+{
+  if (!p || !len || !src) {
+    return;
+  }
+
+  *p = (uint8_t *)malloc(len);
+  memcpy(*p, src, len);
+}
+
+static inline void alloc_copy_u16list(uint16list_t **p,
+                                      const uint16list_t *src)
+{
+  if (!p || !src || !src->len) {
+    return;
+  }
+  *p = (uint16list_t *)malloc(sizeof(uint16list_t));
+  (*p)->len = src->len;
+  (*p)->data = (uint16_t *)malloc(sizeof(uint16_t) * src->len);
+  memcpy((*p)->data, src->data, sizeof(uint16_t) * src->len);
+}
 
 static inline void addr_to_buf(uint16_t addr, char *buf)
 {
@@ -99,6 +188,28 @@ static inline void addr_to_buf(uint16_t addr, char *buf)
 #else
   uint2str(addr, BASE_HEX, 6, buf);
 #endif
+}
+
+static inline void errExit(const char *pMsg)
+{
+  perror(pMsg);
+  exit(EXIT_FAILURE);
+}
+
+static inline void err_exit(const char *pMsg)
+{
+  perror(pMsg);
+#ifdef __WIN32__
+  return;
+#else
+  _exit(EXIT_FAILURE);
+#endif
+}
+
+static inline void errExitEN(int errnum, const char *pMsg)
+{
+  fprintf(stderr, "%s | error code = %d\n", pMsg, errnum);
+  exit(EXIT_FAILURE);
 }
 #ifdef __cplusplus
 }

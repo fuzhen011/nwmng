@@ -14,6 +14,10 @@
 #include "utils.h"
 
 /* Defines  *********************************************************** */
+#define STR_HEX_VALID(x)             \
+  ((((x) >= '0') && ((x) <= '9'))    \
+   || (((x) >= 'a') && ((x) <= 'f')) \
+   || (((x) >= 'A') && ((x) <= 'F')))
 
 /* Global Variables *************************************************** */
 
@@ -72,6 +76,83 @@ int strsuffix(const char *str, const char *suffix)
   return strncmp(str + len - suffix_len, suffix, suffix_len);
 }
 
+static inline char __asmbhex(char h, char l)
+{
+  return h * 16 + l;
+}
+
+int cbuf2str(const char src[],
+             size_t srcLen,
+             uint8_t rev,
+             char dest[],
+             size_t destLen)
+{
+  int len;
+  const unsigned char *p;
+
+  p = (const unsigned char *)src;
+  if (p == NULL) {
+    return err(ec_param_invalid);
+  }
+  len = srcLen;
+
+  if (destLen < len * 2) {
+    return err(ec_not_exist);
+  }
+
+  for (int i = 0; i < len; i++) {
+    if (rev) {
+      dest[len * 2 - 1 - i * 2] = hex_value_to_char(*p % 16);
+      dest[len * 2 - 2 - i * 2] = hex_value_to_char(*p / 16);
+    } else {
+      dest[i * 2] = hex_value_to_char(*p / 16);
+      dest[i * 2 + 1] = hex_value_to_char(*p % 16);
+    }
+    p++;
+  }
+
+  return ec_success;
+}
+
+err_t str2cbuf(const char src[],
+               uint8_t rev,
+               char dest[],
+               size_t destLen)
+{
+  int len;
+  const char *p;
+  char ret;
+
+  p = src;
+  if (!p) {
+    return err(ec_param_invalid);
+  }
+  len = strlen(p);
+
+  if (destLen < len / 2) {
+    return err(ec_length_leak);
+  } else if (len % 2) {
+    return err(ec_param_invalid);
+  }
+
+  for (int i = 0; i < len / 2; i++) {
+    if (STR_HEX_VALID(*p) && STR_HEX_VALID(*(p + 1))) {
+      ret = __asmbhex(hex_char_to_value(*p), hex_char_to_value(*(p + 1)));
+    } else {
+      return err(ec_param_invalid);
+    }
+
+    if (rev) {
+      dest[len / 2 - 1 - i] = ret;
+    } else {
+      dest[i] = ret;
+    }
+    p += 2;
+  }
+
+  return ec_success;
+}
+
 err_t str2uint(const char *input,
                size_t length,
                void *p_ret,
@@ -81,7 +162,7 @@ err_t str2uint(const char *input,
   uint64_t ret = 0;
   const char *x_ret = NULL;
   if (!retlen || !input || !p_ret || !length) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   if (!memcmp(input, "0x", 2)) {
     base = 16;
@@ -97,7 +178,7 @@ err_t str2uint(const char *input,
       } else if (tmp_c >= 'A' && tmp_c <= 'F') {
         tmp = tmp_c - 'A' + 10;
       } else {
-        return ec_format;
+        return err(ec_format);
       }
       ret += tmp * pow(base, length - 1 - i);
     }
@@ -108,7 +189,7 @@ err_t str2uint(const char *input,
       if (tmp_c >= '0' && tmp_c <= '9') {
         tmp = tmp_c - '0';
       } else {
-        return ec_format;
+        return err(ec_format);
       }
       ret += tmp * pow(base, length - 1 - i);
     }
@@ -133,7 +214,7 @@ err_t uint2str(uint64_t input,
   uint64_t ret = 0;
   uint8_t base = 10, remaining = 0, idx = 0;
   if (!length || !str) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
 
   if (base_type == BASE_DEC) {
@@ -141,7 +222,7 @@ err_t uint2str(uint64_t input,
     remaining = input % base;
     while (1) {
       if (idx == length) {
-        return ec_length_leak;
+        return err(ec_length_leak);
       }
       str[length - 1 - idx++] = '0' + remaining;
       if (!ret) {
@@ -159,7 +240,7 @@ err_t uint2str(uint64_t input,
     str[1] = 'x';
     while (1) {
       if (idx > length - 2) {
-        return ec_length_leak;
+        return err(ec_length_leak);
       }
       if (remaining < 10) {
         str[length - 1 - idx++] = '0' + remaining;
@@ -174,7 +255,7 @@ err_t uint2str(uint64_t input,
       ret = ret / base;
     }
   } else {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   return ec_success;
 }

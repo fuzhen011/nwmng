@@ -15,18 +15,24 @@
 
 #include <unistd.h>
 #include <signal.h>
-#include <assert.h>
 #include <errno.h>
+#include <setjmp.h>
 
 #include <wordexp.h>
+
+#include <sys/socket.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "cli/cli.h"
+#include "projconfig.h"
+#include "ccipc.h"
 #include "utils.h"
 #include "err.h"
 #include "logging.h"
+#include "cli/cli.h"
+#include "mng.h"
+#include "nwk.h"
 
 /* Defines  *********************************************************** */
 #define __DUMP_PARAMS
@@ -42,7 +48,7 @@
 #endif
 #define DECLARE_CB(name)  static err_t clicb_##name(int argc, char *argv[])
 
-#define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWmng$ " RTT_CTRL_RESET
+#define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWK-Mng$ " RTT_CTRL_RESET
 #define RL_HISTORY  ".history"
 #define DECLARE_VAGET_FUN(name) static err_t vaget_##name(void *vap, int inbuflen, int *ulen, int *rlen)
 
@@ -57,7 +63,8 @@
          (cmd)->arg ? (cmd)->arg : "",                         \
          (cmd)->doc)
 
-#define iterate_cmds(i) for (int i = 0; i < cmd_num; i++)
+#define foreach_cmds(i) for (int i = 0; i < cmd_num; i++)
+
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
@@ -76,13 +83,30 @@ typedef struct {
 }command_t;
 
 /* Global Variables *************************************************** */
+jmp_buf initjmpbuf;
+sock_status_t sock = { -1, -1 };
+static proj_args_t projargs = { 0 };
 
 /* Static Variables *************************************************** */
+static err_t cli_init(void *p);
+static err_t conn_socksrv(void *p);
+
+static init_func_t initfs[] = {
+  cli_init,
+  clr_all,
+  init_ncp,
+  conn_socksrv,
+  ipc_get_provcfg,
+};
+
+static const int inits_num = ARR_LEN(initfs);
+
 DECLARE_VAGET_FUN(addrs);
 
 DECLARE_CB(sync);
 DECLARE_CB(reset);
 DECLARE_CB(list);
+DECLARE_CB(info);
 DECLARE_CB(help);
 DECLARE_CB(quit);
 DECLARE_CB(ct);
@@ -100,6 +124,9 @@ static const command_t commands[] = {
     "Print help" },
   { "list", NULL, clicb_list,
     "List all devices in the database" },
+  { "info", "[addr...]", clicb_info,
+    "Show the device information in the database",
+    NULL, NULL, vaget_addrs },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -119,6 +146,22 @@ static char *line = NULL;
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
 
+int offsetof_initfunc(init_func_t fn)
+{
+  int i;
+  for (i = 0; i < inits_num; i++) {
+    if (initfs[i] == fn) {
+      break;
+    }
+  }
+  return i;
+}
+
+void on_sock_disconn(void)
+{
+  longjmp(initjmpbuf, offsetof_initfunc(init_ncp));
+}
+
 static int addr_in_cfg(const char *straddr,
                        uint16_t *addr)
 {
@@ -128,6 +171,7 @@ static int addr_in_cfg(const char *straddr,
     LOGD("str2uint failed\n");
     return -1;
   }
+
   if (addrtmp == 0x1003
       || addrtmp == 0xc005
       || addrtmp == 0x120c
@@ -136,18 +180,8 @@ static int addr_in_cfg(const char *straddr,
     *addr = addrtmp;
     return 0;
   }
-  return -1;
-}
 
-static int dummy_get_addrs(uint16_t *addrs)
-{
-  addrs[0] = 0x1003;
-  addrs[1] = 0xc005;
-  addrs[2] = 0x120c;
-  addrs[3] = 0x100e;
-  addrs[4] = 0x1;
-  /* addrs[4] = 0x1003; */
-  return 5;
+  return -1;
 }
 
 #define ADDRULEN  7
@@ -163,7 +197,9 @@ static err_t vaget_addrs(void *vap,
 
   *ulen = ADDRULEN;
   uint16_t *addrs = calloc(VAP_LEN / ADDRULEN, sizeof(uint16_t));
-  int num = dummy_get_addrs(addrs);
+  /* int num = get_ng_addrs(addrs); */
+  int num = 1;
+  /* TODO: Add it when ipc done */
   if (num * (*ulen) > inbuflen ) {
     num = inbuflen / (*ulen);
   }
@@ -176,12 +212,14 @@ static err_t vaget_addrs(void *vap,
   return ec_success;
 }
 
-static void cli_init(void)
+static err_t cli_init(void *p)
 {
   /* Tell the completer that we want a crack first. */
   rl_attempted_completion_function = shell_completion;
   using_history();
   read_history(RL_HISTORY);
+  LOGD("cli init done\n");
+  return ec_success;
 }
 
 /* Generator function for command completion.  STATE lets us know whether
@@ -520,45 +558,176 @@ void readcmd(void)
   wordfree(&w);
 }
 
-int cli_proc_init(int child_num, const pid_t *pids)
+void test_ipc(void)
 {
+  const char s[] = "hello, cfg";
+  char r[50] = { 0 };
+  int n;
+  if (-1 == (n = send(sock.fd, s, sizeof(s), 0))) {
+    LOGE("send [%s]\n", strerror(errno));
+  } else {
+    LOGM("Send [%d:%s]\n", n, s);
+  }
+  if (-1 == (n = recv(sock.fd, r, 50, 0))) {
+    LOGE("recv [%s]\n", strerror(errno));
+  } else {
+    LOGM("CLI received [%d:%s] from client.\n", n, r);
+  }
+  LOGM("CLI Socket TEST DONE\n");
+}
+/*
+ * cli-mng process boot sequence
+ *
+ */
+err_t cli_proc_init(int child_num, const pid_t *pids)
+{
+  err_t e;
+  if (ec_success != (e = logging_init(CLI_LOG_FILE_PATH,
+                                      0, /* Not output to stdout */
+                                      LOG_MINIMAL_LVL(LVL_VER)))) {
+    fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
+    return e;
+  }
+
   if (children) {
     free(children);
   }
-
   if (child_num) {
-    assert(pids);
+    ASSERT(pids);
     children = calloc(child_num, sizeof(pid_t));
     memcpy(children, pids, child_num * sizeof(pid_t));
     children_num = child_num;
   }
+  return e;
+}
 
-  cli_init();
+static err_t conn_socksrv(void *p)
+{
+  if (sock.fd >= 0) {
+    close(sock.fd);
+    sock.fd = -1;
+  }
+
+  usleep(20 * 1000);
+
+  for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
+    if (0 <= (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
+      break;
+    }
+    LOGW("Connect server failed ret[%d] reason[%s]\n", sock.fd, strerror(errno));
+    /*
+     * Delay before trying again.
+     */
+    if (numsec <= MAXSLEEP / 2) {
+      sleep(numsec);
+    }
+  }
+  if (sock.fd < 0) {
+    LOGE("Connect server timeout. Exit.\n");
+    exit(EXIT_FAILURE);
+  }
+  LOGM("Socket connected\n");
+  test_ipc();
+  LOGD("sock conn done\n");
+  return ec_success;
+}
+
+const proj_args_t *getprojargs(void)
+{
+  return &projargs;
+}
+
+static int setprojargs(int argc, char *argv[])
+{
+#if 0
+#else
+  projargs.enc = false;
+  memcpy(projargs.port, PORT, sizeof(PORT));
+  projargs.initialized = true;
+  return 0;
+#endif
+}
+
+int cli_proc(int argc, char *argv[])
+{
+  int ret;
+  err_t e;
+  LOGD("CLI-MNG Process Started Up\n");
+  if (0 != setprojargs(argc, argv)) {
+    LOGE("Set project args error.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  ret = setjmp(initjmpbuf);
+  LOGM("Init cli-mng from %d\n", ret);
+  if (ret == 0) {
+    ret = FULL_RESET;
+  }
+  for (int i = 0; i < sizeof(int) * 8; i++) {
+    if (!IS_BIT_SET(ret, i)) {
+      continue;
+    }
+    if (ec_success != (e = initfs[i](NULL))) {
+      elog(e);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  e = nwk_init(NULL);
+  elog(e);
+
+  cli_mainloop(NULL);
   return 0;
 }
 
-/* static void rl_handler(char *input) */
-/* { */
-/* printf("111\n"); */
-/* } */
-
-int cli_proc(void)
+void *cli_mainloop(void *pIn)
 {
-  LOGD("CLI started\n");
-  for (;;) {
-    readcmd();
+  /* cli_proc_init(0, NULL); */
+  /* cli_proc(); */
+
+  char *str;
+  int ret;
+  wordexp_t w;
+
+  while (1) {
+    if (line) {
+      free(line);
+      line = NULL;
+    }
+    if (NULL == (line = readline(SHELL_NAME))) {
+      continue;
+    }
+    /* Remove leading and trailing whitespace from the line.
+     * Then, if there is anything left, add it to the history list
+     * and execute it. */
+    str = stripwhite(line);
+    if (wordexp(str, &w, WRDE_NOCMD)) {
+      continue;
+    }
+    if (!str || str[0] == '\0') {
+      goto out;
+    }
+    ret = find_cmd_index(str);
+    if (ret == -1) {
+      output_nspt(w.we_wordv[0]);
+      goto out;
+    }
+    DUMP_PARAMS(w.we_wordc, w.we_wordv);
+    /* Handle the command - call the callback */
+    ret = commands[ret].fn(w.we_wordc, w.we_wordv);
+    if (ec_param_invalid == ret) {
+      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+      print_cmd_usage(&commands[ret]);
+      goto out;
+    }
+    out:
+    if (*str) {
+      add_history(str);
+      write_history(RL_HISTORY);
+    }
+    wordfree(&w);
   }
-  /* rl_readline_name = SHELL_NAME; */
-  /* setlinebuf(stdout); */
-  /* rl_attempted_completion_function = shell_completion; */
-  /* rl_erase_empty_line = 1; */
-  /* rl_callback_handler_install(NULL, rl_handler); */
-  /* using_history(); */
-  /* read_history(RL_HISTORY); */
-  /* while (1) */
-  /* { */
-  /* } */
-  return 0;
+  return NULL;
 }
 
 void bt_shell_printf(const char *fmt, ...)
@@ -618,21 +787,34 @@ static err_t clicb_sync(int argc, char *argv[])
 
 static err_t clicb_reset(int argc, char *argv[])
 {
+  int r = -1;
+  if (argc > 1) {
+    r = atoi(argv[1]);
+  }
   printf("%s\n", __FUNCTION__);
+  if (r != -1) {
+    longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
+  }
   return 0;
 }
 
 static err_t clicb_list(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
-  return ec_param_invalid;
+  return err(ec_param_invalid);
+}
+
+static err_t clicb_info(int argc, char *argv[])
+{
+  printf("%s\n", __FUNCTION__);
+  return err(ec_param_invalid);
 }
 
 static err_t clicb_help(int argc, char *argv[])
 {
   print_text(COLOR_HIGHLIGHT, "Available commands:");
   print_text(COLOR_HIGHLIGHT, "-------------------");
-  iterate_cmds(i)
+  foreach_cmds(i)
   {
     print_cmd_usage(&commands[i]);
   }
@@ -654,17 +836,17 @@ static err_t clicb_ct(int argc, char *argv[])
   unsigned int ct;
   uint16_t *addrs;
   if (argc < 3) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
 
   if (ec_success != (e = str2uint(argv[1],
                                   strlen(argv[1]),
                                   &ct,
                                   sizeof(unsigned int)))) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   if (ct > 100) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
 
   addrs = calloc(argc - 2, sizeof(uint16_t));
@@ -695,17 +877,17 @@ static err_t clicb_lightness(int argc, char *argv[])
   unsigned int lightness;
   uint16_t *addrs;
   if (argc < 3) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
 
   if (ec_success != (e = str2uint(argv[1],
                                   strlen(argv[1]),
                                   &lightness,
                                   sizeof(unsigned int)))) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   if (lightness > 100) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   addrs = calloc(argc - 2, sizeof(uint16_t));
 
@@ -735,14 +917,14 @@ static err_t clicb_onoff(int argc, char *argv[])
   int onoff;
   uint16_t *addrs;
   if (argc < 3) {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   if (!strcmp(argv[1], "on")) {
     onoff = 1;
   } else if (!strcmp(argv[1], "off")) {
     onoff = 0;
   } else {
-    return ec_param_invalid;
+    return err(ec_param_invalid);
   }
   addrs = calloc(argc - 2, sizeof(uint16_t));
 

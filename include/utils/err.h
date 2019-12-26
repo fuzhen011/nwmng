@@ -20,16 +20,27 @@ typedef enum {
   ec_param_null = 2,
   ec_not_exist = 3,
   ec_file_ope = 4,
-  ec_sock = 5,
+  ec_not_supported = 5,
   ec_param_invalid = 6,
   ec_format = 7,
+  ec_state = 8,
 
-  ec_pub_param_not_set = 8,
-  ec_pub_data_not_set = 9,
   ec_all_try_done_still_fail = 10,
   ec_already_exist = 11,
   ec_timeout = 12,
-  ec_not_supported = 13,
+  /* Json related error code */
+  ec_json_null = 30,
+  ec_json_open = 31,
+  ec_json_save = 32,
+  ec_json_format = 33,
+
+  ec_bgrsp = 50,
+  ec_bgevt = 51,
+  
+  ec_sock = 60,
+  ec_sock_closed = 61,
+
+  ec_errno = 70
 }error_code_t;
 
 /* const char *get_error_str(error_code_t e); */
@@ -131,6 +142,12 @@ static inline error_code_t errof(err_t e)
 /* Generate the @ref{err_t} from @ref{error_code_t} */
 #define err(e)  (__err(__FILE__, (uint32_t)__LINE__, (e)))
 
+/**
+ * @brief elog - the same as eprint, but use logging instead of fprint
+ *
+ * @param err - @ref{err_t}
+ */
+void elog(err_t err);
 /* #define */
 /**  @} */
 

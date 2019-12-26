@@ -229,9 +229,11 @@ err_t __log(const char *file_name,
             valist);
   if (lcfg.fp) {
     fprintf(lcfg.fp, "%s", lcfg.buf);
+    fflush(lcfg.fp);
   }
   if (lcfg.tostdout) {
     printf("%s", lcfg.buf);
+    fflush(lcfg.fp);
   }
 
   out:
@@ -256,6 +258,35 @@ void logging_demo(void)
   LOGM("%s\n", msg[0]);
   LOGD("%s\n", msg[0]);
   LOGV("%s\n", msg[0]);
+}
+
+void log_n(void)
+{
+  if (lcfg.fp) {
+    fprintf(lcfg.fp, "\n");
+  }
+  if (lcfg.tostdout) {
+    printf("\n");
+  }
+}
+
+static void log_welcome(void)
+{
+  char buf[200] = { 0 };
+  snprintf(buf, 200,
+           RTT_CTRL_BG_BRIGHT_BLUE
+           "NWMNG LOG - Compiled at %s - %s"
+           RTT_CTRL_RESET
+           "\n"
+           ,
+           __DATE__,
+           __TIME__);
+  if (lcfg.fp) {
+    fprintf(lcfg.fp, "%s", buf);
+  }
+  if (lcfg.tostdout) {
+    printf("%s", buf);
+  }
 }
 
 err_t logging_init(const char *path,
@@ -285,11 +316,15 @@ err_t logging_init(const char *path,
   lcfg.tostdout = tostdout;
   lcfg.level = lvl_threshold;
 
+  log_welcome();
   return ec_success;
 }
 
 void logging_deinit(void)
 {
+  if (lcfg.fp) {
+    fclose(lcfg.fp);
+  }
   memset(&lcfg, 0, sizeof(logcfg_t));
 }
 

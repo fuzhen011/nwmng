@@ -7,10 +7,12 @@
 
 /* Includes *********************************************************** */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "utils/err.h"
+#include "utils/utils.h"
+#include "logging.h"
 
 /* Defines  *********************************************************** */
 
@@ -57,7 +59,7 @@ static uint32_t get_file_index(const char *file)
   fprintf(stderr,
           "%s needs to be added to source_files\n",
           file);
-  assert(0);
+  ASSERT(0);
 }
 
 const char *get_err_file_name(err_t ec)
@@ -105,8 +107,8 @@ void print_err(err_t err,
   if (ec_success == (e = errof(err))) {
     return;
   }
-  assert(0 != (line = get_err_line(err)));
-  assert(NULL != (file = get_err_file_name(err)));
+  ASSERT(0 != (line = get_err_line(err)));
+  ASSERT(NULL != (file = get_err_file_name(err)));
 
   pfnc_print("[1;33m" "[24;41m" "ERROR" "[0m" "(%04u:%s) happended at %s:%u\n",
              e,
@@ -123,8 +125,8 @@ void eprint(err_t err)
   if (ec_success == (e = errof(err))) {
     return;
   }
-  assert(0 != (line = get_err_line(err)));
-  assert(NULL != (file = get_err_file_name(err)));
+  ASSERT(0 != (line = get_err_line(err)));
+  ASSERT(NULL != (file = get_err_file_name(err)));
 
   fprintf(stderr,
           "(%d:%s) happended at %s:%lu\n",
@@ -132,4 +134,27 @@ void eprint(err_t err)
           get_error_str(e),
           file,
           (unsigned long)line);
+}
+
+void elog(err_t err)
+{
+  error_code_t e;
+  uint32_t line;
+  const char *file;
+  if (ec_success == (e = errof(err))) {
+    return;
+  }
+
+  line = get_err_line(err);
+  file = get_err_file_name(err);
+
+  if (line == 0 || !file) {
+    LOGE("No file:line in err_t[%d].\n", err);
+  } else {
+    LOGE("(%d:%s) happended at %s:%lu\n",
+         e,
+         get_error_str(e),
+         file,
+         (unsigned long)line);
+  }
 }
