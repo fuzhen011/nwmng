@@ -23,7 +23,7 @@
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t *e);
+static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t *ein);
 
 err_t nwk_init(void *p)
 {
@@ -45,37 +45,37 @@ err_t nwk_init(void *p)
     }
     LOGM("NCP: prov initialized\n");
     mng->state = initialized;
-    err_t e = on_initialized_config(&evt->data.evt_mesh_prov_initialized);
-    if (ec_success == e) {
+    err_t ein = on_initialized_config(&evt->data.evt_mesh_prov_initialized);
+    if (ec_success == ein) {
       mng->state = configured;
     }
-    return e;
+    return ein;
   }
 }
 
-static err_t new_netkey(mng_t *mng, bool *change)
+static err_t new_netkey(mng_t *mng)
 {
-  /* uint16_t ret; */
+  err_t e;
   struct gecko_msg_mesh_prov_create_network_rsp_t *rsp;
 
   if (mng->cfg.subnets[0].netkey.done) {
     return ec_success;
   }
 
-  /* if (mng->cfg.addr || mng->cfg.ivi) { */
-    /* ret = gecko_cmd_mesh_prov_initialize_network(mng->cfg.addr, mng->cfg.ivi)->result; */
-    /* if (bg_err_success != ret) { */
-      /* LOGBGE("init network", ret); */
-      /* return err(ec_bgrsp); */
-    /* } */
-  /* } */
   rsp = gecko_cmd_mesh_prov_create_network(16,
                                            mng->cfg.subnets[0].netkey.val);
 
   if (rsp->result == bg_err_success || rsp->result == bg_err_mesh_already_exists) {
     mng->cfg.subnets[0].netkey.id = rsp->network_id;
     mng->cfg.subnets[0].netkey.done = 1;
-    *change = true;
+    EC(ec_success, socktocfg(CPS_NETKEYID,
+                             sizeof(uint16_t),
+                             &mng->cfg.subnets[0].netkey.id,
+                             NULL));
+    EC(ec_success, socktocfg(CPS_NETKEYDONE,
+                             sizeof(uint8_t),
+                             &mng->cfg.subnets[0].netkey.done,
+                             NULL));
     return ec_success;
   } else if (rsp->result == bg_err_out_of_memory
              || rsp->result == bg_err_mesh_limit_reached) {
@@ -86,8 +86,9 @@ static err_t new_netkey(mng_t *mng, bool *change)
   return err(ec_bgrsp);
 }
 
-static err_t new_appkeys(mng_t *mng, bool *change)
+static err_t new_appkeys(mng_t *mng)
 {
+  err_t e;
   int tmp = 0;
   struct gecko_msg_mesh_prov_create_appkey_rsp_t *rsp;
 
@@ -110,7 +111,21 @@ static err_t new_appkeys(mng_t *mng, bool *change)
         || rsp->result == bg_err_mesh_already_exists) {
       appkey->id = rsp->appkey_index;
       appkey->done = 1;
-      *change = true;
+      EC(ec_success, socktocfg_va(CPS_APPKEYID,
+                                  NULL,
+                                  sizeof(uint16_t),
+                                  &appkey->refid,
+                                  sizeof(uint16_t),
+                                  &appkey->id,
+                                  0));
+
+      EC(ec_success, socktocfg_va(CPS_APPKEYDONE,
+                                  NULL,
+                                  sizeof(uint16_t),
+                                  &appkey->refid,
+                                  sizeof(uint8_t),
+                                  &appkey->done,
+                                  0));
       tmp++;
     } else if (rsp->result == bg_err_out_of_memory
                || rsp->result == bg_err_mesh_limit_reached) {
@@ -150,43 +165,47 @@ static void self_config(const mng_t *mng)
   }
 }
 
-static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t *e)
+static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t *ein)
 {
-  err_t err;
-  bool change = false;
+  err_t e;
   mng_t *mng = get_mng();
 
   /* pProv->state = initialized_em; */
-  mng->cfg.addr = e->address;
-  mng->cfg.ivi = e->ivi;
+  /* mng->cfg.addr = ein->address; */
+  /* mng->cfg.ivi = ein->ivi; */
   /* Turncate to 1 since only 1 subnet is supported now */
-  mng->cfg.subnet_num = e->networks ? 1 : 0;
+  /* mng->cfg.subnet_num = ein->networks ? 1 : 0; */
 
-  if (e->networks == 0 && (mng->cfg.addr || mng->cfg.ivi)) {
+  if (ein->networks == 0 && (mng->cfg.addr || mng->cfg.ivi)) {
     uint16_t ret = gecko_cmd_mesh_prov_initialize_network(mng->cfg.addr,
                                                           mng->cfg.ivi)->result;
     if (bg_err_success != ret) {
       LOGBGE("init network", ret);
       return err(ec_bgrsp);
     }
-  } else if (e->networks && (!mng->cfg.subnets || !mng->cfg.subnets[0].netkey.done)) {
-    bt_shell_printf("NETKEY MISMATCH, NEED FACTORY RESET?\n");
+  } else if (ein->networks && (!mng->cfg.subnets || !mng->cfg.subnets[0].netkey.done)) {
+    bt_shell_printf(COLOR_HIGHLIGHT
+                    "**NETKEY MISMATCH**, NEED FACTORY RESET?"
+                    COLOR_OFF
+                    "\n");
     return err(ec_state);
+  } else if (ein->networks) {
+    if (ein->address != mng->cfg.addr) {
+      mng->cfg.addr = ein->address;
+      EC(ec_success, socktocfg(CPS_ADDR, sizeof(uint16_t), &mng->cfg.addr, NULL));
+    }
+    if (ein->ivi != mng->cfg.ivi) {
+      mng->cfg.ivi = ein->ivi;
+      EC(ec_success, socktocfg(CPS_IVI, sizeof(uint32_t), &mng->cfg.ivi, NULL));
+    }
   }
 
   /* Network Keys */
-  if (ec_success != (err = new_netkey(mng, &change))) {
-    return err;
-  }
+  EC(ec_success, new_netkey(mng));
   /* App Keys */
-  if (ec_success != (err = new_appkeys(mng, &change))) {
-    return err;
-  }
+  EC(ec_success, new_appkeys(mng));
   /* set nettx and timeouts */
   self_config(mng);
 
-  if (change) {
-    /* TODO: Write back to cfg */
-  }
   return ec_success;
 }

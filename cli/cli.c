@@ -787,14 +787,12 @@ static err_t clicb_sync(int argc, char *argv[])
 
 static err_t clicb_reset(int argc, char *argv[])
 {
-  int r = -1;
+  int r = 0;
   if (argc > 1) {
     r = atoi(argv[1]);
   }
   printf("%s\n", __FUNCTION__);
-  if (r != -1) {
-    longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
-  }
+  longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
   return 0;
 }
 

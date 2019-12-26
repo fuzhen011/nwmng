@@ -37,7 +37,53 @@ static mng_t mng = {
 };
 
 /* Static Functions Declaractions ************************************* */
-err_t handle_rsp(ipcevt_hdr_t hdr)
+static err_t handle_rsp(ipcevt_hdr_t hdr);
+
+err_t socktocfg(opc_t opc, uint8_t len, const void *buf,
+                ipcevt_hdr_t hdr)
+{
+  err_t e;
+  if (sock.fd < 0) {
+    return err(ec_state);
+  }
+  EC(ec_success, sock_send(&sock, opc, len, buf));
+  EC(ec_success, handle_rsp(hdr));
+  return ec_success;
+}
+
+err_t socktocfg_va(opc_t opc, ipcevt_hdr_t hdr, ...)
+{
+  err_t e = ec_success;
+  int s, len = 0;
+  uint8_t buf[255] = { 0 };
+  uint8_t *p;
+  va_list param_list;
+
+  if (sock.fd < 0) {
+    return err(ec_state);
+  }
+  va_start(param_list, hdr);
+
+  s = va_arg(param_list, int);
+  while (s != 0) {
+    if (255 - len < s) {
+      e = err(ec_length_leak);
+      goto out;
+    }
+    p = va_arg(param_list, uint8_t *);
+    memcpy(buf + len, p, s);
+    len += s;
+    s = va_arg(param_list, int);
+  }
+  ECG(ec_success, sock_send(&sock, opc, len, buf), out);
+  ECG(ec_success, handle_rsp(hdr), out);
+
+  out:
+  va_end(param_list);
+  return e;
+}
+
+static err_t handle_rsp(ipcevt_hdr_t hdr)
 {
   err_t e = ec_success;
   bool err = false;
@@ -73,11 +119,10 @@ err_t handle_rsp(ipcevt_hdr_t hdr)
     }
     /* LOGM("r[0] = %d\n", r[0]); */
     if (r[0] == RSP_OK) {
-      return e;
+      goto out;
     } else if (r[0] == RSP_ERR) {
       e = *(err_t *)buf;
-      free(buf);
-      return e;
+      goto out;
     }
     if (hdr) {
       if (!hdr(r[0], r[1], buf)) {
@@ -89,6 +134,12 @@ err_t handle_rsp(ipcevt_hdr_t hdr)
       buf = NULL;
     }
   }
+
+  out:
+  if (buf) {
+    free(buf);
+  }
+  return e;
 
   sock_err:
   if (buf) {
@@ -155,11 +206,7 @@ static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf)
 err_t ipc_get_provcfg(void *p)
 {
   err_t e;
-  if (sock.fd < 0) {
-    return err(ec_state);
-  }
-  EC(ec_success, sock_send(&sock, CPG_ALL, 0, NULL));
-  EC(ec_success, handle_rsp(__provcfg_field));
+  EC(ec_success, socktocfg(CPG_ALL, 0, NULL, __provcfg_field));
   return e;
 }
 
@@ -177,7 +224,9 @@ void __ncp_exit(void)
 err_t clr_all(void *p)
 {
   int ret;
-  /* TODO: IPC to clear the provcfg */
+  err_t e;
+  EC(ec_success, socktocfg(CPS_CLRCTL, 0, NULL, NULL));
+
   /* TODO: IPC to clear all nodes */
 
   if (mng.conn != INVALID_CONN_HANDLE) {

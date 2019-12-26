@@ -42,6 +42,7 @@
 - [] Save when the nwmng configured itself for the last time, so it can know if
   the config changes through comparing last modification time with it.
 - [] Config File loaders
+
   - [x] TTL
   - [] Features
     - [] Low Power
@@ -62,13 +63,14 @@
     - [] node done (key: address)
     - [x] add node to backlog
   - [] prov.json
-    - [] clear all control fields (key: NULL)
-    - [] addr (key: NULL)
-    - [] sync time (key: NULL)
-    - [] netkey id (key: NULL)
-    - [] netkey done flag (key: NULL)
-    - [] appkey id (key: refid)
-    - [] appkey done flag (key: refid)
+    - [x] clear all control fields (key: NULL)
+    - [x] addr (key: NULL)
+    - [x] ivi (key: NULL)
+    - [x] sync time (key: NULL)
+    - [x] netkey id (key: NULL)
+    - [x] netkey done flag (key: NULL)
+    - [x] appkey id (key: refid)
+    - [x] appkey done flag (key: refid)
 - [] Write node not only write json file also modify the value in the hash table
 
 ## Utils
@@ -87,6 +89,7 @@
 
 - [x] Porting the error code design from btmesh
   - [x] Porting source file names python script
+- [] Python script to generate the returns for function - get_error_str
 
 ## Tools
 

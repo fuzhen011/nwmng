@@ -59,6 +59,9 @@ void *cli_mainloop(void *pIn);
 
 void bt_shell_printf(const char *fmt, ...);
 
+err_t socktocfg(opc_t opc, uint8_t len, const void *buf,
+                ipcevt_hdr_t hdr);
+err_t socktocfg_va(opc_t opc, ipcevt_hdr_t hdr, ...);
 #ifdef __cplusplus
 }
 #endif

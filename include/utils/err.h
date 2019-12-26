@@ -139,6 +139,7 @@ static inline error_code_t errof(err_t e)
 {
   return (error_code_t)(e & MAX_ERROR_CODE_NUM);
 }
+
 /* Generate the @ref{err_t} from @ref{error_code_t} */
 #define err(e)  (__err(__FILE__, (uint32_t)__LINE__, (e)))
 

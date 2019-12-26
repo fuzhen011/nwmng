@@ -61,6 +61,12 @@ typedef struct {
 typedef struct {
   struct {
     cfg_general_t gen;
+    int subnet_num;
+    struct {
+      json_object *netkey;
+      int appkey_num;
+      json_object *appkey_arr;
+    }keys;
   }prov;
   struct {
     cfg_general_t gen;
@@ -872,11 +878,15 @@ static err_t load_provself(void)
   if (json_object_array_length(n)) {
     /* Turncate to only load the first one */
     provcfg->subnet_num = 1;
+    jcfg.prov.subnet_num = 1;
   }
 
   primary_subnet = json_object_array_get_idx(n, 0);
+  jcfg.prov.keys.netkey = primary_subnet;
   json_object_object_get_ex(primary_subnet, STR_APPKEY, &appkeys);
   appkey_num = json_object_array_length(appkeys);
+  jcfg.prov.keys.appkey_num = appkey_num;
+  jcfg.prov.keys.appkey_arr = appkeys;
   if (provcfg->subnets && provcfg->subnets->appkey_num < appkey_num) {
     provcfg->subnets = realloc(provcfg->subnets,
                                sizeof(subnet_t) + appkey_num * sizeof(meshkey_t));
@@ -1134,7 +1144,11 @@ err_t json_cfg_flush(int cfg_fd)
   if (!gen || !gen->root || !gen->fp) {
     return err(ec_json_null);
   }
-
+#if (JSON_ECHO_DBG == 1)
+  LOGD("Dump %s\n", gen->fp);
+  printf("%s\n",
+         json_object_to_json_string_ext(gen->root, JSON_C_TO_STRING_PRETTY));
+#endif
   if (-1 == json_object_to_file_ext(gen->fp, gen->root, JSON_C_TO_STRING_PRETTY)) {
 #if __APPLE__ == 1
     LOGE("json file save error, reason[%s]\n",
@@ -1207,7 +1221,7 @@ static void __kv_replace(json_object *obj,
                          const void *key,
                          void *value)
 {
-  json_object_object_del(obj, key);
+  /* json_object_object_del(obj, key); */
   json_object_object_add(obj, key, json_object_new_string((char *)value));
 }
 
@@ -1373,28 +1387,22 @@ static err_t write_nodes(int wrtype,
   return e;
 }
 
-static inline void __provself_clrctl(provcfg_t *pc)
-{
-  pc->addr = 0;
-  pc->ivi = 0;
-  pc->sync_time = time(NULL);
-  pc->subnets[0].netkey.done = 0;
-  pc->subnets[0].netkey.id = 0;
-  for (int i = 0; i < pc->subnets[0].active_appkey_num; i++) {
-    pc->subnets[0].appkey[i].done = 0;
-    pc->subnets[0].appkey[i].id = 0;
-  }
-}
-
 static inline void __provself_setappkeyid(provcfg_t *pc,
                                           const void *key,
                                           void *data)
 {
-  for (int i = 0; i < pc->subnets[0].active_appkey_num; i++) {
+  for (int i = 0; i < pc->subnets[0].appkey_num; i++) {
     if (pc->subnets[0].appkey[i].refid != *(uint16_t *)key) {
       continue;
     }
     pc->subnets[0].appkey[i].id = *(uint16_t *)data;
+    json_object *n = json_object_array_get_idx(jcfg.prov.keys.appkey_arr, i);
+    char buf[7] = { 0 };
+    buf[0] = '0';
+    buf[1] = 'x';
+    uint16_tostr(*(uint16_t *)data, buf + 2);
+    __kv_replace(n, STR_ID, buf);
+    return;
   }
 }
 
@@ -1402,34 +1410,90 @@ static inline void __provself_setappkeydone(provcfg_t *pc,
                                             const void *key,
                                             void *data)
 {
-  for (int i = 0; i < pc->subnets[0].active_appkey_num; i++) {
+  for (int i = 0; i < pc->subnets[0].appkey_num; i++) {
     if (pc->subnets[0].appkey[i].refid != *(uint16_t *)key) {
       continue;
     }
     pc->subnets[0].appkey[i].done = *(uint8_t *)data;
+    json_object *n = json_object_array_get_idx(jcfg.prov.keys.appkey_arr, i);
+    char buf[5] = { 0 };
+    buf[0] = '0';
+    buf[1] = 'x';
+    uint8_tostr(*(uint8_t *)data, buf + 2);
+    __kv_replace(n, STR_DONE, buf);
+#if (JSON_ECHO_DBG == 1)
+    printf("appkey[%d], done[%d]\n", i, *(uint8_t *)data);
+    printf("%s\n",
+           json_object_to_json_string_ext(n, JSON_C_TO_STRING_PRETTY));
+#endif
+    return;
   }
 }
 
 static inline void __provself_setaddr(provcfg_t *pc, void *data)
 {
   pc->addr = *(uint16_t *)data;
+  char buf[7] = { 0 };
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint16_tostr(*(uint16_t *)data, buf + 2);
+  __kv_replace(jcfg.prov.gen.root, STR_ADDR, buf);
+}
+
+static inline void __provself_setivi(provcfg_t *pc, void *data)
+{
+  pc->ivi = *(uint32_t *)data;
+  char buf[11] = { 0 };
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint32_tostr(*(uint32_t *)data, buf + 2);
+  __kv_replace(jcfg.prov.gen.root, STR_IVI, buf);
 }
 
 static inline void __provself_setsynctime(provcfg_t *pc, void *data)
 {
   pc->sync_time = *(uint32_t *)data;
+  char buf[11] = { 0 };
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint32_tostr(*(uint32_t *)data, buf + 2);
+  __kv_replace(jcfg.prov.gen.root, STR_SYNC_TIME, buf);
 }
 
 static inline void __provself_setnetkeyid(provcfg_t *pc, void *data)
 {
   pc->subnets[0].netkey.id = *(uint16_t *)data;
+  char buf[7] = { 0 };
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint16_tostr(*(uint16_t *)data, buf + 2);
+  __kv_replace(jcfg.prov.keys.netkey, STR_ID, buf);
 }
 
 static inline void __provself_setnetkeydone(provcfg_t *pc, void *data)
 {
   pc->subnets[0].netkey.done = *(uint8_t *)data;
+  char buf[5] = { 0 };
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint8_tostr(*(uint8_t *)data, buf + 2);
+  __kv_replace(jcfg.prov.keys.netkey, STR_DONE, buf);
 }
 
+static inline void __provself_clrctl(provcfg_t *pc)
+{
+  uint32_t zero = 0;
+  __provself_setaddr(pc, &zero);
+  __provself_setivi(pc, &zero);
+  __provself_setsynctime(pc, &zero);
+  __provself_setnetkeydone(pc, &zero);
+  __provself_setnetkeyid(pc, &zero);
+
+  for (int i = 0; i < pc->subnets[0].appkey_num; i++) {
+    __provself_setappkeyid(pc, &pc->subnets[0].appkey[i].refid, &zero);
+    __provself_setappkeydone(pc, &pc->subnets[0].appkey[i].refid, &zero);
+  }
+}
 static err_t write_provself(int wrtype,
                             const void *key,
                             void *data)
@@ -1441,6 +1505,9 @@ static err_t write_provself(int wrtype,
       break;
     case wrt_prov_addr:
       __provself_setaddr(provcfg, data);
+      break;
+    case wrt_prov_ivi:
+      __provself_setivi(provcfg, data);
       break;
     case wrt_prov_synctime:
       __provself_setsynctime(provcfg, data);

@@ -30,6 +30,14 @@ typedef struct {
 /* Global Variables *************************************************** */
 static const opchdr_t ops[] = {
   { CPS_CLRCTL, prov_clrctl },
+  { CPS_ADDR, provset_addr },
+  { CPS_IVI, provset_ivi },
+  { CPS_SYNCTIME, provset_synctime },
+  { CPS_NETKEYID, provset_netkeyid },
+  { CPS_NETKEYDONE, provset_netkeydone },
+  { CPS_APPKEYID, provset_appkeyid },
+  { CPS_APPKEYDONE, provset_appkeydone },
+
   { CPG_ALL, prov_get },
 };
 
@@ -192,6 +200,7 @@ err_t cfg_init(void)
   }
 
   EC(ec_success, cfgdb_init());
+  gp_init(cft_json, NULL);
 
   e = json_cfg_open(TEMPLATE_FILE,
                     TMPLATE_FILE_PATH,

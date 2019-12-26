@@ -41,6 +41,7 @@ extern "C"
 enum {
   CPS_CLRCTL,
   CPS_ADDR,
+  CPS_IVI,
   CPS_SYNCTIME,
   CPS_NETKEYID,
   CPS_NETKEYDONE,

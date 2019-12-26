@@ -37,7 +37,7 @@ typedef struct {
   do { if (!gp.initialized) { return; } } while (0)
 
 /* Static Variables *************************************************** */
-static gp_t gp = { 0 };
+gp_t gp = { 0 };
 
 /* Static Functions Declaractions ************************************* */
 
@@ -73,6 +73,40 @@ err_t prov_clrctl(int len, const char *arg)
   return gp.write(PROV_CFG_FILE, wrt_clrctl, NULL, NULL);
 }
 
+err_t provset_addr(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_addr, NULL, (void *)arg);
+}
+
+err_t provset_ivi(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_ivi, NULL, (void *)arg);
+}
+
+err_t provset_synctime(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_synctime, NULL, (void *)arg);
+}
+
+err_t provset_netkeyid(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_id, NULL, (void *)arg);
+}
+
+err_t provset_netkeydone(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_done, NULL, (void *)arg);
+}
+
+err_t provset_appkeyid(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_appkey_id, (void *)arg, (void *)arg + 2);
+}
+
+err_t provset_appkeydone(int len, const char *arg)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_appkey_done, arg, (void *)arg + 2);
+}
 err_t prov_get(int len, const char *arg)
 {
   err_t e;
