@@ -28,10 +28,9 @@ else()
   set(GCOV_FLAGS "")
 endif()
 
-set(
-  CMAKE_C_FLAGS
-  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
-  )
+set(CMAKE_C_FLAGS
+    "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
+)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g3 -DDEBUG=1")
 set(CMAKE_C_FLAGS_RELEASE "-Os -DDEBUG=0")
 
@@ -55,11 +54,11 @@ set(HAL_SRC_LIST
 set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
 set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/dev_add.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/bgevt_hdr.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/nwk.c)
 set(CFG_SRC_LIST
-    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c
-    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
     ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/generic_parser.c
     ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/json_parser.c)
 set(UTILS_SRC_LIST
@@ -79,10 +78,9 @@ set(SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
 
 if(APPLE)
-  set(
-    CMAKE_C_LINK_FLAGS
-    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
-    )
+  set(CMAKE_C_LINK_FLAGS
+      "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
+  )
   set(EXTRA_INC_PATH
       /usr/local/Cellar/glib/2.62.3/include/glib-2.0
       /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include
@@ -90,46 +88,42 @@ if(APPLE)
   set(RL_LIB readline.dylib)
 else()
   set(EXTRA_INC_PATH
-      /usr/include/glib-2.0
-      /usr/lib/x86_64-linux-gnu/glib-2.0/include
+      /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include
       /usr/include/json-c)
   set(RL_LIB readline.so)
 endif()
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}
-                    ${CMAKE_CURRENT_LIST_DIR}/include
-                    ${CMAKE_CURRENT_LIST_DIR}/include/utils
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cli
-                    ${CMAKE_CURRENT_LIST_DIR}/include/mng
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-                    ${CMAKE_CURRENT_LIST_DIR}/include/ipc
-                    ${CMAKE_CURRENT_LIST_DIR}/hal
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/common
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/host
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/common
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/host
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/common/uart
-                    ${RL_INC}
-                    ${EXTRA_INC_PATH})
+include_directories(
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include/utils
+  ${CMAKE_CURRENT_LIST_DIR}/include/cli
+  ${CMAKE_CURRENT_LIST_DIR}/include/mng
+  ${CMAKE_CURRENT_LIST_DIR}/include/cfg
+  ${CMAKE_CURRENT_LIST_DIR}/include/ipc
+  ${CMAKE_CURRENT_LIST_DIR}/hal
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/common
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/host
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/common
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/host
+  ${CMAKE_CURRENT_LIST_DIR}/hal/common/uart
+  ${RL_INC}
+  ${EXTRA_INC_PATH})
 
-add_executable(cli-mng
-               ${HAL_SRC_LIST}
-               ${CLI_SRC_LIST}
-               ${MNG_SRC_LIST}
-               ${UTILS_SRC_LIST}
-               ${CMAKE_CURRENT_LIST_DIR}/main.c
-               ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
+add_executable(
+  cli-mng
+  ${HAL_SRC_LIST} ${CLI_SRC_LIST} ${MNG_SRC_LIST} ${UTILS_SRC_LIST}
+  ${CMAKE_CURRENT_LIST_DIR}/main.c ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
+
 target_link_libraries(cli-mng m ${RL_LIB})
 target_compile_definitions(cli-mng PUBLIC CLI_MNG)
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${RL_LIB} pthread json-c)
 
-add_executable(cfg
-               ${CFG_SRC_LIST}
-               ${UTILS_SRC_LIST}
-               ${CMAKE_CURRENT_LIST_DIR}/main.c
-               ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
+add_executable(
+  cfg ${CFG_SRC_LIST} ${UTILS_SRC_LIST} ${CMAKE_CURRENT_LIST_DIR}/main.c
+      ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
 target_link_libraries(cfg m json-c glib-2.0)
 target_compile_definitions(cfg PUBLIC CFG)
 

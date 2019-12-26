@@ -37,6 +37,8 @@ extern "C"
  * CPS - Command Prov Set
  * CPG - Command Prov Get
  *
+ * CUPLG - Command Unprovisioned List Get
+ *
  */
 enum {
   CPS_CLRCTL,
@@ -48,17 +50,23 @@ enum {
   CPS_APPKEYID,
   CPS_APPKEYDONE,
 
-  CPG_ALL,
+  /* Check if provided UUID is in the unprovisioned list */
+  CUPLG_CHECK,
+  /* Result of {CUPLG_CHECK} */
+  RSP_UPL_CHECK,
 
+  /* Provcfg Get */
+  CPG_ALL,
   RSP_PROV_BASIC,
   RSP_PROV_SUBNETS,
   RSP_PROV_TTL,
   RSP_PROV_TXP,
   RSP_PROV_TIMEOUT,
+  /* Provcfg Get */
 
   RSP_ERR = 253,
   RSP_OK = 254,
-  OPC_MAX = 255 
+  OPC_MAX = 255
 };
 
 typedef uint8_t opc_t;

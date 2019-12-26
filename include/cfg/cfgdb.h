@@ -69,6 +69,29 @@ typedef struct {
   }*features;
 } tmpl_t;
 
+typedef struct {
+  uint8_t *ttl;
+  uint8_t *snb;
+  txparam_t *net_txp;
+  /*
+   * when setting the features of the node, do below steps:
+   * 1. Check if the feature is enabled in dcd, goto step 2 if yes.
+   * 2. Check if the feature needs to be set explicitly, goto step 3 if yes.
+   * 3. Check the target status (1-enable/0-disable/2-keep) in value
+   * 4. Set the feature if it's not "2-keep"
+   */
+  struct {
+    bbitmap_t dcd_status;
+    bbitmap_t needset;
+    bbitmap_t value;
+    txparam_t *relay_txp;
+  }features;
+
+  publication_t *pub;
+  uint16list_t *bindings;
+  uint16list_t *sublist;
+}mesh_config_t;
+
 /**
  * @brief Node structure, all the configuration of a node will be loaded to the
  * structure, all fields with pointer type are optional to present, the others
@@ -81,29 +104,7 @@ typedef struct {
   uint8_t rmorbl; /* Remove or blacklist state */
   lbitmap_t err;
   uint8_t *tmpl;
-  struct {
-    uint8_t *ttl;
-    uint8_t *snb;
-    txparam_t *net_txp;
-    /*
-     * when setting the features of the node, do below steps:
-     * 1. Check if the feature is enabled in dcd, goto step 2 if yes.
-     * 2. Check if the feature needs to be set explicitly, goto step 3 if yes.
-     * 3. Check the target status (1-enable/0-disable/2-keep) in value
-     * 4. Set the feature if it's not "2-keep"
-     */
-    struct {
-      bbitmap_t dcd_status;
-      bbitmap_t needset;
-      bbitmap_t value;
-      txparam_t *relay_txp;
-    }features;
-
-    publication_t *pub;
-    uint16list_t *bindings;
-    uint16list_t *sublist;
-  }config;
-
+  mesh_config_t config;
   struct {
     uint8_t light_supt;
     uint16_t venmod_supt;

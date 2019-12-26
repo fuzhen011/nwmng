@@ -71,11 +71,11 @@ static err_t new_netkey(mng_t *mng)
     EC(ec_success, socktocfg(CPS_NETKEYID,
                              sizeof(uint16_t),
                              &mng->cfg.subnets[0].netkey.id,
-                             NULL));
+                             NULL, NULL));
     EC(ec_success, socktocfg(CPS_NETKEYDONE,
                              sizeof(uint8_t),
                              &mng->cfg.subnets[0].netkey.done,
-                             NULL));
+                             NULL, NULL));
     return ec_success;
   } else if (rsp->result == bg_err_out_of_memory
              || rsp->result == bg_err_mesh_limit_reached) {
@@ -113,6 +113,7 @@ static err_t new_appkeys(mng_t *mng)
       appkey->done = 1;
       EC(ec_success, socktocfg_va(CPS_APPKEYID,
                                   NULL,
+                                  NULL,
                                   sizeof(uint16_t),
                                   &appkey->refid,
                                   sizeof(uint16_t),
@@ -120,6 +121,7 @@ static err_t new_appkeys(mng_t *mng)
                                   0));
 
       EC(ec_success, socktocfg_va(CPS_APPKEYDONE,
+                                  NULL,
                                   NULL,
                                   sizeof(uint16_t),
                                   &appkey->refid,
@@ -192,11 +194,11 @@ static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t 
   } else if (ein->networks) {
     if (ein->address != mng->cfg.addr) {
       mng->cfg.addr = ein->address;
-      EC(ec_success, socktocfg(CPS_ADDR, sizeof(uint16_t), &mng->cfg.addr, NULL));
+      EC(ec_success, socktocfg(CPS_ADDR, sizeof(uint16_t), &mng->cfg.addr, NULL, NULL));
     }
     if (ein->ivi != mng->cfg.ivi) {
       mng->cfg.ivi = ein->ivi;
-      EC(ec_success, socktocfg(CPS_IVI, sizeof(uint32_t), &mng->cfg.ivi, NULL));
+      EC(ec_success, socktocfg(CPS_IVI, sizeof(uint32_t), &mng->cfg.ivi, NULL, NULL));
     }
   }
 

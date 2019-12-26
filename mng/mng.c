@@ -37,9 +37,9 @@ static mng_t mng = {
 };
 
 /* Static Functions Declaractions ************************************* */
-static err_t handle_rsp(ipcevt_hdr_t hdr);
+static err_t handle_rsp(ipcevt_hdr_t hdr, void *out);
 
-err_t socktocfg(opc_t opc, uint8_t len, const void *buf,
+err_t socktocfg(opc_t opc, uint8_t len, const void *buf, void *out,
                 ipcevt_hdr_t hdr)
 {
   err_t e;
@@ -47,11 +47,11 @@ err_t socktocfg(opc_t opc, uint8_t len, const void *buf,
     return err(ec_state);
   }
   EC(ec_success, sock_send(&sock, opc, len, buf));
-  EC(ec_success, handle_rsp(hdr));
+  EC(ec_success, handle_rsp(hdr, out));
   return ec_success;
 }
 
-err_t socktocfg_va(opc_t opc, ipcevt_hdr_t hdr, ...)
+err_t socktocfg_va(opc_t opc, void *out, ipcevt_hdr_t hdr, ...)
 {
   err_t e = ec_success;
   int s, len = 0;
@@ -68,22 +68,22 @@ err_t socktocfg_va(opc_t opc, ipcevt_hdr_t hdr, ...)
   while (s != 0) {
     if (255 - len < s) {
       e = err(ec_length_leak);
-      goto out;
+      goto end;
     }
     p = va_arg(param_list, uint8_t *);
     memcpy(buf + len, p, s);
     len += s;
     s = va_arg(param_list, int);
   }
-  ECG(ec_success, sock_send(&sock, opc, len, buf), out);
-  ECG(ec_success, handle_rsp(hdr), out);
+  ECG(ec_success, sock_send(&sock, opc, len, buf), end);
+  ECG(ec_success, handle_rsp(hdr, out), end);
 
-  out:
+  end:
   va_end(param_list);
   return e;
 }
 
-static err_t handle_rsp(ipcevt_hdr_t hdr)
+static err_t handle_rsp(ipcevt_hdr_t hdr, void *out)
 {
   err_t e = ec_success;
   bool err = false;
@@ -125,7 +125,7 @@ static err_t handle_rsp(ipcevt_hdr_t hdr)
       goto out;
     }
     if (hdr) {
-      if (!hdr(r[0], r[1], buf)) {
+      if (!hdr(r[0], r[1], buf, out)) {
         LOGE("Recv unexpected CMD[%u:%u]\n", r[0], r[1]);
       }
     }
@@ -151,7 +151,8 @@ static err_t handle_rsp(ipcevt_hdr_t hdr)
   return e;
 }
 
-static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf)
+static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf,
+                           void *out)
 {
   int i = 0;
   switch (opc) {
@@ -206,7 +207,7 @@ static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf)
 err_t ipc_get_provcfg(void *p)
 {
   err_t e;
-  EC(ec_success, socktocfg(CPG_ALL, 0, NULL, __provcfg_field));
+  EC(ec_success, socktocfg(CPG_ALL, 0, NULL, NULL, __provcfg_field));
   return e;
 }
 
@@ -225,7 +226,7 @@ err_t clr_all(void *p)
 {
   int ret;
   err_t e;
-  EC(ec_success, socktocfg(CPS_CLRCTL, 0, NULL, NULL));
+  EC(ec_success, socktocfg(CPS_CLRCTL, 0, NULL, NULL, NULL));
 
   /* TODO: IPC to clear all nodes */
 
