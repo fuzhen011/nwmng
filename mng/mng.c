@@ -266,9 +266,39 @@ err_t init_ncp(void *p)
 
 void *mng_mainloop(void *p)
 {
-  while (1) {
-    sleep(1);
+#if 1
+  static volatile int i = 0;
+  if (mng.state == state_reload) {
+    /* TODO: reload the state */
   }
+  if (mng.state == adding_devices_em) {
+    i++;
+    if (i == 0x1fffffff) {
+      mng.state = configured;
+      i = 0;
+      LOGM("back\n");
+    }
+  }
+#endif
+  return NULL;
+}
+
+err_t clm_set_scan(int onoff)
+{
+  uint16_t ret;
+  if (!!mng.status.free_mode == onoff) {
+    return ec_success;
+  }
+  if (onoff) {
+    ret = gecko_cmd_mesh_prov_scan_unprov_beacons()->result;
+    CHECK_BGCALL(ret, "scan unprov beacon");
+  } else {
+    ret = gecko_cmd_mesh_prov_stop_scan_unprov_beacons()->result;
+    CHECK_BGCALL(ret, "stop unprov beacon scanning");
+  }
+  mng.status.free_mode = onoff ? fm_freemode : fm_idle;
+  LOGD("Scanning unprovisioned beacon [%s]\n", onoff ? "ON" : "OFF");
+  return ec_success;
 }
 
 /* int mng_evt_hdr(const void *ve) */

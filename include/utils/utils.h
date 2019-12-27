@@ -72,6 +72,22 @@ enum {
     if ((exp_ret) != (e = (func))) { goto err; } \
   } while (0)
 
+#define CHECK_BGCALL(ret, msg)     \
+  do {                             \
+    if (bg_err_success != (ret)) { \
+      LOGBGE(msg, (ret));        \
+      return err(ec_bgrsp);        \
+    }                              \
+  } while (0)
+
+#define CHECK_BGCALL_VOID(ret, msg) \
+  do {                              \
+    if (bg_err_success != (ret)) {  \
+      LOGBGE(msg, (ret));         \
+      return;                       \
+    }                               \
+  } while (0)
+
 char *strdelimit(char *str, char *del, char c);
 int strsuffix(const char *str, const char *suffix);
 

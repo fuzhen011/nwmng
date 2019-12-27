@@ -92,13 +92,30 @@ typedef struct {
   int iterators[ITERATOR_NUM];
 }config_cache_t;
 
+enum {
+  nil,
+  syncup,
+  initialized,
+  configured,
+  adding_devices_em,
+  configuring_devices_em,
+  removing_devices_em,
+  blacklisting_devices_em,
+  state_reload
+};
+
+enum{
+  fm_idle,
+  fm_scanning,
+  fm_freemode
+};
+
 typedef struct {
   int state;
   uint8_t conn;
   provcfg_t cfg;
   struct {
-    bool scanning;
-    bool free_mode;
+    int free_mode;
   }status;
   struct {
     add_cache_t add[MAX_PROV_SESSIONS];
@@ -113,6 +130,8 @@ void *mng_mainloop(void *p);
 mng_t *get_mng(void);
 
 err_t ipc_get_provcfg(void *p);
+
+err_t clm_set_scan(int onoff);
 #ifdef __cplusplus
 }
 #endif

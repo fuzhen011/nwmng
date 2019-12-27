@@ -129,7 +129,7 @@ static const command_t commands[] = {
     "Show the device information in the database",
     NULL, NULL, vaget_addrs },
   { "scan", "[on/off]", clicb_scan,
-    "Turn on/off unprovisioned beacon scanning"},
+    "Turn on/off unprovisioned beacon scanning" },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -682,7 +682,7 @@ int cli_proc(int argc, char *argv[])
   cli_mainloop(NULL);
   return 0;
 }
-
+#if 0
 void *cli_mainloop(void *pIn)
 {
   /* cli_proc_init(0, NULL); */
@@ -732,6 +732,94 @@ void *cli_mainloop(void *pIn)
   }
   return NULL;
 }
+#else
+static void rl_handler(char *input)
+{
+  /* cli_proc_init(0, NULL); */
+  /* cli_proc(); */
+
+  char *str;
+  int ret;
+  wordexp_t w;
+
+  /* Remove leading and trailing whitespace from the line.
+   * Then, if there is anything left, add it to the history list
+   * and execute it. */
+  str = stripwhite(input);
+  if (wordexp(str, &w, WRDE_NOCMD)) {
+    goto done;
+  }
+  if (!str || str[0] == '\0') {
+    goto out;
+  }
+  ret = find_cmd_index(str);
+  if (ret == -1) {
+    output_nspt(w.we_wordv[0]);
+    goto out;
+  }
+  DUMP_PARAMS(w.we_wordc, w.we_wordv);
+  /* Handle the command - call the callback */
+  ret = commands[ret].fn(w.we_wordc, w.we_wordv);
+  if (ec_param_invalid == ret) {
+    printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+    print_cmd_usage(&commands[ret]);
+  }
+
+  out:
+  if (*str) {
+    add_history(str);
+    write_history(RL_HISTORY);
+  }
+  wordfree(&w);
+  done:
+  free(input);
+}
+
+void *cli_mainloop(void *pIn)
+{
+  int rl_saved = 0;
+  struct timeval tv = { 0 };
+  int stdinfd, maxfd = -1, r;
+  fd_set rset, allset;
+
+  rl_readline_name = SHELL_NAME;
+  setlinebuf(stdout);
+  rl_erase_empty_line = 1;
+  rl_callback_handler_install(SHELL_NAME, rl_handler);
+
+  FD_ZERO(&allset);
+  stdinfd = fileno(stdin);
+  FD_SET(stdinfd, &allset);
+  maxfd = MAX(stdinfd, maxfd);
+
+  while (1) {
+    if (get_mng()->state <= configured) {
+      if (rl_saved) {
+        rl_replace_line("", 0);
+        rl_restore_prompt();
+        rl_saved = 0;
+        rl_redisplay();
+      }
+      rset = allset; /* rset gets modified each time around */
+      if ((r = select(maxfd + 1, &rset, NULL, NULL, &tv)) < 0) {
+        LOGE("Select returns [%d], err[%s]\n", r, strerror(errno));
+        return (void *)(uintptr_t)err(ec_sock);
+      }
+
+      if (FD_ISSET(stdinfd, &rset)) {
+        rl_callback_read_char();
+      }
+    } else if (!rl_saved) {
+      rl_save_prompt();
+      rl_replace_line("", 0);
+      rl_redisplay();
+      rl_saved = 1;
+    }
+    mng_mainloop(NULL);
+  }
+  return NULL;
+}
+#endif
 
 void bt_shell_printf(const char *fmt, ...)
 {
@@ -808,6 +896,7 @@ static err_t clicb_list(int argc, char *argv[])
 static err_t clicb_info(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
+  get_mng()->state = adding_devices_em;
   return err(ec_param_invalid);
 }
 
@@ -824,8 +913,17 @@ static err_t clicb_help(int argc, char *argv[])
 
 static err_t clicb_scan(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
-  return ec_success;
+  int onoff = 1;
+  if (argc > 1) {
+    if (!strcmp(argv[1], "on")) {
+      onoff = 1;
+    } else if (!strcmp(argv[1], "off")) {
+      onoff = 0;
+    } else {
+      return err(ec_param_invalid);
+    }
+  }
+  return clm_set_scan(onoff);
 }
 
 static err_t clicb_quit(int argc, char *argv[])

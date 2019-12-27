@@ -14,17 +14,6 @@ extern "C"
 
 #include "mng.h"
 
-enum {
-  nil,
-  syncup,
-  initialized,
-  configured,
-  adding_devices_em,
-  configuring_devices_em,
-  removing_devices_em,
-  blacklisting_devices_em
-};
-
 err_t nwk_init(void *p);
 #ifdef __cplusplus
 }
