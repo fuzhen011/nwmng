@@ -273,11 +273,13 @@ void *mng_mainloop(void *p)
   }
   if (mng.state == adding_devices_em) {
     i++;
-    if (i == 0x1fffffff) {
+    if (i == 0x004fffff) {
       mng.state = configured;
       i = 0;
       LOGM("back\n");
+      return NULL;
     }
+    return (void *)1;
   }
 #endif
   return NULL;

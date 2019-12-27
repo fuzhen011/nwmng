@@ -777,7 +777,7 @@ static void rl_handler(char *input)
 
 void *cli_mainloop(void *pIn)
 {
-  int rl_saved = 0;
+  int ret = 0, rl_saved = 0;
   struct timeval tv = { 0 };
   int stdinfd, maxfd = -1, r;
   fd_set rset, allset;
@@ -793,29 +793,33 @@ void *cli_mainloop(void *pIn)
   maxfd = MAX(stdinfd, maxfd);
 
   while (1) {
-    if (get_mng()->state <= configured) {
-      if (rl_saved) {
-        rl_replace_line("", 0);
-        rl_restore_prompt();
-        rl_saved = 0;
-        rl_redisplay();
-      }
-      rset = allset; /* rset gets modified each time around */
-      if ((r = select(maxfd + 1, &rset, NULL, NULL, &tv)) < 0) {
-        LOGE("Select returns [%d], err[%s]\n", r, strerror(errno));
-        return (void *)(uintptr_t)err(ec_sock);
-      }
+    rset = allset;   /* rset gets modified each time around */
+    if (rl_saved && get_mng()->state <= configured) {
+      LOGD("restore\n");
+      rl_replace_line("", 0);
+      rl_restore_prompt();
+      rl_saved = 0;
+      rl_redisplay();
+    }
+    if ((r = select(maxfd + 1, &rset, NULL, NULL, ret ? &tv : NULL)) < 0) {
+      LOGE("Select returns [%d], err[%s]\n", r, strerror(errno));
+      return (void *)(uintptr_t)err(ec_sock);
+    }
 
+    if (get_mng()->state <= configured) {
       if (FD_ISSET(stdinfd, &rset)) {
+        LOGD("read\n");
         rl_callback_read_char();
       }
-    } else if (!rl_saved) {
+    }
+    if (!rl_saved && get_mng()->state > configured) {
+      LOGD("save\n");
       rl_save_prompt();
       rl_replace_line("", 0);
       rl_redisplay();
       rl_saved = 1;
     }
-    mng_mainloop(NULL);
+    ret = (mng_mainloop(NULL) != NULL);
   }
   return NULL;
 }
