@@ -112,6 +112,7 @@ DECLARE_CB(quit);
 DECLARE_CB(ct);
 DECLARE_CB(lightness);
 DECLARE_CB(onoff);
+DECLARE_CB(scan);
 
 static const command_t commands[] = {
   { "sync", NULL, clicb_sync,
@@ -127,6 +128,8 @@ static const command_t commands[] = {
   { "info", "[addr...]", clicb_info,
     "Show the device information in the database",
     NULL, NULL, vaget_addrs },
+  { "scan", "[on/off]", clicb_scan,
+    "Turn on/off unprovisioned beacon scanning"},
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -819,6 +822,12 @@ static err_t clicb_help(int argc, char *argv[])
   return 0;
 }
 
+static err_t clicb_scan(int argc, char *argv[])
+{
+  printf("%s\n", __FUNCTION__);
+  return ec_success;
+}
+
 static err_t clicb_quit(int argc, char *argv[])
 {
   printf("%s\n", __FUNCTION__);
@@ -858,7 +867,7 @@ static err_t clicb_ct(int argc, char *argv[])
   }
   if (e == ec_success) {
     /* TODO */
-    /* handle onoff set to addrs */
+    /* handle ct set to addrs */
     LOGD("Sending color temperature [%u] to be handled\n", ct);
     /* IMPL PENDING, now for DEBUG */
     sleep(1);

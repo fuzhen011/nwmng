@@ -84,7 +84,7 @@ typedef struct {
   }err_cache;
   mesh_config_t config;
   dcd_t dcd;
-  uint32_t cc_handle; /* Config Client Handle */
+  uint32_t cc_handle; /* Config Client Handle returned by bgcall */
   struct {
     uint16_t vd;
     uint16_t md;
