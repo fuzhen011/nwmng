@@ -32,6 +32,7 @@
   - [] Set light color temperature.
 - [] Whenever start provision a new device, check if it's in backlog, if yes,
   delete it;
+- [x] backoff sync NCP with timeout
 
 ## CFG
 

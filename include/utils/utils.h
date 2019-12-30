@@ -75,7 +75,7 @@ enum {
 #define CHECK_BGCALL(ret, msg)     \
   do {                             \
     if (bg_err_success != (ret)) { \
-      LOGBGE(msg, (ret));        \
+      LOGBGE(msg, (ret));          \
       return err(ec_bgrsp);        \
     }                              \
   } while (0)
@@ -83,7 +83,7 @@ enum {
 #define CHECK_BGCALL_VOID(ret, msg) \
   do {                              \
     if (bg_err_success != (ret)) {  \
-      LOGBGE(msg, (ret));         \
+      LOGBGE(msg, (ret));           \
       return;                       \
     }                               \
   } while (0)
@@ -206,13 +206,13 @@ static inline void addr_to_buf(uint16_t addr, char *buf)
 #endif
 }
 
-static inline void errExit(const char *pMsg)
+static inline void err_exit(const char *pMsg)
 {
   perror(pMsg);
   exit(EXIT_FAILURE);
 }
 
-static inline void err_exit(const char *pMsg)
+static inline void _err_exit(const char *pMsg)
 {
   perror(pMsg);
 #ifdef __WIN32__
@@ -222,11 +222,28 @@ static inline void err_exit(const char *pMsg)
 #endif
 }
 
-static inline void errExitEN(int errnum, const char *pMsg)
+static inline void err_exit_en(int errnum, const char *pMsg)
 {
   fprintf(stderr, "%s | error code = %d\n", pMsg, errnum);
   exit(EXIT_FAILURE);
 }
+
+#define PTMTX_LOCK(mutex)                           \
+  do {                                              \
+    int ret;                                        \
+    if (0 != (ret = pthread_mutex_lock((mutex)))) { \
+      err_exit_en(ret, "pthread_mutex_lock");       \
+    }                                               \
+  } while (0)
+
+#define PTMTX_UNLOCK(mutex)                           \
+  do {                                                \
+    int ret;                                          \
+    if (0 != (ret = pthread_mutex_unlock((mutex)))) { \
+      err_exit_en(ret, "pthread_mutex_unlock");       \
+    }                                                 \
+  } while (0)
+
 #ifdef __cplusplus
 }
 #endif

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "projconfig.h"
 #include "bg_uart_cbs.h"
 #include "uart.h"
 #include "bgevt_hdr.h"
@@ -65,7 +66,7 @@ void sync_host_and_ncp_target(void)
 
   ncp_sync = false;
   LOGM("Syncing up NCP Host and Target\n");
-  do {
+  for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
     if (get_bguart_impl()->enc) {
       poll_update(50);
     }
@@ -73,25 +74,38 @@ void sync_host_and_ncp_target(void)
     if (p) {
       switch (BGLIB_MSG_ID(p->header)) {
         case gecko_evt_system_boot_id:
-        {
           LOGM("System Booted. NCP Target and Host Sync-ed Up\n");
           ncp_sync = true;
-        }
-        break;
+          break;
         default:
-          sleep(1);
+          /*
+           * Delay before trying again.
+           */
+          if (numsec <= MAXSLEEP / 2) {
+            sleep(numsec);
+          }
           break;
       }
     } else {
       gecko_cmd_system_reset(0);
       LOGD("Sent reset signal to NCP target\n");
-      sleep(1);
+      /*
+       * Delay before trying again.
+       */
+      if (numsec <= MAXSLEEP / 2) {
+        sleep(numsec);
+      }
     }
 
     if (ncp_sync) {
-      break;
+      return;
     }
-  } while (1);
+  }
+
+  if (!ncp_sync) {
+    LOGW("Sync ncp target failed.\n");
+    exit(EXIT_FAILURE);
+  }
 }
 
 void bgevt_dispenser(void)

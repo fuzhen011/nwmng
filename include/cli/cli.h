@@ -15,6 +15,19 @@ extern "C"
 #include <stdbool.h>
 #include "err.h"
 #include "opcodes.h"
+
+#define __DUMP_PARAMS
+#ifdef __DUMP_PARAMS
+#define DUMP_PARAMS(argc, argv)                            \
+  do {                                                     \
+    LOGV("CMD - %s with %d params.\n", argv[0], argc - 1); \
+    for (int i = 1; i < (argc); i++)                       \
+    { LOGV("\tparam[%d]: %s\n", i, (argv)[i]); }           \
+  } while (0)
+#else
+#define DUMP_PARAMS(argc, argv)
+#endif
+
 err_t cli_init(void *p);
 
 void on_sock_disconn(void);

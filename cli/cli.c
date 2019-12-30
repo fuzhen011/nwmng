@@ -6,6 +6,7 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <pthread.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -34,17 +35,6 @@
 #include "mng.h"
 
 /* Defines  *********************************************************** */
-#define __DUMP_PARAMS
-#ifdef __DUMP_PARAMS
-#define DUMP_PARAMS(argc, argv)                            \
-  do {                                                     \
-    LOGV("CMD - %s with %d params.\n", argv[0], argc - 1); \
-    for (int i = 1; i < (argc); i++)                       \
-    { LOGV("\tparam[%d]: %s\n", i, (argv)[i]); }           \
-  } while (0)
-#else
-#define DUMP_PARAMS()
-#endif
 #define DECLARE_CB(name)  static err_t clicb_##name(int argc, char *argv[])
 
 #define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWK-Mng$ " RTT_CTRL_RESET
@@ -83,6 +73,9 @@ typedef struct {
 
 /* Global Variables *************************************************** */
 extern jmp_buf initjmpbuf;
+extern pthread_mutex_t qlock, hdrlock;
+extern pthread_cond_t qready, hdrready;
+extern err_t cmd_ret;
 
 /* Static Variables *************************************************** */
 
@@ -100,14 +93,17 @@ DECLARE_CB(onoff);
 DECLARE_CB(scan);
 
 static const command_t commands[] = {
-  { "sync", NULL, clicb_sync,
-    "Synchronize network configuration" },
+  /* CLI local commands */
   { "reset", "<1/0>", clicb_reset,
     "[Factory] Reset the device" },
   { "q", NULL, clicb_quit,
     "Quit the program" },
   { "help", NULL, clicb_help,
     "Print help" },
+
+  /* Commands need to be handled by mng */
+  { "sync", NULL, clicb_sync,
+    "Synchronize network configuration" },
   { "list", NULL, clicb_list,
     "List all devices in the database" },
   { "info", "[addr...]", clicb_info,
@@ -115,7 +111,6 @@ static const command_t commands[] = {
     NULL, NULL, vaget_addrs },
   { "scan", "[on/off]", clicb_scan,
     "Turn on/off unprovisioned beacon scanning" },
-
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
     "Set the onoff of a light", NULL, NULL, vaget_addrs },
@@ -125,6 +120,7 @@ static const command_t commands[] = {
     "Set the color temperature of a light", NULL, NULL, vaget_addrs },
 };
 
+const size_t cli_cmd_num = 3;
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
 int children_num = 0;
@@ -557,61 +553,8 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
 }
 
 #if 0
-void *cli_mainloop(void *pIn)
-{
-  /* cli_proc_init(0, NULL); */
-  /* cli_proc(); */
-
-  char *str;
-  int ret;
-  wordexp_t w;
-
-  while (1) {
-    if (line) {
-      free(line);
-      line = NULL;
-    }
-    if (NULL == (line = readline(SHELL_NAME))) {
-      continue;
-    }
-    /* Remove leading and trailing whitespace from the line.
-     * Then, if there is anything left, add it to the history list
-     * and execute it. */
-    str = stripwhite(line);
-    if (wordexp(str, &w, WRDE_NOCMD)) {
-      continue;
-    }
-    if (!str || str[0] == '\0') {
-      goto out;
-    }
-    ret = find_cmd_index(str);
-    if (ret == -1) {
-      output_nspt(w.we_wordv[0]);
-      goto out;
-    }
-    DUMP_PARAMS(w.we_wordc, w.we_wordv);
-    /* Handle the command - call the callback */
-    ret = commands[ret].fn(w.we_wordc, w.we_wordv);
-    if (ec_param_invalid == ret) {
-      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
-      print_cmd_usage(&commands[ret]);
-      goto out;
-    }
-    out:
-    if (*str) {
-      add_history(str);
-      write_history(RL_HISTORY);
-    }
-    wordfree(&w);
-  }
-  return NULL;
-}
-#else
 static void rl_handler(char *input)
 {
-  /* cli_proc_init(0, NULL); */
-  /* cli_proc(); */
-
   char *str;
   int ret;
   wordexp_t w;
@@ -648,7 +591,6 @@ static void rl_handler(char *input)
   done:
   free(input);
 }
-
 void *cli_mainloop(void *pIn)
 {
   int ret = 0, rl_saved = 0;
@@ -694,6 +636,71 @@ void *cli_mainloop(void *pIn)
       rl_saved = 1;
     }
     ret = (mng_mainloop(NULL) != NULL);
+  }
+  return NULL;
+}
+#else
+extern wordexp_t *wcmd;
+void *cli_mainloop(void *pin)
+{
+  err_t e;
+  char *str;
+  int ret;
+  wordexp_t w;
+
+  while (1) {
+    if (line) {
+      free(line);
+      line = NULL;
+    }
+    if (NULL == (line = readline(SHELL_NAME))) {
+      continue;
+    }
+    /* Remove leading and trailing whitespace from the line.
+     * Then, if there is anything left, add it to the history list
+     * and execute it. */
+    str = stripwhite(line);
+    if (wordexp(str, &w, WRDE_NOCMD)) {
+      continue;
+    }
+    if (!str || str[0] == '\0') {
+      goto out;
+    }
+    DUMP_PARAMS(w.we_wordc, w.we_wordv);
+    ret = find_cmd_index(str);
+    if (ret == -1) {
+      output_nspt(w.we_wordv[0]);
+      goto out;
+    } else if (ret < 3) {
+      /* Locally handled */
+      e = commands[ret].fn(w.we_wordc, w.we_wordv);
+      if (ec_param_invalid == e) {
+        printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+        print_cmd_usage(&commands[ret]);
+        goto out;
+      }
+    } else {
+      /* Need the mng component to handle */
+      cmd_enq(str, ret);
+    }
+
+    /* Handle the command - call the
+     * callback */
+
+#if 0
+    ret = commands[ret].fn(w.we_wordc, w.we_wordv);
+    if (ec_param_invalid == ret) {
+      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+      print_cmd_usage(&commands[ret]);
+      goto out;
+    }
+#endif
+    out:
+    if (*str) {
+      add_history(str);
+      write_history(RL_HISTORY);
+    }
+    wordfree(&w);
   }
   return NULL;
 }

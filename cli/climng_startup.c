@@ -11,6 +11,7 @@
 #include <string.h>
 #include <setjmp.h>
 
+#include <pthread.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -23,6 +24,13 @@
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
+pthread_t mng_tid;
+
+pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER,
+                hdrlock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t qready = PTHREAD_COND_INITIALIZER,
+               hdrready = PTHREAD_COND_INITIALIZER;
+
 jmp_buf initjmpbuf;
 
 /* Static Variables *************************************************** */
@@ -39,7 +47,6 @@ static init_func_t initfs[] = {
 static const int inits_num = ARR_LEN(initfs);
 
 /* Static Functions Declaractions ************************************* */
-
 int offsetof_initfunc(init_func_t fn)
 {
   int i;
@@ -64,6 +71,7 @@ const proj_args_t *getprojargs(void)
 static int setprojargs(int argc, char *argv[])
 {
 #if 0
+  /* TODO: Impl pending */
 #else
   projargs.enc = false;
   memcpy(projargs.port, PORT, sizeof(PORT));
@@ -100,6 +108,18 @@ int cli_proc(int argc, char *argv[])
   e = nwk_init(NULL);
   elog(e);
 
+  if (0 != (ret = pthread_create(&mng_tid,
+                                 NULL,
+                                 mng_mainloop,
+                                 NULL))) {
+    err_exit_en(ret, "pthread create");
+  }
+
   cli_mainloop(NULL);
+
+  if (0 != (ret = pthread_join(mng_tid, NULL))) {
+    err_exit_en(ret, "pthread_join");
+  }
+
   return 0;
 }

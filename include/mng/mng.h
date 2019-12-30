@@ -11,6 +11,7 @@
 extern "C"
 {
 #endif
+#include <wordexp.h>
 #include <stdbool.h>
 #include "err.h"
 #include "projconfig.h"
@@ -104,7 +105,7 @@ enum {
   state_reload
 };
 
-enum{
+enum {
   fm_idle,
   fm_scanning,
   fm_freemode
@@ -132,6 +133,9 @@ mng_t *get_mng(void);
 err_t ipc_get_provcfg(void *p);
 
 err_t clm_set_scan(int onoff);
+
+void cmd_enq(const char *str, int offs);
+wordexp_t *cmd_deq(void);
 #ifdef __cplusplus
 }
 #endif

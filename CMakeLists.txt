@@ -122,8 +122,7 @@ add_executable(cli-mng
                ${UTILS_SRC_LIST}
                ${CMAKE_CURRENT_LIST_DIR}/main.c
                ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
-
-target_link_libraries(cli-mng m ${RL_LIB})
+target_link_libraries(cli-mng m ${RL_LIB} pthread)
 target_compile_definitions(cli-mng PUBLIC CLI_MNG)
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})

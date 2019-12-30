@@ -6,6 +6,7 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -32,6 +33,23 @@
 
 /* Global Variables *************************************************** */
 extern sock_status_t sock;
+extern pthread_mutex_t qlock, hdrlock;
+extern pthread_cond_t qready, hdrready;
+
+err_t cmd_ret = ec_success;
+
+typedef struct qitem{
+  int offs;
+  wordexp_t *cmd;
+  struct qitem *next;
+}qitem_t;
+
+typedef struct {
+  qitem_t *head;
+  qitem_t *tail;
+}cmdq_t;
+
+cmdq_t cmdq = { 0 };
 
 /* Static Variables *************************************************** */
 static mng_t mng = {
@@ -39,6 +57,56 @@ static mng_t mng = {
 };
 
 /* Static Functions Declaractions ************************************* */
+/******************************************************************
+ * Command queue
+ * ***************************************************************/
+void cmd_enq(const char *str, int offs)
+{
+  wordexp_t *w = NULL;
+  if (!str) {
+    return;
+  }
+  w = malloc(sizeof(wordexp_t));
+  if (wordexp(str, w, WRDE_NOCMD)) {
+    free(w);
+    return;
+  }
+  qitem_t *qi = malloc(sizeof(qitem_t));
+  qi->cmd = w;
+  qi->offs = offs;
+  qi->next = NULL;
+  PTMTX_LOCK(&qlock);
+  if (cmdq.tail) {
+    cmdq.tail->next = qi;
+    cmdq.tail = qi;
+  } else {
+    cmdq.tail = cmdq.head = qi;
+  }
+  PTMTX_UNLOCK(&qlock);
+}
+
+wordexp_t *cmd_deq(void)
+{
+  wordexp_t *w = NULL;
+  qitem_t *qi;
+
+  PTMTX_LOCK(&qlock);
+  if (!cmdq.head) {
+    goto out;
+  }
+
+  w = cmdq.head->cmd;
+  qi = cmdq.head;
+  cmdq.head = cmdq.head->next;
+  if (!cmdq.head) {
+    cmdq.tail = NULL;
+  }
+  free(qi);
+
+  out:
+  PTMTX_UNLOCK(&qlock);
+  return w;
+}
 
 static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf,
                            void *out)
@@ -155,22 +223,17 @@ err_t init_ncp(void *p)
 
 void *mng_mainloop(void *p)
 {
-#if 1
-  static volatile int i = 0;
-  if (mng.state == state_reload) {
-    /* TODO: reload the state */
-  }
-  if (mng.state == adding_devices_em) {
-    i++;
-    if (i == 0x004fffff) {
-      mng.state = configured;
-      i = 0;
-      LOGM("back\n");
-      return NULL;
+  while (1) {
+    wordexp_t *w = cmd_deq();
+
+    if (w) {
+      DUMP_PARAMS(w->we_wordc, w->we_wordv);
+      wordfree(w);
+      free(w);
+    }else{
+      usleep(50);
     }
-    return (void *)1;
   }
-#endif
   return NULL;
 }
 
