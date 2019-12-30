@@ -26,13 +26,12 @@
 #include <readline/history.h>
 
 #include "projconfig.h"
-#include "ccipc.h"
+#include "climng_startup.h"
 #include "utils.h"
 #include "err.h"
 #include "logging.h"
 #include "cli/cli.h"
 #include "mng.h"
-#include "nwk.h"
 
 /* Defines  *********************************************************** */
 #define __DUMP_PARAMS
@@ -83,23 +82,9 @@ typedef struct {
 }command_t;
 
 /* Global Variables *************************************************** */
-jmp_buf initjmpbuf;
-sock_status_t sock = { -1, -1 };
-static proj_args_t projargs = { 0 };
+extern jmp_buf initjmpbuf;
 
 /* Static Variables *************************************************** */
-static err_t cli_init(void *p);
-static err_t conn_socksrv(void *p);
-
-static init_func_t initfs[] = {
-  cli_init,
-  clr_all,
-  init_ncp,
-  conn_socksrv,
-  ipc_get_provcfg,
-};
-
-static const int inits_num = ARR_LEN(initfs);
 
 DECLARE_VAGET_FUN(addrs);
 
@@ -148,22 +133,6 @@ static char *line = NULL;
 
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
-
-int offsetof_initfunc(init_func_t fn)
-{
-  int i;
-  for (i = 0; i < inits_num; i++) {
-    if (initfs[i] == fn) {
-      break;
-    }
-  }
-  return i;
-}
-
-void on_sock_disconn(void)
-{
-  longjmp(initjmpbuf, offsetof_initfunc(init_ncp));
-}
 
 static int addr_in_cfg(const char *straddr,
                        uint16_t *addr)
@@ -215,7 +184,7 @@ static err_t vaget_addrs(void *vap,
   return ec_success;
 }
 
-static err_t cli_init(void *p)
+err_t cli_init(void *p)
 {
   /* Tell the completer that we want a crack first. */
   rl_attempted_completion_function = shell_completion;
@@ -561,23 +530,6 @@ void readcmd(void)
   wordfree(&w);
 }
 
-void test_ipc(void)
-{
-  const char s[] = "hello, cfg";
-  char r[50] = { 0 };
-  int n;
-  if (-1 == (n = send(sock.fd, s, sizeof(s), 0))) {
-    LOGE("send [%s]\n", strerror(errno));
-  } else {
-    LOGM("Send [%d:%s]\n", n, s);
-  }
-  if (-1 == (n = recv(sock.fd, r, 50, 0))) {
-    LOGE("recv [%s]\n", strerror(errno));
-  } else {
-    LOGM("CLI received [%d:%s] from client.\n", n, r);
-  }
-  LOGM("CLI Socket TEST DONE\n");
-}
 /*
  * cli-mng process boot sequence
  *
@@ -604,84 +556,6 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
   return e;
 }
 
-static err_t conn_socksrv(void *p)
-{
-  if (sock.fd >= 0) {
-    close(sock.fd);
-    sock.fd = -1;
-  }
-
-  usleep(20 * 1000);
-
-  for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
-    if (0 <= (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
-      break;
-    }
-    LOGW("Connect server failed ret[%d] reason[%s]\n", sock.fd, strerror(errno));
-    /*
-     * Delay before trying again.
-     */
-    if (numsec <= MAXSLEEP / 2) {
-      sleep(numsec);
-    }
-  }
-  if (sock.fd < 0) {
-    LOGE("Connect server timeout. Exit.\n");
-    exit(EXIT_FAILURE);
-  }
-  LOGM("Socket connected\n");
-  test_ipc();
-  LOGD("sock conn done\n");
-  return ec_success;
-}
-
-const proj_args_t *getprojargs(void)
-{
-  return &projargs;
-}
-
-static int setprojargs(int argc, char *argv[])
-{
-#if 0
-#else
-  projargs.enc = false;
-  memcpy(projargs.port, PORT, sizeof(PORT));
-  projargs.initialized = true;
-  return 0;
-#endif
-}
-
-int cli_proc(int argc, char *argv[])
-{
-  int ret;
-  err_t e;
-  LOGD("CLI-MNG Process Started Up\n");
-  if (0 != setprojargs(argc, argv)) {
-    LOGE("Set project args error.\n");
-    exit(EXIT_FAILURE);
-  }
-
-  ret = setjmp(initjmpbuf);
-  LOGM("Init cli-mng from %d\n", ret);
-  if (ret == 0) {
-    ret = FULL_RESET;
-  }
-  for (int i = 0; i < sizeof(int) * 8; i++) {
-    if (!IS_BIT_SET(ret, i)) {
-      continue;
-    }
-    if (ec_success != (e = initfs[i](NULL))) {
-      elog(e);
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  e = nwk_init(NULL);
-  elog(e);
-
-  cli_mainloop(NULL);
-  return 0;
-}
 #if 0
 void *cli_mainloop(void *pIn)
 {

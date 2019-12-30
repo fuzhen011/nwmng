@@ -19,6 +19,8 @@
 - [] Synchronized command - block until the command ends normally or unexpectedly.
 - [] Trap Ctrl-C to end all operations.
 - [] Finish the command execs
+- [] Separate CLI and MNG to 2 threads
+  - [] Move all the socket related function to mng component
 
 ## MNG
 

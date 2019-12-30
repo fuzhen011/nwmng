@@ -11,6 +11,7 @@
 #include "cli.h"
 #include "nwk.h"
 #include "mng.h"
+#include "mng_ipc.h"
 #include "logging.h"
 #include "gecko_bglib.h"
 #include "bg_uart_cbs.h"
