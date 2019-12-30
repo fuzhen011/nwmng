@@ -85,7 +85,7 @@ void cmd_enq(const char *str, int offs)
   PTMTX_UNLOCK(&qlock);
 }
 
-wordexp_t *cmd_deq(void)
+wordexp_t *cmd_deq(int *offs)
 {
   wordexp_t *w = NULL;
   qitem_t *qi;
@@ -96,6 +96,7 @@ wordexp_t *cmd_deq(void)
   }
 
   w = cmdq.head->cmd;
+  *offs = cmdq.head->offs;
   qi = cmdq.head;
   cmdq.head = cmdq.head->next;
   if (!cmdq.head) {

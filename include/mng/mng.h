@@ -135,7 +135,7 @@ err_t ipc_get_provcfg(void *p);
 err_t clm_set_scan(int onoff);
 
 void cmd_enq(const char *str, int offs);
-wordexp_t *cmd_deq(void);
+wordexp_t *cmd_deq(int *offs);
 #ifdef __cplusplus
 }
 #endif
