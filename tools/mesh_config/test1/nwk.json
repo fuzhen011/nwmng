@@ -1,11 +1,16 @@
 {
-  "SyncTime":"0x5e0b1e7e",
+  "SyncTime":"0x5e0b5c82",
   "Subnets":[
     {
       "RefId":"0x0000",
       "Nodes":[
         {
           "UUID":"000b5731555c2d7665447362616c6953",
+          "Address":"0x0005",
+          "Err":"0x00000000",
+          "Template ID":"0x01",
+          "RM_Blacklist":"0x00",
+          "Done":"0x11",
           "TTL":"0x03",
           "Features":{
             "Low Power":"0x01",
@@ -36,26 +41,21 @@
             "0xD052",
             "0xD053",
             "0xD054"
-          ],
-          "Address":"0x0005",
-          "Err":"0x00000000",
-          "Template ID":"0x01",
-          "RM_Blacklist":"0x00",
-          "Done":"0x11"
+          ]
         },
         {
           "UUID":"08080808080808080808080808080808",
           "Address":"0x0001",
           "Template ID":"0x01",
+          "Err":"0x00000013",
           "RM_Blacklist":"0x00",
-          "Done":"0x01",
-          "Err":"0x00000013"
+          "Done":"0x01"
         },
         {
           "UUID":"000b57ef2b872d7665447362616c6953",
           "Address":"0x0000",
-          "Err":"0x00000000",
           "Template ID":"0x21",
+          "Err":"0x00000000",
           "RM_Blacklist":"0x00",
           "Done":"0x00"
         }

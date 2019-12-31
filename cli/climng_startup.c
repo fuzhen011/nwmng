@@ -39,9 +39,9 @@ static proj_args_t projargs = { 0 };
 
 static init_func_t initfs[] = {
   cli_init,
-  cfg_init,
   clr_all,
   init_ncp,
+  cfg_init,
   mng_init,
 };
 

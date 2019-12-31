@@ -156,6 +156,8 @@ err_t cli_init(void *p)
 {
   /* Tell the completer that we want a crack first. */
   rl_attempted_completion_function = shell_completion;
+  setlinebuf(stdout);
+  rl_erase_empty_line = 1;
   using_history();
   read_history(RL_HISTORY);
   LOGD("cli init done\n");
