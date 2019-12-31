@@ -23,7 +23,6 @@
 
 #include <sys/socket.h>
 
-#include <readline/readline.h>
 #include <readline/history.h>
 
 #include "projconfig.h"
@@ -43,33 +42,7 @@
 
 #define VAP_LEN 256
 
-#define CMD_LENGTH  36
-#define print_text(color, fmt, args ...) \
-  printf(color fmt COLOR_OFF "\n", ## args)
-#define print_cmd_usage(cmd)                                   \
-  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",          \
-         (cmd)->name, (int)(CMD_LENGTH - strlen((cmd)->name)), \
-         (cmd)->arg ? (cmd)->arg : "",                         \
-         (cmd)->doc)
-
 #define foreach_cmds(i) for (int i = 0; i < cmd_num; i++)
-
-typedef err_t (*va_param_get_func_t)(void *vap,
-                                     int inbuflen,
-                                     int *ulen,
-                                     int *rlen);
-
-typedef err_t (*cmd_exec_func_t)(int argc, char *argv[]);
-
-typedef struct {
-  const char *name;
-  const char *arg;
-  cmd_exec_func_t fn;
-  const char *doc;
-  rl_compdisp_func_t *disp;
-  rl_compentry_func_t *argcmpl;
-  va_param_get_func_t vpget;
-}command_t;
 
 /* Global Variables *************************************************** */
 extern jmp_buf initjmpbuf;
@@ -92,7 +65,7 @@ DECLARE_CB(lightness);
 DECLARE_CB(onoff);
 DECLARE_CB(scan);
 
-static const command_t commands[] = {
+const command_t commands[] = {
   /* CLI local commands */
   { "reset", "<1/0>", clicb_reset,
     "[Factory] Reset the device" },
@@ -756,8 +729,8 @@ void bt_shell_printf(const char *fmt, ...)
 
 static err_t clicb_sync(int argc, char *argv[])
 {
-  sleep(5);
   printf("%s\n", __FUNCTION__);
+  sleep(5);
   return 0;
 }
 

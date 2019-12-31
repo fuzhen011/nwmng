@@ -98,10 +98,12 @@ enum {
   syncup,
   initialized,
   configured,
+  starting,
   adding_devices_em,
   configuring_devices_em,
   removing_devices_em,
   blacklisting_devices_em,
+  stopping,
   state_reload
 };
 

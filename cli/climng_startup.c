@@ -24,6 +24,7 @@
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
+bool mng_started = false;
 pthread_t mng_tid;
 
 pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER,
@@ -82,7 +83,7 @@ static int setprojargs(int argc, char *argv[])
 
 int cli_proc(int argc, char *argv[])
 {
-  int ret;
+  int ret, tmp;
   err_t e;
   LOGD("CLI-MNG Process Started Up\n");
   if (0 != setprojargs(argc, argv)) {
@@ -92,6 +93,10 @@ int cli_proc(int argc, char *argv[])
 
   ret = setjmp(initjmpbuf);
   LOGM("Init cli-mng from %d\n", ret);
+  if (mng_started && 0 != (tmp = pthread_cancel(mng_tid))) {
+    LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
+  }
+  mng_started = false;
   if (ret == 0) {
     ret = FULL_RESET;
   }
@@ -108,12 +113,10 @@ int cli_proc(int argc, char *argv[])
   e = nwk_init(NULL);
   elog(e);
 
-  if (0 != (ret = pthread_create(&mng_tid,
-                                 NULL,
-                                 mng_mainloop,
-                                 NULL))) {
+  if (0 != (ret = pthread_create(&mng_tid, NULL, mng_mainloop, NULL))) {
     err_exit_en(ret, "pthread create");
   }
+  mng_started = true;
 
   cli_mainloop(NULL);
 

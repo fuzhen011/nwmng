@@ -33,6 +33,7 @@
 
 /* Global Variables *************************************************** */
 extern sock_status_t sock;
+extern const command_t commands[];
 extern pthread_mutex_t qlock, hdrlock;
 extern pthread_cond_t qready, hdrready;
 
@@ -57,6 +58,7 @@ static mng_t mng = {
 };
 
 /* Static Functions Declaractions ************************************* */
+static void poll_cmd(void);
 /******************************************************************
  * Command queue
  * ***************************************************************/
@@ -225,17 +227,42 @@ err_t init_ncp(void *p)
 void *mng_mainloop(void *p)
 {
   while (1) {
-    wordexp_t *w = cmd_deq();
-
-    if (w) {
-      DUMP_PARAMS(w->we_wordc, w->we_wordv);
-      wordfree(w);
-      free(w);
-    }else{
-      usleep(50);
+    bool busy = false;
+    poll_cmd();
+    bgevt_dispenser();
+    switch (mng.state) {
+      case starting:
+        /* TODO: Load actions */
+        break;
+      case stopping:
+        mng.state = configured;
+        break;
+      case state_reload:
+        /* TODO: Load actions */
+        break;
+      default:
+        break;
+    }
+    if (!busy) {
+      usleep(10 * 1000);
     }
   }
   return NULL;
+}
+
+static void poll_cmd(void)
+{
+  int i;
+  wordexp_t *w = cmd_deq(&i);
+  if (w) {
+    DUMP_PARAMS(w->we_wordc, w->we_wordv);
+    if (ec_param_invalid == commands[i].fn(w->we_wordc, w->we_wordv)) {
+      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+      print_cmd_usage(&commands[i]);
+    }
+    wordfree(w);
+    free(w);
+  }
 }
 
 err_t clm_set_scan(int onoff)

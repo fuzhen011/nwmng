@@ -13,6 +13,8 @@ extern "C"
 #endif
 #include <stdlib.h>
 #include <stdbool.h>
+#include <readline/readline.h>
+
 #include "err.h"
 #include "opcodes.h"
 
@@ -27,6 +29,31 @@ extern "C"
 #else
 #define DUMP_PARAMS(argc, argv)
 #endif
+
+#define CMD_LENGTH  36
+#define print_text(color, fmt, args ...) \
+  printf(color fmt COLOR_OFF "\n", ## args)
+#define print_cmd_usage(cmd)                                   \
+  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",          \
+         (cmd)->name, (int)(CMD_LENGTH - strlen((cmd)->name)), \
+         (cmd)->arg ? (cmd)->arg : "",                         \
+         (cmd)->doc)
+
+typedef err_t (*cmd_exec_func_t)(int argc, char *argv[]);
+
+typedef err_t (*va_param_get_func_t)(void *vap,
+                                     int inbuflen,
+                                     int *ulen,
+                                     int *rlen);
+typedef struct {
+  const char *name;
+  const char *arg;
+  cmd_exec_func_t fn;
+  const char *doc;
+  rl_compdisp_func_t *disp;
+  rl_compentry_func_t *argcmpl;
+  va_param_get_func_t vpget;
+}command_t;
 
 err_t cli_init(void *p);
 

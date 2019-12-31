@@ -7,6 +7,7 @@
 
 /* Includes *********************************************************** */
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 #include "projconfig.h"
@@ -127,6 +128,10 @@ void bgevt_dispenser(void)
       bgevt_hdr *h = hdrs;
       while (h && !ret) {
         ret = (*h)(evt);
+        h++;
+      }
+      if (!ret) {
+        LOGW("evt[0x%08x] not handled\n", BGLIB_MSG_ID(evt->header));
       }
     }
   } while (evt);
