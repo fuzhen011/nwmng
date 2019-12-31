@@ -8,6 +8,7 @@
 /* Includes *********************************************************** */
 /* #include "dev_add.h" */
 #include "mng.h"
+#include "mng_ipc.h"
 #include "utils.h"
 #include "logging.h"
 #include "opcodes.h"

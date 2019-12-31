@@ -98,6 +98,7 @@ err_t provset_netkeyid(int len, const char *arg);
 err_t provset_netkeydone(int len, const char *arg);
 err_t provset_appkeyid(int len, const char *arg);
 err_t provset_appkeydone(int len, const char *arg);
+err_t _upldev_check(int len, const char *arg);
 #ifdef __cplusplus
 }
 #endif

@@ -16,6 +16,7 @@ extern "C"
 #endif
 #define FILE_PATH_MAX 108
 
+#define MAXSLEEP 128
 #define GC_EXP_DEV_NUM  128
 
 #if __APPLE__ == 1
@@ -23,7 +24,7 @@ extern "C"
 #define PORT      "/dev/tty.usbmodem0004400502021"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
-#define PORT      "/dev/ttyACM0"
+#define PORT      "/dev/ttyACM2"
 #endif
 
 #define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"

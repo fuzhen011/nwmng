@@ -107,6 +107,7 @@ err_t provset_appkeydone(int len, const char *arg)
 {
   return gp.write(PROV_CFG_FILE, wrt_prov_appkey_done, arg, (void *)arg + 2);
 }
+
 err_t prov_get(int len, const char *arg)
 {
   err_t e;
@@ -163,3 +164,17 @@ err_t prov_get(int len, const char *arg)
   }
   return ec_success;
 }
+
+err_t _upldev_check(int len, const char *arg)
+{
+  uint8_t ret = 1;
+  err_t e;
+  node_t *n = cfgdb_unprov_dev_get((const uint8_t *)arg);
+
+  if (!n || n->rmorbl) {
+    ret = 0;
+  }
+  EC(ec_success, sendto_client(RSP_UPL_CHECK, 1, &ret));
+  return ec_success;
+}
+

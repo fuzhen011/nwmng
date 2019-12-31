@@ -28,7 +28,6 @@
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
-pthread_t cfg_tid;
 
 /* Static Functions Declaractions ************************************* */
 #if !defined(CLI_MNG) && !defined(CFG)

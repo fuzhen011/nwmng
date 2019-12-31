@@ -39,6 +39,9 @@ static const opchdr_t ops[] = {
   { CPS_APPKEYDONE, provset_appkeydone },
 
   { CPG_ALL, prov_get },
+
+  /* Node related operations  */
+  { CUPLG_CHECK, _upldev_check },
 };
 
 static const int ops_num = sizeof(ops) / sizeof(opchdr_t);

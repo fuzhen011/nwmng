@@ -15,8 +15,6 @@ extern "C"
 #include "opcodes.h"
 #include "err.h"
 
-#define MAXSLEEP 128
-
 typedef struct {
   int fd;
   int listenfd;

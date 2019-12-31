@@ -6,6 +6,7 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -22,14 +23,34 @@
 #include "gecko_bglib.h"
 #include "bgevt_hdr.h"
 #include "mng.h"
+#include "mng_ipc.h"
 #include "nwk.h"
 #include "ccipc.h"
 #include "cli.h"
+#include "climng_startup.h"
 /* Defines  *********************************************************** */
 #define INVALID_CONN_HANDLE 0xff
 
 /* Global Variables *************************************************** */
 extern sock_status_t sock;
+extern const command_t commands[];
+extern pthread_mutex_t qlock, hdrlock;
+extern pthread_cond_t qready, hdrready;
+
+err_t cmd_ret = ec_success;
+
+typedef struct qitem{
+  int offs;
+  wordexp_t *cmd;
+  struct qitem *next;
+}qitem_t;
+
+typedef struct {
+  qitem_t *head;
+  qitem_t *tail;
+}cmdq_t;
+
+cmdq_t cmdq = { 0 };
 
 /* Static Variables *************************************************** */
 static mng_t mng = {
@@ -37,118 +58,57 @@ static mng_t mng = {
 };
 
 /* Static Functions Declaractions ************************************* */
-static err_t handle_rsp(ipcevt_hdr_t hdr, void *out);
-
-err_t socktocfg(opc_t opc, uint8_t len, const void *buf, void *out,
-                ipcevt_hdr_t hdr)
+static void poll_cmd(void);
+/******************************************************************
+ * Command queue
+ * ***************************************************************/
+void cmd_enq(const char *str, int offs)
 {
-  err_t e;
-  if (sock.fd < 0) {
-    return err(ec_state);
+  wordexp_t *w = NULL;
+  if (!str) {
+    return;
   }
-  EC(ec_success, sock_send(&sock, opc, len, buf));
-  EC(ec_success, handle_rsp(hdr, out));
-  return ec_success;
+  w = malloc(sizeof(wordexp_t));
+  if (wordexp(str, w, WRDE_NOCMD)) {
+    free(w);
+    return;
+  }
+  qitem_t *qi = malloc(sizeof(qitem_t));
+  qi->cmd = w;
+  qi->offs = offs;
+  qi->next = NULL;
+  PTMTX_LOCK(&qlock);
+  if (cmdq.tail) {
+    cmdq.tail->next = qi;
+    cmdq.tail = qi;
+  } else {
+    cmdq.tail = cmdq.head = qi;
+  }
+  PTMTX_UNLOCK(&qlock);
 }
 
-err_t socktocfg_va(opc_t opc, void *out, ipcevt_hdr_t hdr, ...)
+wordexp_t *cmd_deq(int *offs)
 {
-  err_t e = ec_success;
-  int s, len = 0;
-  uint8_t buf[255] = { 0 };
-  uint8_t *p;
-  va_list param_list;
+  wordexp_t *w = NULL;
+  qitem_t *qi;
 
-  if (sock.fd < 0) {
-    return err(ec_state);
+  PTMTX_LOCK(&qlock);
+  if (!cmdq.head) {
+    goto out;
   }
-  va_start(param_list, hdr);
 
-  s = va_arg(param_list, int);
-  while (s != 0) {
-    if (255 - len < s) {
-      e = err(ec_length_leak);
-      goto end;
-    }
-    p = va_arg(param_list, uint8_t *);
-    memcpy(buf + len, p, s);
-    len += s;
-    s = va_arg(param_list, int);
+  w = cmdq.head->cmd;
+  *offs = cmdq.head->offs;
+  qi = cmdq.head;
+  cmdq.head = cmdq.head->next;
+  if (!cmdq.head) {
+    cmdq.tail = NULL;
   }
-  ECG(ec_success, sock_send(&sock, opc, len, buf), end);
-  ECG(ec_success, handle_rsp(hdr, out), end);
-
-  end:
-  va_end(param_list);
-  return e;
-}
-
-static err_t handle_rsp(ipcevt_hdr_t hdr, void *out)
-{
-  err_t e = ec_success;
-  bool err = false;
-  uint8_t r[2] = { 0 };
-  uint8_t *buf = NULL;
-  int n, len;
-
-  while (1) {
-    n = recv(sock.fd, r, 2, 0);
-    if (-1 == n) {
-      LOGE("recv err[%s]\n", strerror(errno));
-      err = true;
-      goto sock_err;
-    } else if (0 == n) {
-      err = true;
-      goto sock_err;
-    }
-    if (r[1]) {
-      buf = malloc(r[1]);
-      len = r[1];
-      while (len) {
-        n = recv(sock.fd, buf, len, 0);
-        if (-1 == n) {
-          LOGE("recv err[%s]\n", strerror(errno));
-          err = true;
-          goto sock_err;
-        } else if (0 == n) {
-          err = true;
-          goto sock_err;
-        }
-        len -= n;
-      }
-    }
-    /* LOGM("r[0] = %d\n", r[0]); */
-    if (r[0] == RSP_OK) {
-      goto out;
-    } else if (r[0] == RSP_ERR) {
-      e = *(err_t *)buf;
-      goto out;
-    }
-    if (hdr) {
-      if (!hdr(r[0], r[1], buf, out)) {
-        LOGE("Recv unexpected CMD[%u:%u]\n", r[0], r[1]);
-      }
-    }
-    if (buf) {
-      free(buf);
-      buf = NULL;
-    }
-  }
+  free(qi);
 
   out:
-  if (buf) {
-    free(buf);
-  }
-  return e;
-
-  sock_err:
-  if (buf) {
-    free(buf);
-  }
-  if (err) {
-    on_sock_disconn();
-  }
-  return e;
+  PTMTX_UNLOCK(&qlock);
+  return w;
 }
 
 static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf,
@@ -266,23 +226,43 @@ err_t init_ncp(void *p)
 
 void *mng_mainloop(void *p)
 {
-#if 1
-  static volatile int i = 0;
-  if (mng.state == state_reload) {
-    /* TODO: reload the state */
-  }
-  if (mng.state == adding_devices_em) {
-    i++;
-    if (i == 0x004fffff) {
-      mng.state = configured;
-      i = 0;
-      LOGM("back\n");
-      return NULL;
+  while (1) {
+    bool busy = false;
+    poll_cmd();
+    bgevt_dispenser();
+    switch (mng.state) {
+      case starting:
+        /* TODO: Load actions */
+        break;
+      case stopping:
+        mng.state = configured;
+        break;
+      case state_reload:
+        /* TODO: Load actions */
+        break;
+      default:
+        break;
     }
-    return (void *)1;
+    if (!busy) {
+      usleep(10 * 1000);
+    }
   }
-#endif
   return NULL;
+}
+
+static void poll_cmd(void)
+{
+  int i;
+  wordexp_t *w = cmd_deq(&i);
+  if (w) {
+    DUMP_PARAMS(w->we_wordc, w->we_wordv);
+    if (ec_param_invalid == commands[i].fn(w->we_wordc, w->we_wordv)) {
+      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+      print_cmd_usage(&commands[i]);
+    }
+    wordfree(w);
+    free(w);
+  }
 }
 
 err_t clm_set_scan(int onoff)

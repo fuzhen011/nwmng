@@ -6,6 +6,7 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <pthread.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -22,30 +23,17 @@
 
 #include <sys/socket.h>
 
-#include <readline/readline.h>
 #include <readline/history.h>
 
 #include "projconfig.h"
-#include "ccipc.h"
+#include "climng_startup.h"
 #include "utils.h"
 #include "err.h"
 #include "logging.h"
 #include "cli/cli.h"
 #include "mng.h"
-#include "nwk.h"
 
 /* Defines  *********************************************************** */
-#define __DUMP_PARAMS
-#ifdef __DUMP_PARAMS
-#define DUMP_PARAMS(argc, argv)                            \
-  do {                                                     \
-    LOGV("CMD - %s with %d params.\n", argv[0], argc - 1); \
-    for (int i = 1; i < (argc); i++)                       \
-    { LOGV("\tparam[%d]: %s\n", i, (argv)[i]); }           \
-  } while (0)
-#else
-#define DUMP_PARAMS()
-#endif
 #define DECLARE_CB(name)  static err_t clicb_##name(int argc, char *argv[])
 
 #define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWK-Mng$ " RTT_CTRL_RESET
@@ -54,52 +42,15 @@
 
 #define VAP_LEN 256
 
-#define CMD_LENGTH  36
-#define print_text(color, fmt, args ...) \
-  printf(color fmt COLOR_OFF "\n", ## args)
-#define print_cmd_usage(cmd)                                   \
-  printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",          \
-         (cmd)->name, (int)(CMD_LENGTH - strlen((cmd)->name)), \
-         (cmd)->arg ? (cmd)->arg : "",                         \
-         (cmd)->doc)
-
 #define foreach_cmds(i) for (int i = 0; i < cmd_num; i++)
 
-typedef err_t (*va_param_get_func_t)(void *vap,
-                                     int inbuflen,
-                                     int *ulen,
-                                     int *rlen);
-
-typedef err_t (*cmd_exec_func_t)(int argc, char *argv[]);
-
-typedef struct {
-  const char *name;
-  const char *arg;
-  cmd_exec_func_t fn;
-  const char *doc;
-  rl_compdisp_func_t *disp;
-  rl_compentry_func_t *argcmpl;
-  va_param_get_func_t vpget;
-}command_t;
-
 /* Global Variables *************************************************** */
-jmp_buf initjmpbuf;
-sock_status_t sock = { -1, -1 };
-static proj_args_t projargs = { 0 };
+extern jmp_buf initjmpbuf;
+extern pthread_mutex_t qlock, hdrlock;
+extern pthread_cond_t qready, hdrready;
+extern err_t cmd_ret;
 
 /* Static Variables *************************************************** */
-static err_t cli_init(void *p);
-static err_t conn_socksrv(void *p);
-
-static init_func_t initfs[] = {
-  cli_init,
-  clr_all,
-  init_ncp,
-  conn_socksrv,
-  ipc_get_provcfg,
-};
-
-static const int inits_num = ARR_LEN(initfs);
 
 DECLARE_VAGET_FUN(addrs);
 
@@ -114,15 +65,18 @@ DECLARE_CB(lightness);
 DECLARE_CB(onoff);
 DECLARE_CB(scan);
 
-static const command_t commands[] = {
-  { "sync", NULL, clicb_sync,
-    "Synchronize network configuration" },
+const command_t commands[] = {
+  /* CLI local commands */
   { "reset", "<1/0>", clicb_reset,
     "[Factory] Reset the device" },
   { "q", NULL, clicb_quit,
     "Quit the program" },
   { "help", NULL, clicb_help,
     "Print help" },
+
+  /* Commands need to be handled by mng */
+  { "sync", NULL, clicb_sync,
+    "Synchronize network configuration" },
   { "list", NULL, clicb_list,
     "List all devices in the database" },
   { "info", "[addr...]", clicb_info,
@@ -130,7 +84,6 @@ static const command_t commands[] = {
     NULL, NULL, vaget_addrs },
   { "scan", "[on/off]", clicb_scan,
     "Turn on/off unprovisioned beacon scanning" },
-
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
     "Set the onoff of a light", NULL, NULL, vaget_addrs },
@@ -140,6 +93,7 @@ static const command_t commands[] = {
     "Set the color temperature of a light", NULL, NULL, vaget_addrs },
 };
 
+const size_t cli_cmd_num = 3;
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
 int children_num = 0;
@@ -148,22 +102,6 @@ static char *line = NULL;
 
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
-
-int offsetof_initfunc(init_func_t fn)
-{
-  int i;
-  for (i = 0; i < inits_num; i++) {
-    if (initfs[i] == fn) {
-      break;
-    }
-  }
-  return i;
-}
-
-void on_sock_disconn(void)
-{
-  longjmp(initjmpbuf, offsetof_initfunc(init_ncp));
-}
 
 static int addr_in_cfg(const char *straddr,
                        uint16_t *addr)
@@ -215,7 +153,7 @@ static err_t vaget_addrs(void *vap,
   return ec_success;
 }
 
-static err_t cli_init(void *p)
+err_t cli_init(void *p)
 {
   /* Tell the completer that we want a crack first. */
   rl_attempted_completion_function = shell_completion;
@@ -561,23 +499,6 @@ void readcmd(void)
   wordfree(&w);
 }
 
-void test_ipc(void)
-{
-  const char s[] = "hello, cfg";
-  char r[50] = { 0 };
-  int n;
-  if (-1 == (n = send(sock.fd, s, sizeof(s), 0))) {
-    LOGE("send [%s]\n", strerror(errno));
-  } else {
-    LOGM("Send [%d:%s]\n", n, s);
-  }
-  if (-1 == (n = recv(sock.fd, r, 50, 0))) {
-    LOGE("recv [%s]\n", strerror(errno));
-  } else {
-    LOGM("CLI received [%d:%s] from client.\n", n, r);
-  }
-  LOGM("CLI Socket TEST DONE\n");
-}
 /*
  * cli-mng process boot sequence
  *
@@ -604,140 +525,9 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
   return e;
 }
 
-static err_t conn_socksrv(void *p)
-{
-  if (sock.fd >= 0) {
-    close(sock.fd);
-    sock.fd = -1;
-  }
-
-  usleep(20 * 1000);
-
-  for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
-    if (0 <= (sock.fd = cli_conn(CC_SOCK_CLNT_PATH, CC_SOCK_SERV_PATH))) {
-      break;
-    }
-    LOGW("Connect server failed ret[%d] reason[%s]\n", sock.fd, strerror(errno));
-    /*
-     * Delay before trying again.
-     */
-    if (numsec <= MAXSLEEP / 2) {
-      sleep(numsec);
-    }
-  }
-  if (sock.fd < 0) {
-    LOGE("Connect server timeout. Exit.\n");
-    exit(EXIT_FAILURE);
-  }
-  LOGM("Socket connected\n");
-  test_ipc();
-  LOGD("sock conn done\n");
-  return ec_success;
-}
-
-const proj_args_t *getprojargs(void)
-{
-  return &projargs;
-}
-
-static int setprojargs(int argc, char *argv[])
-{
 #if 0
-#else
-  projargs.enc = false;
-  memcpy(projargs.port, PORT, sizeof(PORT));
-  projargs.initialized = true;
-  return 0;
-#endif
-}
-
-int cli_proc(int argc, char *argv[])
-{
-  int ret;
-  err_t e;
-  LOGD("CLI-MNG Process Started Up\n");
-  if (0 != setprojargs(argc, argv)) {
-    LOGE("Set project args error.\n");
-    exit(EXIT_FAILURE);
-  }
-
-  ret = setjmp(initjmpbuf);
-  LOGM("Init cli-mng from %d\n", ret);
-  if (ret == 0) {
-    ret = FULL_RESET;
-  }
-  for (int i = 0; i < sizeof(int) * 8; i++) {
-    if (!IS_BIT_SET(ret, i)) {
-      continue;
-    }
-    if (ec_success != (e = initfs[i](NULL))) {
-      elog(e);
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  e = nwk_init(NULL);
-  elog(e);
-
-  cli_mainloop(NULL);
-  return 0;
-}
-#if 0
-void *cli_mainloop(void *pIn)
-{
-  /* cli_proc_init(0, NULL); */
-  /* cli_proc(); */
-
-  char *str;
-  int ret;
-  wordexp_t w;
-
-  while (1) {
-    if (line) {
-      free(line);
-      line = NULL;
-    }
-    if (NULL == (line = readline(SHELL_NAME))) {
-      continue;
-    }
-    /* Remove leading and trailing whitespace from the line.
-     * Then, if there is anything left, add it to the history list
-     * and execute it. */
-    str = stripwhite(line);
-    if (wordexp(str, &w, WRDE_NOCMD)) {
-      continue;
-    }
-    if (!str || str[0] == '\0') {
-      goto out;
-    }
-    ret = find_cmd_index(str);
-    if (ret == -1) {
-      output_nspt(w.we_wordv[0]);
-      goto out;
-    }
-    DUMP_PARAMS(w.we_wordc, w.we_wordv);
-    /* Handle the command - call the callback */
-    ret = commands[ret].fn(w.we_wordc, w.we_wordv);
-    if (ec_param_invalid == ret) {
-      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
-      print_cmd_usage(&commands[ret]);
-      goto out;
-    }
-    out:
-    if (*str) {
-      add_history(str);
-      write_history(RL_HISTORY);
-    }
-    wordfree(&w);
-  }
-  return NULL;
-}
-#else
 static void rl_handler(char *input)
 {
-  /* cli_proc_init(0, NULL); */
-  /* cli_proc(); */
-
   char *str;
   int ret;
   wordexp_t w;
@@ -774,7 +564,6 @@ static void rl_handler(char *input)
   done:
   free(input);
 }
-
 void *cli_mainloop(void *pIn)
 {
   int ret = 0, rl_saved = 0;
@@ -820,6 +609,59 @@ void *cli_mainloop(void *pIn)
       rl_saved = 1;
     }
     ret = (mng_mainloop(NULL) != NULL);
+  }
+  return NULL;
+}
+#else
+void *cli_mainloop(void *pin)
+{
+  err_t e;
+  char *str;
+  int ret;
+  wordexp_t w;
+
+  while (1) {
+    if (line) {
+      free(line);
+      line = NULL;
+    }
+    if (NULL == (line = readline(SHELL_NAME))) {
+      continue;
+    }
+    /* Remove leading and trailing whitespace from the line.
+     * Then, if there is anything left, add it to the history list
+     * and execute it. */
+    str = stripwhite(line);
+    if (wordexp(str, &w, WRDE_NOCMD)) {
+      continue;
+    }
+    if (!str || str[0] == '\0') {
+      goto out;
+    }
+    DUMP_PARAMS(w.we_wordc, w.we_wordv);
+    ret = find_cmd_index(str);
+    if (ret == -1) {
+      output_nspt(w.we_wordv[0]);
+      goto out;
+    } else if (ret < 3) {
+      /* Locally handled */
+      e = commands[ret].fn(w.we_wordc, w.we_wordv);
+      if (ec_param_invalid == e) {
+        printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+        print_cmd_usage(&commands[ret]);
+        goto out;
+      }
+    } else {
+      /* Need the mng component to handle */
+      cmd_enq(str, ret);
+    }
+
+    out:
+    if (*str) {
+      add_history(str);
+      write_history(RL_HISTORY);
+    }
+    wordfree(&w);
   }
   return NULL;
 }
@@ -875,8 +717,8 @@ void bt_shell_printf(const char *fmt, ...)
 
 static err_t clicb_sync(int argc, char *argv[])
 {
-  sleep(5);
   printf("%s\n", __FUNCTION__);
+  sleep(5);
   return 0;
 }
 
