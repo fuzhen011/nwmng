@@ -54,7 +54,6 @@ extern err_t cmd_ret;
 
 DECLARE_VAGET_FUN(addrs);
 
-DECLARE_CB(sync);
 DECLARE_CB(reset);
 DECLARE_CB(list);
 DECLARE_CB(info);
@@ -75,7 +74,7 @@ const command_t commands[] = {
     "Print help" },
 
   /* Commands need to be handled by mng */
-  { "sync", NULL, clicb_sync,
+  { "sync", "[1/0]", clicb_sync,
     "Synchronize network configuration" },
   { "list", NULL, clicb_list,
     "List all devices in the database" },
@@ -715,33 +714,26 @@ void bt_shell_printf(const char *fmt, ...)
   }
 }
 
-static err_t clicb_sync(int argc, char *argv[])
-{
-  printf("%s\n", __FUNCTION__);
-  sleep(5);
-  return 0;
-}
-
 static err_t clicb_reset(int argc, char *argv[])
 {
   int r = 0;
   if (argc > 1) {
     r = atoi(argv[1]);
   }
-  printf("%s\n", __FUNCTION__);
+  bt_shell_printf("%s\n", __FUNCTION__);
   longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
   return 0;
 }
 
 static err_t clicb_list(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
+  bt_shell_printf("%s\n", __FUNCTION__);
   return err(ec_param_invalid);
 }
 
 static err_t clicb_info(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
+  bt_shell_printf("%s\n", __FUNCTION__);
   get_mng()->state = adding_devices_em;
   return err(ec_param_invalid);
 }
@@ -774,7 +766,7 @@ static err_t clicb_scan(int argc, char *argv[])
 
 static err_t clicb_quit(int argc, char *argv[])
 {
-  printf("%s\n", __FUNCTION__);
+  bt_shell_printf("%s\n", __FUNCTION__);
   for (int i = 0; i < children_num; i++) {
     kill(children[i], SIGKILL);
   }
@@ -815,7 +807,7 @@ static err_t clicb_ct(int argc, char *argv[])
     LOGD("Sending color temperature [%u] to be handled\n", ct);
     /* IMPL PENDING, now for DEBUG */
     sleep(1);
-    printf("Success\n");
+    bt_shell_printf("Success\n");
     (void)ct;
   }
   free(addrs);
@@ -855,7 +847,7 @@ static err_t clicb_lightness(int argc, char *argv[])
     LOGD("Sending lightness [%u] to be handled\n", lightness);
     /* IMPL PENDING, now for DEBUG */
     sleep(1);
-    printf("Success\n");
+    bt_shell_printf("Success\n");
     (void)lightness;
   }
   free(addrs);
@@ -892,7 +884,7 @@ static err_t clicb_onoff(int argc, char *argv[])
     LOGD("Sending onoff[%s] to be handled\n", onoff ? "on" : "off");
     /* IMPL PENDING, now for DEBUG */
     sleep(1);
-    printf("Success\n");
+    bt_shell_printf("Success\n");
     (void)onoff;
   }
   free(addrs);

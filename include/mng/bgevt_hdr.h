@@ -11,8 +11,9 @@
 extern "C"
 {
 #endif
+#include "gecko_bglib.h"
 
-typedef int (*bgevt_hdr)(const void *evt);
+typedef int (*bgevt_hdr)(const struct gecko_cmd_packet *evt);
 
 void conn_ncptarget(void);
 void sync_host_and_ncp_target(void);

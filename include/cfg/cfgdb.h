@@ -176,6 +176,7 @@ err_t cfgdb_tmpl_remove(tmpl_t *n);
 err_t cfgdb_tmpl_add(tmpl_t *n);
 
 provcfg_t *get_provcfg(void);
+void cfg_load_mnglists(GHFunc func);
 #ifdef __cplusplus
 }
 #endif

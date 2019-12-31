@@ -19,7 +19,7 @@
 #include "logging.h"
 #include "nwk.h"
 #include "cli.h"
-#include "mng_ipc.h"
+#include "cfg.h"
 
 /* Defines  *********************************************************** */
 
@@ -39,10 +39,10 @@ static proj_args_t projargs = { 0 };
 
 static init_func_t initfs[] = {
   cli_init,
+  cfg_init,
   clr_all,
   init_ncp,
-  conn_socksrv,
-  ipc_get_provcfg,
+  mng_init,
 };
 
 static const int inits_num = ARR_LEN(initfs);

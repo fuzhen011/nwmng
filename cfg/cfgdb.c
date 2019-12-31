@@ -327,3 +327,9 @@ int get_ng_addrs(uint16_t *addrs)
   g_hash_table_foreach(db.devdb.nodes, copy_addr_to_user, addrs);
   return offs;
 }
+
+void cfg_load_mnglists(GHFunc func)
+{
+  g_hash_table_foreach(db.devdb.unprov_devs, func, NULL);
+  g_hash_table_foreach(db.devdb.nodes, func, NULL);
+}

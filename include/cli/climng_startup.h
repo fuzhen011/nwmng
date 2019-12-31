@@ -19,17 +19,22 @@ extern "C"
  * BITMAP for longjmp to set the return value of setjmp, if the bit is set, the
  * corresponding function in {initfs} array will be called.
  */
-#define FULL_RESET  (BITOF(CLI_INIT) | BITOF(NCP_INIT) \
-                     | BITOF(SOCK_CONN) | BITOF(GET_PROVCFG))
-#define NORMAL_RESET (BITOF(NCP_INIT) | BITOF(GET_PROVCFG))
-#define FACTORY_RESET (BITOF(CLR_ALL) | BITOF(NCP_INIT) | BITOF(GET_PROVCFG))
+#define FULL_RESET  (BITOF(CLI_INIT)    \
+                     | BITOF(CFG_INIT)  \
+                     | BITOF(NCP_INIT)  \
+                     | BITOF(MNG_INIT))
+#define NORMAL_RESET (BITOF(NCP_INIT) \
+                      | BITOF(MNG_INIT))
+#define FACTORY_RESET (BITOF(CLR_ALL)    \
+                       | BITOF(NCP_INIT) \
+                       | BITOF(MNG_INIT))
 
 enum {
   CLI_INIT,
+  CFG_INIT,
   CLR_ALL,
   NCP_INIT,
-  SOCK_CONN,
-  GET_PROVCFG,
+  MNG_INIT,
 };
 
 typedef struct {

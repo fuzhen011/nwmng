@@ -1,0 +1,321 @@
+#if !defined(CLI_MNG) && !defined(CFG)
+typedef int (*proc_t)(int argc, char *argv[]);
+static proc_t procs[] = {
+  cli_proc, cfg_proc
+};
+static const int proc_num = sizeof(procs) / sizeof(proc_t);
+static pid_t pids[10] = { 0 };
+#endif
+
+
+static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf,
+                           void *out)
+{
+  int i = 0;
+  switch (opc) {
+    case RSP_PROV_BASIC:
+      memcpy(&mng.cfg.addr, buf + i, sizeof(uint16_t));
+      i += sizeof(uint16_t);
+      memcpy(&mng.cfg.sync_time, buf + i, sizeof(time_t));
+      i += sizeof(time_t);
+      memcpy(&mng.cfg.ivi, buf + i, sizeof(uint32_t));
+      i += sizeof(uint32_t);
+      memcpy(&mng.cfg.subnet_num, buf + i, sizeof(uint8_t));
+      /* i += sizeof(uint8_t); */
+      break;
+    case RSP_PROV_SUBNETS:
+      if (mng.cfg.subnets) {
+        free(mng.cfg.subnets);
+      }
+      /* buf[0] is the appkey_num */
+      mng.cfg.subnets = malloc(sizeof(subnet_t) + sizeof(meshkey_t) * buf[0]);
+      memcpy(mng.cfg.subnets, buf + i, sizeof(subnet_t));
+      i += sizeof(subnet_t);
+      if (buf[0]) {
+        memcpy(mng.cfg.subnets[0].appkey, buf + i,
+               sizeof(meshkey_t) * buf[0]);
+        i += sizeof(meshkey_t) * buf[0];
+      }
+      break;
+    case RSP_PROV_TTL:
+      if (!mng.cfg.ttl) {
+        mng.cfg.ttl = malloc(sizeof(uint8_t));
+      }
+      *mng.cfg.ttl = buf[0];
+      break;
+    case RSP_PROV_TXP:
+      if (!mng.cfg.net_txp) {
+        mng.cfg.net_txp = malloc(sizeof(txparam_t));
+      }
+      memcpy(mng.cfg.net_txp, buf, sizeof(txparam_t));
+      break;
+    case RSP_PROV_TIMEOUT:
+      if (!mng.cfg.timeout) {
+        mng.cfg.timeout = malloc(sizeof(timeout_t));
+      }
+      memcpy(mng.cfg.timeout, buf, sizeof(timeout_t));
+      break;
+    default:
+      return 0;
+  }
+  return 1;
+}
+
+err_t ipc_get_provcfg(void *p)
+{
+  err_t e;
+  EC(ec_success, socktocfg(CPG_ALL, 0, NULL, NULL, __provcfg_field));
+  return e;
+}
+
+static int __upl_check_hdr(opc_t opc, uint8_t len, const uint8_t *buf,
+                           void *out)
+{
+  if (opc != RSP_UPL_CHECK) {
+    return 0;
+  }
+  *(uint8_t *)out = buf[0];
+  return 1;
+}
+
+
+void *cfg_mainloop(void *p)
+{
+  /* cfg_init(); */
+  /* cfg_proc(); */
+
+  int n, maxfd;
+  uid_t uid;
+  fd_set rset, allset;
+  err_t e;
+
+  FD_ZERO(&allset);
+
+  if (0 > (srv_sock.listenfd = serv_listen(CC_SOCK_SERV_PATH))) {
+    LOGE("Serv[%s] Listen error [%s]\n", CC_SOCK_CLNT_PATH, strerror(errno));
+    return (void *)(uintptr_t)err(ec_sock);
+  }
+  LOGV("CFG Wait for Socket Connection\n");
+  FD_SET(srv_sock.listenfd, &allset);
+  maxfd = srv_sock.listenfd;
+
+  while (1) {
+    rset = allset;  /* rset gets modified each time around */
+    if ((n = select(maxfd + 1, &rset, NULL, NULL, NULL)) < 0) {
+      LOGE("Select returns [%d], err[%s]\n", n, strerror(errno));
+      return (void *)(uintptr_t)err(ec_sock);
+    }
+
+    if (FD_ISSET(srv_sock.listenfd, &rset) && srv_sock.fd < 0) {
+      /* there is no connection now, so accept new client request */
+      if ((srv_sock.fd = serv_accept(srv_sock.listenfd, &uid)) < 0) {
+        LOGE("serv_accept returns [%d], err[%s]\n", srv_sock.fd, strerror(errno));
+        return (void *)(uintptr_t)err(ec_sock);
+      }
+      FD_SET(srv_sock.fd, &allset);
+      if (srv_sock.fd > maxfd) {
+        maxfd = srv_sock.fd;  /* max fd for select() */
+      }
+      LOGM("new connection: uid %d, fd %d", uid, srv_sock.fd);
+      cfgtest_ipc();
+      continue;
+    }
+    if (srv_sock.fd >= 0 && FD_ISSET(srv_sock.fd, &rset)) {
+      e = handle_cmd();
+      if (ec_sock_closed == errof(e)) {
+        LOGW("Socket closed.\n");
+        FD_CLR(srv_sock.fd, &allset);
+        close(srv_sock.fd);
+        srv_sock.fd = -1;
+      } else if (ec_success != e) {
+        /* exit for now */
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
+  return (void *)(uintptr_t)err(ec_not_exist);
+}
+
+static err_t handle_cmd(void)
+{
+  char r[6] = { 0 };
+  char *buf = NULL;
+  int n, len, pos;
+  err_t e = ec_not_supported;
+
+  /* Get the opcode and length */
+  n = recv(srv_sock.fd, r, 2, 0);
+  if (-1 == n) {
+    LOGE("recv err[%s]\n", strerror(errno));
+    return err(ec_errno);
+  } else if (0 == n) {
+    e = err(ec_sock_closed);
+    goto out;
+  }
+
+  if (r[1]) {
+    buf = malloc(r[1]);
+    len = r[1];
+    while (len) {
+      n = recv(srv_sock.fd, buf, len, 0);
+      if (-1 == n) {
+        LOGE("recv err[%s]\n", strerror(errno));
+        e = err(ec_errno);
+        goto out;
+      } else if (0 == n) {
+        e = err(ec_sock_closed);
+        goto out;
+      }
+      len -= n;
+    }
+  }
+
+  for (int i = 0; i < ops_num; i++) {
+    if (ops[i].opc != r[0]) {
+      continue;
+    }
+    e = ops[i].hdr(r[1], buf);
+  }
+  if (r[1]) {
+    free(buf);
+    buf = NULL;
+  }
+
+  memset(r, 0, 5);
+  if (e == ec_success) {
+    r[0] = RSP_OK;
+    len = 2;
+  } else {
+    r[0] = RSP_ERR;
+    r[1] = 4;
+    memcpy(r + 2, &e, 4);
+    len = 6;
+  }
+
+  pos = 0;
+  while (pos != len) {
+    if (-1 == (n = send(srv_sock.fd, r + pos, len - pos, 0))) {
+      LOGE("send [%s]\n", strerror(errno));
+      return err(ec_errno);
+    }
+    pos += n;
+  }
+
+  out:
+  if (buf) {
+    free(buf);
+  }
+  return e;
+}
+
+static const opchdr_t ops[] = {
+  { CPS_CLRCTL, prov_clrctl },
+  { CPS_ADDR, provset_addr },
+  { CPS_IVI, provset_ivi },
+  { CPS_SYNCTIME, provset_synctime },
+  { CPS_NETKEYID, provset_netkeyid },
+  { CPS_NETKEYDONE, provset_netkeydone },
+  { CPS_APPKEYID, provset_appkeyid },
+  { CPS_APPKEYDONE, provset_appkeydone },
+
+  { CPG_ALL, prov_get },
+
+  /* Node related operations  */
+  { CUPLG_CHECK, _upldev_check },
+};
+
+static const int ops_num = sizeof(ops) / sizeof(opchdr_t);
+
+sock_status_t srv_sock = { -1, -1 };
+typedef struct {
+  opc_t opc;
+  err_t (*hdr)(int len, const char *arg);
+}opchdr_t;
+static void cfgtest_ipc(void)
+{
+  const char s[] = "hello, cli";
+  char r[50] = { 0 };
+  int n;
+  if (-1 == (n = recv(srv_sock.fd, r, 50, 0))) {
+    LOGE("recv[fd:%d] [%s]\n", srv_sock.fd, strerror(errno));
+  } else {
+    LOGM("CFG received [%d:%s] from client.\n", n, r);
+  }
+  if (-1 == (n = send(srv_sock.fd, s, sizeof(s), 0))) {
+    LOGE("send [%s]\n", strerror(errno));
+  } else {
+    LOGM("Send [%d:%s]\n", n, s);
+  }
+  LOGM("CFG Socket TEST DONE\n");
+}
+
+err_t prov_get(int len, const char *arg)
+{
+  err_t e;
+  provcfg_t *pc = get_provcfg();
+  uint8_t buf[0xff] = { 0 };
+  uint8_t i = 0;
+
+  /* Send the provcfg basic data */
+  memcpy(buf + i, &pc->addr, sizeof(uint16_t));
+  i += sizeof(uint16_t);
+  memcpy(buf + i, &pc->sync_time, sizeof(time_t));
+  i += sizeof(time_t);
+  memcpy(buf + i, &pc->ivi, sizeof(uint32_t));
+  i += sizeof(uint32_t);
+  memcpy(buf + i, &pc->subnet_num, sizeof(uint8_t));
+  i += sizeof(uint8_t);
+  EC(ec_success, sendto_client(RSP_PROV_BASIC, i, buf));
+  memset(buf, 0, i);
+  i = 0;
+
+  if (pc->subnet_num) {
+    memcpy(buf + i, pc->subnets, sizeof(subnet_t));
+    i += sizeof(subnet_t);
+    if (pc->subnets[0].appkey_num) {
+      memcpy(buf + i, pc->subnets[0].appkey,
+             sizeof(meshkey_t) * pc->subnets[0].appkey_num);
+      i += sizeof(meshkey_t) * pc->subnets[0].appkey_num;
+    }
+    EC(ec_success, sendto_client(RSP_PROV_SUBNETS, i, buf));
+    memset(buf, 0, i);
+    i = 0;
+  }
+
+  if (pc->ttl) {
+    buf[0] = *pc->ttl;
+    i += 1;
+    EC(ec_success, sendto_client(RSP_PROV_TTL, i, buf));
+    memset(buf, 0, i);
+    i = 0;
+  }
+  if (pc->net_txp) {
+    memcpy(buf + i, pc->net_txp, sizeof(txparam_t));
+    i += sizeof(txparam_t);
+    EC(ec_success, sendto_client(RSP_PROV_TXP, i, buf));
+    memset(buf, 0, i);
+    i = 0;
+  }
+  if (pc->timeout) {
+    memcpy(buf + i, pc->timeout, sizeof(timeout_t));
+    i += sizeof(timeout_t);
+    EC(ec_success, sendto_client(RSP_PROV_TIMEOUT, i, buf));
+    memset(buf, 0, i);
+    i = 0;
+  }
+  return ec_success;
+}
+
+err_t _upldev_check(int len, const char *arg)
+{
+  uint8_t ret = 1;
+  err_t e;
+  node_t *n = cfgdb_unprov_dev_get((const uint8_t *)arg);
+
+  if (!n || n->rmorbl) {
+    ret = 0;
+  }
+  EC(ec_success, sendto_client(RSP_UPL_CHECK, 1, &ret));
+  return ec_success;
+}

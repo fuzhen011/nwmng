@@ -918,32 +918,20 @@ static err_t load_provself(void)
   return e;
 }
 
-static err_t load_nodes(void)
+static void __load_node_arr(json_object *pnode, bool backlog)
 {
-  /* NOTE: Only first subnet will be loaded */
-  json_object *n, *pnode;
+  bool add;
   err_t e;
-  bool add = false;
-  if (!jcfg.nw.subnets
-      || !jcfg.nw.subnets[0].nodes
-      || !jcfg.nw.gen.root) {
-    return err(ec_json_open);
-  }
-  pnode = jcfg.nw.subnets[0].nodes;
-
   json_array_foreach(i, num, pnode)
   {
+    add = false;
     json_object *tmp;
-    n = json_object_array_get_idx(pnode, i);
+    json_object *n = json_object_array_get_idx(pnode, i);
     if (!_node_valid_check(n)) {
       LOGE("Node[%d] invalid, pass.\n", i);
       continue;
     }
 
-    if (!json_object_object_get_ex(n, STR_UUID, &tmp)) {
-      /* No reference ID, ignore it */
-      continue;
-    }
     /*
      * Check if it's already provisioned to know which hash table to find the
      * node
@@ -991,7 +979,9 @@ static err_t load_nodes(void)
       continue;
     }
 
-    if (addr) {
+    if (backlog) {
+      t = cfgdb_backlog_get((const uint8_t *)uuid);
+    } else if (addr) {
       t = cfgdb_node_get(addr);
     } else {
       t = cfgdb_unprov_dev_get((const uint8_t *)uuid);
@@ -1012,12 +1002,25 @@ static err_t load_nodes(void)
         t->done = done;
         t->rmorbl = rmbl;
         t->err = errbits;
-        EC(ec_success, cfgdb_add(t));
+        e = cfgdb_add(t);
+        elog(e);
       } else {
         free(t);
       }
     }
   }
+}
+
+static err_t load_nodes(void)
+{
+  /* NOTE: Only first subnet will be loaded */
+  if (!jcfg.nw.subnets
+      || !jcfg.nw.subnets[0].nodes
+      || !jcfg.nw.gen.root) {
+    return err(ec_json_open);
+  }
+  __load_node_arr(jcfg.nw.subnets[0].nodes, false);
+  __load_node_arr(jcfg.nw.backlog, true);
   return ec_success;
 }
 

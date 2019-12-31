@@ -30,15 +30,6 @@
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-#if !defined(CLI_MNG) && !defined(CFG)
-typedef int (*proc_t)(int argc, char *argv[]);
-static proc_t procs[] = {
-  cli_proc, cfg_proc
-};
-static const int proc_num = sizeof(procs) / sizeof(proc_t);
-static pid_t pids[10] = { 0 };
-#endif
-
 void startup(int argc, char *argv[])
 {
 #if defined(CLI_MNG)
@@ -57,6 +48,7 @@ void startup(int argc, char *argv[])
   logging_deinit();
   cfgdb_deinit();
 #else
+#if 0
   /* Single exec - fork the cfg process */
   err_t e;
   pid_t pid;
@@ -90,5 +82,15 @@ void startup(int argc, char *argv[])
     default:
       break;
   }
+#else
+  err_t e;
+  if (ec_success != (e = cli_proc_init(0, NULL))) {
+    elog(e);
+    return;
+  }
+  cli_proc(argc, argv); /* should never return */
+
+  logging_deinit();
+#endif
 #endif
 }

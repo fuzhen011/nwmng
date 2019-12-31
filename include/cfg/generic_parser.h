@@ -89,16 +89,17 @@ typedef err_t (*gp_free_cfg_func_t)(void **);
 /******************************************************************
  * IPC Callbacks
  * ***************************************************************/
-err_t prov_clrctl(int len, const char *arg);
+err_t cfg_clrctl(void);
 err_t prov_get(int len, const char *arg);
-err_t provset_addr(int len, const char *arg);
-err_t provset_ivi(int len, const char *arg);
+err_t provset_addr(const uint16_t *addr);
+err_t provset_ivi(const uint32_t *ivi);
 err_t provset_synctime(int len, const char *arg);
-err_t provset_netkeyid(int len, const char *arg);
-err_t provset_netkeydone(int len, const char *arg);
-err_t provset_appkeyid(int len, const char *arg);
-err_t provset_appkeydone(int len, const char *arg);
+err_t provset_netkeyid(const uint16_t *id);
+err_t provset_netkeydone(const uint8_t *done);
+err_t provset_appkeyid(const uint16_t *refid, const uint16_t *id);
+err_t provset_appkeydone(const uint16_t *refid, const uint8_t *done);
 err_t _upldev_check(int len, const char *arg);
+err_t backlog_dev(const uint8_t *uuid);
 #ifdef __cplusplus
 }
 #endif

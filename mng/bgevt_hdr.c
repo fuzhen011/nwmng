@@ -17,6 +17,8 @@
 #include "socket_handler.h"
 #include "gecko_bglib.h"
 #include "logging.h"
+#include "mng.h"
+
 /* Defines  *********************************************************** */
 BGLIB_DEFINE();
 
@@ -26,6 +28,7 @@ BGLIB_DEFINE();
 static volatile int ncp_sync = false;
 
 static bgevt_hdr hdrs[] = {
+  dev_add_hdr,
   NULL
 };
 
@@ -126,7 +129,7 @@ void bgevt_dispenser(void)
     evt = gecko_peek_event();
     if (evt) {
       bgevt_hdr *h = hdrs;
-      while (h && !ret) {
+      while (*h && !ret) {
         ret = (*h)(evt);
         h++;
       }

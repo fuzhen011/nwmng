@@ -20,19 +20,18 @@
 #include "projconfig.h"
 #include "logging.h"
 #include "utils.h"
+#include "generic_parser.h"
 #include "gecko_bglib.h"
 #include "bgevt_hdr.h"
 #include "mng.h"
-#include "mng_ipc.h"
 #include "nwk.h"
-#include "ccipc.h"
 #include "cli.h"
 #include "climng_startup.h"
+#include "glib.h"
 /* Defines  *********************************************************** */
 #define INVALID_CONN_HANDLE 0xff
 
 /* Global Variables *************************************************** */
-extern sock_status_t sock;
 extern const command_t commands[];
 extern pthread_mutex_t qlock, hdrlock;
 extern pthread_cond_t qready, hdrready;
@@ -59,6 +58,7 @@ static mng_t mng = {
 
 /* Static Functions Declaractions ************************************* */
 static void poll_cmd(void);
+static void load_lists(gpointer key, gpointer value, gpointer data);
 /******************************************************************
  * Command queue
  * ***************************************************************/
@@ -111,66 +111,6 @@ wordexp_t *cmd_deq(int *offs)
   return w;
 }
 
-static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf,
-                           void *out)
-{
-  int i = 0;
-  switch (opc) {
-    case RSP_PROV_BASIC:
-      memcpy(&mng.cfg.addr, buf + i, sizeof(uint16_t));
-      i += sizeof(uint16_t);
-      memcpy(&mng.cfg.sync_time, buf + i, sizeof(time_t));
-      i += sizeof(time_t);
-      memcpy(&mng.cfg.ivi, buf + i, sizeof(uint32_t));
-      i += sizeof(uint32_t);
-      memcpy(&mng.cfg.subnet_num, buf + i, sizeof(uint8_t));
-      /* i += sizeof(uint8_t); */
-      break;
-    case RSP_PROV_SUBNETS:
-      if (mng.cfg.subnets) {
-        free(mng.cfg.subnets);
-      }
-      /* buf[0] is the appkey_num */
-      mng.cfg.subnets = malloc(sizeof(subnet_t) + sizeof(meshkey_t) * buf[0]);
-      memcpy(mng.cfg.subnets, buf + i, sizeof(subnet_t));
-      i += sizeof(subnet_t);
-      if (buf[0]) {
-        memcpy(mng.cfg.subnets[0].appkey, buf + i,
-               sizeof(meshkey_t) * buf[0]);
-        i += sizeof(meshkey_t) * buf[0];
-      }
-      break;
-    case RSP_PROV_TTL:
-      if (!mng.cfg.ttl) {
-        mng.cfg.ttl = malloc(sizeof(uint8_t));
-      }
-      *mng.cfg.ttl = buf[0];
-      break;
-    case RSP_PROV_TXP:
-      if (!mng.cfg.net_txp) {
-        mng.cfg.net_txp = malloc(sizeof(txparam_t));
-      }
-      memcpy(mng.cfg.net_txp, buf, sizeof(txparam_t));
-      break;
-    case RSP_PROV_TIMEOUT:
-      if (!mng.cfg.timeout) {
-        mng.cfg.timeout = malloc(sizeof(timeout_t));
-      }
-      memcpy(mng.cfg.timeout, buf, sizeof(timeout_t));
-      break;
-    default:
-      return 0;
-  }
-  return 1;
-}
-
-err_t ipc_get_provcfg(void *p)
-{
-  err_t e;
-  EC(ec_success, socktocfg(CPG_ALL, 0, NULL, NULL, __provcfg_field));
-  return e;
-}
-
 mng_t *get_mng(void)
 {
   return &mng;
@@ -186,9 +126,8 @@ err_t clr_all(void *p)
 {
   int ret;
   err_t e;
-  EC(ec_success, socktocfg(CPS_CLRCTL, 0, NULL, NULL, NULL));
 
-  /* TODO: IPC to clear all nodes */
+  EC(ec_success, cfg_clrctl());
 
   if (mng.conn != INVALID_CONN_HANDLE) {
     if (bg_err_success != (ret = gecko_cmd_le_connection_close(mng.conn)->result)) {
@@ -232,7 +171,7 @@ void *mng_mainloop(void *p)
     bgevt_dispenser();
     switch (mng.state) {
       case starting:
-        /* TODO: Load actions */
+        /* load lists */
         break;
       case stopping:
         mng.state = configured;
@@ -283,6 +222,73 @@ err_t clm_set_scan(int onoff)
   return ec_success;
 }
 
+err_t mng_init(void *p)
+{
+  memset(&mng, 0, sizeof(mng_t));
+  mng.conn = 0xff;
+  mng.cfg = get_provcfg();
+  return ec_success;
+}
+
+void mng_load_lists(void)
+{
+  cfg_load_mnglists(load_lists);
+}
+
+#define BL_BITMASK  0x01
+#define RM_BITMASK  0x10
+
+static void load_lists(gpointer key, gpointer value, gpointer data)
+{
+  node_t *n = (node_t *)value;
+  int in = (gecko_cmd_mesh_prov_ddb_get(16, n->uuid)->result == bg_err_success);
+
+  if (!n->addr) {
+    if (in) {
+      gecko_cmd_mesh_prov_ddb_delete(*(uuid_128 *)n->uuid);
+    }
+    if (!n->rmorbl) {
+      mng.lists.add = g_list_append(mng.lists.add, n);
+    }
+  } else {
+    /* Priority: Blacklist > remove > config */
+    if (!in) {
+      /* TODO - set a flag */
+      LOGE("CFG and DDB in NCP are Out Of Sync - **Factory Reset Required?**\n");
+      /* return TRUE; */
+    }
+    if (n->rmorbl & BL_BITMASK) {
+      mng.lists.bl = g_list_append(mng.lists.bl, n);
+    } else if (n->rmorbl & RM_BITMASK) {
+      mng.lists.rm = g_list_append(mng.lists.rm, n);
+    } else if (!n->done) {
+      mng.lists.config = g_list_append(mng.lists.config, n);
+    }
+  }
+  /* return FALSE; */
+}
+
 /* int mng_evt_hdr(const void *ve) */
 /* { */
 /* } */
+
+err_t clicb_sync(int argc, char *argv[])
+{
+  int s = 1;
+
+  if (argc > 1) {
+    s = atoi(argv[1]);
+  }
+  if (s < 0 || s > 1) {
+    return err(ec_param_invalid);
+  }
+
+  if (mng.state < starting && s) {
+    mng.state = starting;
+  } else if (mng.state >= starting && !s) {
+    mng.state = stopping;
+  }
+
+  bt_shell_printf("%s\n", __FUNCTION__);
+  return 0;
+}

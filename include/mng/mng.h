@@ -15,6 +15,7 @@ extern "C"
 #include <stdbool.h>
 #include "err.h"
 #include "projconfig.h"
+#include "host_gecko.h"
 #include "cfgdb.h"
 
 typedef struct {
@@ -75,7 +76,7 @@ typedef struct {
 typedef struct {
   int state;
   int next_state;
-  uint16_t addr;
+  node_t *node;
   bbitmap_t flag;
   uint8_t remaining_retry;
   struct {
@@ -83,7 +84,6 @@ typedef struct {
     uint32_t bgevt;
     uint16_t general;
   }err_cache;
-  mesh_config_t config;
   dcd_t dcd;
   uint32_t cc_handle; /* Config Client Handle returned by bgcall */
   struct {
@@ -92,6 +92,22 @@ typedef struct {
   }vnm;
   int iterators[ITERATOR_NUM];
 }config_cache_t;
+
+enum {
+  bl_idle,
+  bl_busy,
+  bl_done
+};
+typedef struct {
+  int state; /* @ref{bl_xxx} */
+  node_t *node;
+  /* target network size = 32 * 8 = 256 */
+  struct {
+    lbitmap_t phase1[8];
+    lbitmap_t phase2[8];
+    lbitmap_t phase3[8];
+  }status;
+}bl_cache_t;
 
 enum {
   nil,
@@ -116,16 +132,26 @@ enum {
 typedef struct {
   int state;
   uint8_t conn;
-  provcfg_t cfg;
+  provcfg_t *cfg;
   struct {
     int free_mode;
   }status;
+
   struct {
     add_cache_t add[MAX_PROV_SESSIONS];
     config_cache_t config[MAX_CONCURRENT_CONFIG_NODES];
+    bl_cache_t bl;
   }cache;
+  
+  struct{
+    GList *add;
+    GList *config;
+    GList *bl;
+    GList *rm;
+  }lists;
 }mng_t;
 
+err_t mng_init(void *p);
 err_t init_ncp(void *p);
 err_t clr_all(void *p);
 
@@ -138,6 +164,9 @@ err_t clm_set_scan(int onoff);
 
 void cmd_enq(const char *str, int offs);
 wordexp_t *cmd_deq(int *offs);
+
+int dev_add_hdr(const struct gecko_cmd_packet *evt);
+err_t clicb_sync(int argc, char *argv[]);
 #ifdef __cplusplus
 }
 #endif

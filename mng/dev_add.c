@@ -8,13 +8,11 @@
 /* Includes *********************************************************** */
 /* #include "dev_add.h" */
 #include "mng.h"
-#include "mng_ipc.h"
 #include "utils.h"
 #include "logging.h"
-#include "opcodes.h"
 #include "cli.h"
+#include "generic_parser.h"
 
-#include "host_gecko.h"
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -22,9 +20,9 @@
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-static void on_beacon_recv(struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt);
-static void on_prov_failed(struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt);
-static void on_prov_success(struct gecko_msg_mesh_prov_device_provisioned_evt_t *evt);
+static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt);
+static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt);
+static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_evt_t *evt);
 
 static inline int iscached(const mng_t *mng,
                            const uint8_t *uuid,
@@ -47,7 +45,7 @@ static inline int iscached(const mng_t *mng,
   return -1;
 }
 
-int dev_add_hdr(struct gecko_cmd_packet *evt)
+int dev_add_hdr(const struct gecko_cmd_packet *evt)
 {
   ASSERT(evt);
 
@@ -77,22 +75,12 @@ int dev_add_hdr(struct gecko_cmd_packet *evt)
   return 1;
 }
 
-static int __upl_check_hdr(opc_t opc, uint8_t len, const uint8_t *buf,
-                           void *out)
-{
-  if (opc != RSP_UPL_CHECK) {
-    return 0;
-  }
-  *(uint8_t *)out = buf[0];
-  return 1;
-}
-
-static void on_beacon_recv(struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt)
+static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt)
 {
   int freeid;
-  uint8_t inupl;
   uint16_t ret;
   mng_t *mng = get_mng();
+  node_t *n;
 
   ASSERT(evt);
 
@@ -101,8 +89,6 @@ static void on_beacon_recv(struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt)
     return;
   }
 
-  /* TODO: if free mode is on, add it to backlog if hasn't */
-
   if (-1 != iscached(mng, evt->uuid.data, &freeid)) {
     return;
   }
@@ -110,16 +96,29 @@ static void on_beacon_recv(struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt)
   if (freeid == -1) {
     return;
   }
-  if (ec_success != socktocfg(CUPLG_CHECK, 16,
-                              evt->uuid.data, &inupl, __upl_check_hdr)) {
-    LOGE("socket error\n");
-  }
-  if (!inupl) {
+
+  n = cfgdb_unprov_dev_get(evt->uuid.data);
+  if (!n) {
+    /* TODO: if free mode is on, add it to backlog if hasn't */
+    if (NULL == cfgdb_backlog_get(evt->uuid.data)) {
+      err_t e = backlog_dev(evt->uuid.data);
+      if (ec_success == e) {
+        char uuid_str[33] = { 0 };
+        cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
+        bt_shell_printf("Add new device (UUID:%s) to backlog\n", uuid_str);
+        LOGM("Add new device (UUID:%s) to backlog\n", uuid_str);
+      } else {
+        elog(e);
+      }
+    }
+    return;
+  } else if (n->rmorbl) {
     return;
   }
+
   LOGM("Unprovisioned beacon match. Start provisioning it\n");
   /* TODO: Provision it */
-  ret = gecko_cmd_mesh_prov_provision_device(mng->cfg.subnets[0].netkey.id,
+  ret = gecko_cmd_mesh_prov_provision_device(mng->cfg->subnets[0].netkey.id,
                                              16,
                                              evt->uuid.data)->result;
   if (bg_err_success != ret) {
@@ -130,7 +129,7 @@ static void on_beacon_recv(struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt)
   memcpy(mng->cache.add[freeid].uuid, evt->uuid.data, 16);
 }
 
-static void on_prov_success(struct gecko_msg_mesh_prov_device_provisioned_evt_t *evt)
+static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_evt_t *evt)
 {
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
@@ -146,7 +145,7 @@ static void on_prov_success(struct gecko_msg_mesh_prov_device_provisioned_evt_t 
    */
 }
 
-static void on_prov_failed(struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
+static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
 {
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);

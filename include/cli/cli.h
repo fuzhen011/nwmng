@@ -16,7 +16,6 @@ extern "C"
 #include <readline/readline.h>
 
 #include "err.h"
-#include "opcodes.h"
 
 #define __DUMP_PARAMS
 #ifdef __DUMP_PARAMS
