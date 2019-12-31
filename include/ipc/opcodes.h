@@ -50,11 +50,6 @@ enum {
   CPS_APPKEYID,
   CPS_APPKEYDONE,
 
-  /* Check if provided UUID is in the unprovisioned list */
-  CUPLG_CHECK,
-  /* Result of {CUPLG_CHECK} */
-  RSP_UPL_CHECK,
-
   /* Provcfg Get */
   CPG_ALL,
   RSP_PROV_BASIC,
@@ -63,6 +58,11 @@ enum {
   RSP_PROV_TXP,
   RSP_PROV_TIMEOUT,
   /* Provcfg Get */
+
+  /* Check if provided UUID is in the unprovisioned list */
+  CUPLG_CHECK,
+  /* Result of {CUPLG_CHECK} */
+  RSP_UPL_CHECK,
 
   RSP_ERR = 253,
   RSP_OK = 254,

@@ -613,7 +613,6 @@ void *cli_mainloop(void *pIn)
   return NULL;
 }
 #else
-extern wordexp_t *wcmd;
 void *cli_mainloop(void *pin)
 {
   err_t e;
@@ -657,17 +656,6 @@ void *cli_mainloop(void *pin)
       cmd_enq(str, ret);
     }
 
-    /* Handle the command - call the
-     * callback */
-
-#if 0
-    ret = commands[ret].fn(w.we_wordc, w.we_wordv);
-    if (ec_param_invalid == ret) {
-      printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
-      print_cmd_usage(&commands[ret]);
-      goto out;
-    }
-#endif
     out:
     if (*str) {
       add_history(str);
