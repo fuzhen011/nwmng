@@ -26,6 +26,7 @@
 #include "mng.h"
 #include "nwk.h"
 #include "cli.h"
+#include "cfg.h"
 #include "climng_startup.h"
 #include "glib.h"
 /* Defines  *********************************************************** */
@@ -171,7 +172,7 @@ void *mng_mainloop(void *p)
     bgevt_dispenser();
     switch (mng.state) {
       case starting:
-        /* load lists */
+        /* TODO: load lists */
         break;
       case stopping:
         mng.state = configured;
@@ -282,6 +283,9 @@ err_t clicb_sync(int argc, char *argv[])
   if (s < 0 || s > 1) {
     return err(ec_param_invalid);
   }
+  cfg_init(NULL);
+
+  return ec_success;
 
   if (mng.state < starting && s) {
     mng.state = starting;

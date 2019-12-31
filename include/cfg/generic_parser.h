@@ -52,6 +52,7 @@ enum {
 #define FL_TRUNC                        (1UL << 1)
 /* Clear all control fields */
 #define FL_CLR_CTLFS                    (1UL << 2)
+#define FL_FORCE_RELOAD                 (1UL << 3)
 
 void gp_init(int cfg_filetype, void *init_data);
 

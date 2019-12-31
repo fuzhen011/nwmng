@@ -15,6 +15,8 @@
 #include <json_util.h>
 #include <glib.h>
 
+#include <sys/stat.h>
+
 #include "cfgdb.h"
 #include "generic_parser.h"
 #include "json_object.h"
@@ -56,6 +58,7 @@ typedef struct {
   bool autoflush;
   char *fp;
   json_object *root;
+  time_t synctime;
 }cfg_general_t;
 
 typedef struct {
@@ -91,6 +94,9 @@ typedef struct {
 static json_cfg_t jcfg = { 0 };
 
 /* Static Functions Declaractions ************************************* */
+static void __kv_replace(json_object *obj,
+                         const void *key,
+                         void *value);
 /*
  * out holds the pointer to value, it can be a real value or a pointer
  */
@@ -667,6 +673,7 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
 {
   err_t e = ec_success;;
   cfg_general_t *gen;
+  json_object *sy;
 
   gen = gen_from_fd(cfg_fd);
   json_cfg_close(cfg_fd);
@@ -675,6 +682,13 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
   }
   gen->root = json_object_from_file(gen->fp);
   gen->autoflush = autoflush;
+
+  if (json_object_object_get_ex(gen->root, STR_SYNC_TIME, &sy)) {
+    const char *syt = json_object_get_string(sy);
+    if (ec_success != str2uint(syt, strlen(syt), &gen->synctime, sizeof(uint32_t))) {
+      LOGE("STR to UINT error\n");
+    }
+  }
 
   if (cfg_fd == NW_NODES_CFG_FILE) {
     /* Load the subnets, which fills the refid and the json_object nodes */
@@ -1059,6 +1073,7 @@ err_t json_cfg_open(int cfg_fd,
   int tmp;
   err_t ret = ec_success;
   cfg_general_t *gen;
+  struct stat st;
 
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
     return err(ec_param_invalid);
@@ -1111,6 +1126,13 @@ err_t json_cfg_open(int cfg_fd,
       }
     }
   }
+  if (gen->synctime && !(flags & FL_FORCE_RELOAD)) {
+    stat(gen->fp, &st);
+    if (st.st_mtim.tv_sec <= gen->synctime) {
+      LOGM("Already hold the latest content, no need to reload file\n");
+      return ec_success;
+    }
+  }
 
   if (ec_success != (ret = open_json_file(cfg_fd, 1))) {
     goto fail;
@@ -1146,6 +1168,15 @@ err_t json_cfg_flush(int cfg_fd)
   gen = gen_from_fd(cfg_fd);
   if (!gen || !gen->root || !gen->fp) {
     return err(ec_json_null);
+  }
+  if (cfg_fd != TEMPLATE_FILE) {
+    char buf[11] = { 0 };
+    time_t t = time(NULL);
+    gen->synctime = (uint32_t)t;
+    buf[0] = '0';
+    buf[1] = 'x';
+    uint32_tostr((uint32_t)t, buf + 2);
+    __kv_replace(gen->root, STR_SYNC_TIME, buf);
   }
 #if (JSON_ECHO_DBG == 1)
   LOGD("Dump %s\n", gen->fp);
