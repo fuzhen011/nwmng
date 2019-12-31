@@ -10,10 +10,12 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "projconfig.h"
 #include "json_parser.h"
 #include "generic_parser.h"
 #include "cfgdb.h"
 #include "cfg.h"
+#include "mng.h"
 
 /* Defines  *********************************************************** */
 typedef struct {
@@ -123,4 +125,34 @@ err_t provset_appkeydone(const uint16_t *refid, const uint8_t *done)
 err_t backlog_dev(const uint8_t *uuid)
 {
   return gp.write(NW_NODES_CFG_FILE, wrt_add_node, NULL, (void *)uuid);
+}
+
+int file_modified(int cfg_fd)
+{
+  uint8_t r;
+  err_t e = gp.read(cfg_fd, rdt_modified, NULL, &r);
+  if (e != ec_success) {
+    elog(e);
+    return -1;
+  }
+  return r;
+}
+
+err_t load_cfg_file(int cfg_fd)
+{
+  err_t e;
+  if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
+    return err(ec_param_invalid);
+  }
+  const char *fp = (cfg_fd == TEMPLATE_FILE ? TMPLATE_FILE_PATH
+                    : cfg_fd == NW_NODES_CFG_FILE ? NWNODES_FILE_PATH : SELFCFG_FILE_PATH);
+  e = gp.open(cfg_fd, fp, 0);
+  if (ec_success != e) {
+    elog(e);
+    return e;
+  }
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    mng_load_lists();
+  }
+  return ec_success;
 }

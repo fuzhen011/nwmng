@@ -1601,5 +1601,28 @@ err_t json_cfg_read(int cfg_fd,
                     const void *key,
                     void *data)
 {
+  struct stat st;
+  cfg_general_t *gen;
+  if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
+    return err(ec_param_invalid);
+  }
+  gen = gen_from_fd(cfg_fd);
+  switch (rdtype) {
+    case rdt_modified:
+      if (!gen->fp) {
+        *(uint8_t *)data = 1;
+        return ec_success;
+      }
+      stat(gen->fp, &st);
+      if (st.st_mtim.tv_sec > gen->synctime) {
+        *(uint8_t *)data = 1;
+        return ec_success;
+      }
+      *(uint8_t *)data = 0;
+      return ec_success;
+      break;
+    default:
+      return ec_param_invalid;
+  }
   return ec_success;
 }

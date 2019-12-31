@@ -14,7 +14,6 @@
 #include "cfg.h"
 
 #include "generic_parser.h"
-#include "parser/json_parser.h"
 
 /* TEST */
 #include <unistd.h>
@@ -154,17 +153,11 @@ err_t cfg_init(void *p)
   EC(ec_success, cfgdb_init());
   gp_init(cft_json, NULL);
 
-  e = json_cfg_open(TEMPLATE_FILE,
-                    TMPLATE_FILE_PATH,
-                    0);
+  e = load_cfg_file(TEMPLATE_FILE);
   elog(e);
-  e = json_cfg_open(NW_NODES_CFG_FILE,
-                    NWNODES_FILE_PATH,
-                    0);
+  e = load_cfg_file(NW_NODES_CFG_FILE);
   elog(e);
-  e = json_cfg_open(PROV_CFG_FILE,
-                    SELFCFG_FILE_PATH,
-                    0);
+  e = load_cfg_file(PROV_CFG_FILE);
   elog(e);
   return e;
 }

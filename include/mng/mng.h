@@ -148,6 +148,7 @@ typedef struct {
     GList *config;
     GList *bl;
     GList *rm;
+    GList *fail;
   }lists;
 }mng_t;
 
@@ -167,6 +168,7 @@ wordexp_t *cmd_deq(int *offs);
 
 int dev_add_hdr(const struct gecko_cmd_packet *evt);
 err_t clicb_sync(int argc, char *argv[]);
+void mng_load_lists(void);
 #ifdef __cplusplus
 }
 #endif

@@ -173,6 +173,9 @@ void *mng_mainloop(void *p)
     switch (mng.state) {
       case starting:
         /* TODO: load lists */
+        if (file_modified(NW_NODES_CFG_FILE)) {
+          load_cfg_file(NW_NODES_CFG_FILE);
+        }
         break;
       case stopping:
         mng.state = configured;
@@ -234,6 +237,8 @@ err_t mng_init(void *p)
 void mng_load_lists(void)
 {
   cfg_load_mnglists(load_lists);
+  g_list_free(mng.lists.fail);
+  mng.lists.fail = NULL;
 }
 
 #define BL_BITMASK  0x01
@@ -283,9 +288,6 @@ err_t clicb_sync(int argc, char *argv[])
   if (s < 0 || s > 1) {
     return err(ec_param_invalid);
   }
-  cfg_init(NULL);
-
-  return ec_success;
 
   if (mng.state < starting && s) {
     mng.state = starting;
