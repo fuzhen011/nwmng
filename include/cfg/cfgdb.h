@@ -13,9 +13,9 @@ extern "C"
 #endif
 #include <stdint.h>
 #include <stdbool.h>
+#include <glib.h>
 
 #include "utils.h"
-#include "glib.h"
 
 enum {
   relay_bitoffs,

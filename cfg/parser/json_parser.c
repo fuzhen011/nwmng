@@ -1128,7 +1128,11 @@ err_t json_cfg_open(int cfg_fd,
   }
   if (gen->synctime && !(flags & FL_FORCE_RELOAD)) {
     stat(gen->fp, &st);
+#if __APPLE__ == 1
+    if (st.st_mtimespec.tv_sec <= gen->synctime) {
+#else
     if (st.st_mtim.tv_sec <= gen->synctime) {
+#endif
       LOGM("Already hold the latest content, no need to reload file\n");
       return ec_success;
     }
@@ -1614,7 +1618,11 @@ err_t json_cfg_read(int cfg_fd,
         return ec_success;
       }
       stat(gen->fp, &st);
+#if __APPLE__ == 1
+      if (st.st_mtimespec.tv_sec > gen->synctime) {
+#else
       if (st.st_mtim.tv_sec > gen->synctime) {
+#endif
         *(uint8_t *)data = 1;
         return ec_success;
       }
