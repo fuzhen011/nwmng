@@ -665,9 +665,9 @@ static inline cfg_general_t *gen_from_fd(int fd)
  * @brief open_json_file - close the current root and reload it with the file
  * content, it also fill all the json_object in the struct
  *
- * @param cfg_fd -
+ * @param cfg_fd - config file descriptor
  *
- * @return
+ * @return @ref{err_t}
  */
 static err_t open_json_file(int cfg_fd, bool autoflush)
 {
@@ -1038,13 +1038,16 @@ static err_t load_nodes(void)
   return ec_success;
 }
 
-static err_t load_json_file(int cfg_fd,
-                            bool clrctlfls)
+static err_t load_json_file(int cfg_fd, bool clrdb)
 {
   /* TODO */
   if (cfg_fd == TEMPLATE_FILE) {
     return load_template();
   } else if (cfg_fd == NW_NODES_CFG_FILE) {
+    if (clrdb) {
+      elog(cfgdb_remove_all_nodes());
+      elog(cfgdb_remove_all_upl());
+    }
     return load_nodes();
   } else if (cfg_fd == PROV_CFG_FILE) {
     return load_provself();
@@ -1143,7 +1146,7 @@ err_t json_cfg_open(int cfg_fd,
   }
 
   if (ec_success != (ret = load_json_file(cfg_fd,
-                                          !!(flags & FL_CLR_CTLFS)))) {
+                                          !!(flags & FL_FORCE_RELOAD)))) {
     goto fail;
   }
 
@@ -1391,8 +1394,23 @@ static err_t set_node_done(const void *key,
 
 static err_t nodes_clrctl(void)
 {
-  /* TODO */
-  return ec_success;
+  char uint32_zero[] = { '0', 'x', '0', '0', '0', '0', '0', '0', '0', '0', 0 };
+  char uint16_zero[] = { '0', 'x', '0', '0', '0', '0', 0 };
+  char uint8_zero[] = { '0', 'x', '0', '0', 0 };
+  json_array_foreach(i, n, jcfg.nw.subnets[0].nodes){
+    json_object *node;
+    node = json_object_array_get_idx(jcfg.nw.subnets[0].nodes, i);
+    __kv_replace(node, STR_ADDR, uint16_zero);
+    __kv_replace(node, STR_ERRBITS, uint32_zero);
+    __kv_replace(node, STR_RMORBL, uint8_zero);
+    __kv_replace(node, STR_DONE, uint8_zero);
+  }
+  if (jcfg.nw.gen.autoflush) {
+    json_cfg_flush(NW_NODES_CFG_FILE);
+  }
+
+  /* Force reload the file */
+  return json_cfg_open(NW_NODES_CFG_FILE, NULL, FL_FORCE_RELOAD);
 }
 
 static err_t write_nodes(int wrtype,

@@ -171,6 +171,24 @@ void cfgdb_deinit(void)
   db.initialized = 0;
 }
 
+err_t cfgdb_remove_all_nodes(void)
+{
+  if (!db.initialized) {
+    return err(ec_state);
+  }
+  g_hash_table_remove_all(db.devdb.nodes);
+  return ec_success;
+}
+
+err_t cfgdb_remove_all_upl(void)
+{
+  if (!db.initialized) {
+    return err(ec_state);
+  }
+  g_hash_table_remove_all(db.devdb.unprov_devs);
+  return ec_success;
+}
+
 int cfgdb_contains(const node_t *n)
 {
   CHECK_STATE(0);

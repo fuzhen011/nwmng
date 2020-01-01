@@ -168,6 +168,10 @@ node_t *cfgdb_backlog_get(const uint8_t *uuid);
 
 err_t cfgdb_remove(node_t *n, bool destory);
 err_t cfgdb_add(node_t *n);
+
+err_t cfgdb_remove_all_upl(void);
+err_t cfgdb_remove_all_nodes(void);
+
 /*
  * Template related functions
  */
