@@ -160,7 +160,7 @@ err_t init_ncp(void *p)
   conn_ncptarget();
   sync_host_and_ncp_target();
   atexit(__ncp_exit);
-  LOGD("ncp init done\n");
+  /* LOGD("ncp init done\n"); */
   return ec_success;
 }
 
@@ -271,6 +271,7 @@ static void load_lists(gpointer key, gpointer value, gpointer data)
       mng.lists.config = g_list_append(mng.lists.config, n);
     }
   }
+  LOGM("Lists loaded\n");
   /* return FALSE; */
 }
 

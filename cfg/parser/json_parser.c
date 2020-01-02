@@ -720,9 +720,10 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
   out:
   if (ec_success != e) {
     json_cfg_close(cfg_fd);
-  } else {
-    LOGD("%s file opened\n", gen->fp);
   }
+  /* else { */
+  /* LOGD("%s file opened\n", gen->fp); */
+  /* } */
   return e;
 }
 
@@ -1066,7 +1067,7 @@ void json_cfg_close(int cfg_fd)
     SAFE_FREE(jcfg.nw.subnets);
   }
   gen->root = NULL;
-  LOGM("%s file closed.\n", gen->fp);
+  /* LOGM("%s file closed.\n", gen->fp); */
 }
 
 err_t json_cfg_open(int cfg_fd,
@@ -1136,7 +1137,7 @@ err_t json_cfg_open(int cfg_fd,
 #else
     if (st.st_mtim.tv_sec <= gen->synctime) {
 #endif
-      LOGM("Already hold the latest content, no need to reload file\n");
+      LOGD("Already hold the latest content, no need to reload file\n");
       return ec_success;
     }
   }
