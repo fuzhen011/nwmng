@@ -120,6 +120,11 @@ err_t cfgdb_init(void)
   db.devdb.backlog = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, node_free);
   db.initialized = 1;
 
+  uint8_t uuid1[16] = { 0x00, 0x0b, 0x57, 0x31, 0x55, 0x5c, 0x2d, 0x76, 0x65, 0x44, 0x73, 0x62, 0x61, 0x6c, 0x69, 0x53 };
+  uint8_t uuid2[16] = { 0x00, 0x0b, 0x57, 0xef, 0x2b, 0x87, 0x2d, 0x76, 0x65, 0x44, 0x73, 0x62, 0x61, 0x6c, 0x69, 0x53 };
+  LOGD("UUID1 hash = %u\n", g_str_hash(uuid1));
+  LOGD("UUID2 hash = %u\n", g_str_hash(uuid2));
+  LOGD("UUID1 key %s= UUID2 key\n", memcmp(uuid1, uuid2, 16) ? "!" : "=");
   return ec_success;
 }
 
@@ -348,6 +353,13 @@ int get_ng_addrs(uint16_t *addrs)
 
 void cfg_load_mnglists(GHFunc func)
 {
+#if 1
   g_hash_table_foreach(db.devdb.unprov_devs, func, NULL);
   g_hash_table_foreach(db.devdb.nodes, func, NULL);
+#else
+  LOGD("UPL size %u\n", g_hash_table_size(db.devdb.unprov_devs));
+  LOGD("Node size %u\n", g_hash_table_size(db.devdb.nodes));
+  g_hash_table_foreach(db.devdb.unprov_devs, dump__, NULL);
+  g_hash_table_foreach(db.devdb.nodes, dump__, NULL);
+#endif
 }

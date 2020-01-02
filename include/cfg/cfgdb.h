@@ -141,10 +141,14 @@ typedef struct {
 }provcfg_t;
 
 typedef struct {
+#if 0
   GHashTable *templates;
   GHashTable *unprov_devs;
   GHashTable *nodes;
   GHashTable *backlog;
+#else
+
+#endif
   GQueue *lights;
   /* TODO: Add queue to each item */
   GList *pubgroups;

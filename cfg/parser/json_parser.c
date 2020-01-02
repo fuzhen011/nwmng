@@ -603,12 +603,23 @@ static err_t _load_tmpl(json_object *obj,
   ASSERT(cfg_fd == NW_NODES_CFG_FILE);
 
   json_object_object_get_ex(obj, STR_TMPL, &tmp);
+  if (!tmp) {
+    if (((node_t *)out)->tmpl) {
+      free(((node_t *)out)->tmpl);
+      ((node_t *)out)->tmpl = NULL;
+    }
+    return ec_success;
+  }
   tmplid_str = json_object_get_string(tmp);
 
   if (ec_success != str2uint(tmplid_str, strlen(tmplid_str), &tmplid, sizeof(uint8_t))) {
     LOGE("STR to UINT error\n");
     return err(ec_json_format);
   }
+  if (NULL == ((node_t *)out)->tmpl) {
+    ((node_t *)out)->tmpl = malloc(1);
+  }
+  *((node_t *)out)->tmpl = tmplid;
 
   t = cfgdb_tmpl_get(tmplid);
   if (!t) {
