@@ -20,10 +20,10 @@
 #define HEALTH_SERVER_MDID              0x0002
 #define HEALTH_CLIENT_MDID              0x0003
 
-#if 0
-#define GET_DCD_MSG                     "Node[%d]: Get DCD\n"
-#define GET_DCD_SUC_MSG                 "Node[%d]:  --- Get DCD " HL_SUCCESS "\n"
-#define GET_DCD_FAIL_MSG                "Node[%d]:  --- Get DCD " HL_FAILED ", Err <0x%04x>\n"
+#if 1
+#define GET_DCD_MSG                     "Node[%x]: Get DCD\n"
+#define GET_DCD_SUC_MSG                 "Node[%x]:  --- Get DCD Success\n"
+#define GET_DCD_FAIL_MSG                "Node[%x]:  --- Get DCD Failed, Err <0x%04x>\n"
 #endif
 
 #if 1
@@ -35,16 +35,16 @@
   } while (0)
 #endif
 
-#define SUC_P(cache, config)                   \
-  do {                                         \
-    CS_LOG(GET_DCD_SUC_MSG, cache->nodeIndex); \
+#define SUC_P(cache, config)                 \
+  do {                                       \
+    LOGD(GET_DCD_SUC_MSG, cache->node->addr); \
   } while (0)
 
 #define FAIL_P(cache, config, err) \
   do {                             \
-    CS_ERR(GET_DCD_FAIL_MSG,       \
-           cache->nodeIndex,       \
-           err);                   \
+    LOGE(GET_DCD_FAIL_MSG,         \
+         cache->node->addr,         \
+         err);                     \
   } while (0)
 
 /* Global Variables *************************************************** */
