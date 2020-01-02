@@ -20,28 +20,24 @@ static acc_t acc = { 0 };
 
 static acc_state_t as_get_dcd = {
   get_dcd_em,
-#if 0
-  getDcdEntryGuard,
-  getDcdStateEntry,
-  getDcdStateInprogress,
-  getDcdStateRetry,
-  getDcdStateExit,
-  isGetDcdRelatedPacket,
+  getdcd_guard,
+  getdcd_entry,
+  getdcd_inprg,
+  getdcd_retry,
+  getdcd_exit,
+  is_getdcd_pkts,
   NULL
-#endif
 };
 
 static acc_state_t as_end = {
   end_em,
-#if 0
   NULL,
-  endStateEntry,
+  end_entry,
   NULL,
   NULL,
   NULL,
   NULL,
   NULL
-#endif
 };
 
 const char *stateNames[] = {

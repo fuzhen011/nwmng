@@ -35,41 +35,44 @@ typedef struct {
 #define GUARD_TIMER_EXPIRED_BIT_MASK  (1 << GUARD_TIMER_EXPIRED_OFFSET)
 
 #define WAIT_RESPONSE(x)  IS_BIT_SET((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
-#define WAIT_RESPONSE_CLEAR(x)  BIT_CLEAR((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
+#define WAIT_RESPONSE_CLEAR(x)  BIT_CLR((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
 #define WAIT_RESPONSE_SET(x)  BIT_SET((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
 
 #define EVER_RETRIED(x) IS_BIT_SET((x)->flags, EVER_RETRIED_BIT_OFFSET)
 #define EVER_RETRIED_SET(x) BIT_SET((x)->flags, EVER_RETRIED_BIT_OFFSET)
-#define EVER_RETRIED_CLEAR(x) BIT_CLEAR((x)->flags, EVER_RETRIED_BIT_OFFSET)
+#define EVER_RETRIED_CLEAR(x) BIT_CLR((x)->flags, EVER_RETRIED_BIT_OFFSET)
 
 #define OOM(x) IS_BIT_SET((x)->flags, OOM_BIT_OFFSET)
 #define OOM_SET(x)                       \
   do {                                   \
-    OOM_SET_PRINT(x);                    \
     BIT_SET((x)->flags, OOM_BIT_OFFSET); \
   } while (0)
-#define OOM_CLEAR(x) BIT_CLEAR((x)->flags, OOM_BIT_OFFSET)
+#define OOM_CLEAR(x) BIT_CLR((x)->flags, OOM_BIT_OFFSET)
 
-#define RETRY_CLEAR(x)                              \
-  do {                                              \
-    BIT_CLEAR((x)->flags, EVER_RETRIED_BIT_OFFSET); \
-    (x)->retry = 0;                                 \
+#define RETRY_CLEAR(x)                            \
+  do {                                            \
+    BIT_CLR((x)->flags, EVER_RETRIED_BIT_OFFSET); \
+    (x)->remaining_retry = 0;                     \
   } while (0)
 /*
  * TODO: Need to clear above?
  */
 typedef struct {
-  uint8_t feature;
+  uint16_t vid;
+  uint16_t mid;
+}vendor_model_t;
+
+typedef struct {
+  uint8_t sigm_cnt;
+  uint8_t vm_cnt;
+  uint16_t *sig_models;
+  vendor_model_t *vm;
+}elem_t;
+
+typedef struct {
+  uint16_t feature;
   uint8_t element_cnt;
-  struct {
-    uint8_t sigm_cnt;
-    uint8_t vm_cnt;
-    uint16_t *sig_models;
-    struct {
-      uint16_t vid;
-      uint16_t mid;
-    }*vendor_model;
-  }e1;
+  elem_t *elems;
 }dcd_t;
 
 #define ITERATOR_NUM  3
@@ -144,8 +147,8 @@ typedef struct {
     config_cache_t config[MAX_CONCURRENT_CONFIG_NODES];
     bl_cache_t bl;
   }cache;
-  
-  struct{
+
+  struct {
     GList *add;
     GList *config;
     GList *bl;

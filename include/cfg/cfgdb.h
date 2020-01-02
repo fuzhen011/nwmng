@@ -106,8 +106,9 @@ typedef struct {
   uint8_t *tmpl;
   mesh_config_t config;
   struct {
+    /* enum value - see {ctl_support} */
     uint8_t light_supt;
-    uint16_t venmod_supt;
+    lbitmap_t venmod_supt;
   }models;
 }node_t;
 

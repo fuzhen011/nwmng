@@ -15,36 +15,33 @@
 #define GENERIC_ONOFF_SERVER_MDID       0x1000
 #define GENERIC_ONOFF_CLIENT_MDID       0x1001
 
+#define LIGHT_LIGHTNESS_SERVER_MDID     0x1300
+#define LIGHT_CTL_SERVER_MDID     0x1303
+
 #define CONFIGURATION_SERVER_MDID       0x0000
 #define CONFIGURATION_CLIENT_MDID       0x0001
 #define HEALTH_SERVER_MDID              0x0002
 #define HEALTH_CLIENT_MDID              0x0003
 
-#if 1
 #define GET_DCD_MSG                     "Node[%x]: Get DCD\n"
 #define GET_DCD_SUC_MSG                 "Node[%x]:  --- Get DCD Success\n"
 #define GET_DCD_FAIL_MSG                "Node[%x]:  --- Get DCD Failed, Err <0x%04x>\n"
-#endif
 
-#if 1
-#define ONCE_P(cache, config)
-#else
-#define ONCE_P(cache, config)              \
-  do {                                     \
-    CS_LOG(GET_DCD_MSG, cache->nodeIndex); \
+#define ONCE_P(cache)                     \
+  do {                                    \
+    LOGD(GET_DCD_MSG, cache->node->addr); \
   } while (0)
-#endif
 
-#define SUC_P(cache, config)                 \
-  do {                                       \
+#define SUC_P(cache)                          \
+  do {                                        \
     LOGD(GET_DCD_SUC_MSG, cache->node->addr); \
   } while (0)
 
-#define FAIL_P(cache, config, err) \
-  do {                             \
-    LOGE(GET_DCD_FAIL_MSG,         \
-         cache->node->addr,         \
-         err);                     \
+#define FAIL_P(cache, err)  \
+  do {                      \
+    LOGE(GET_DCD_FAIL_MSG,  \
+         cache->node->addr, \
+         err);              \
   } while (0)
 
 /* Global Variables *************************************************** */
@@ -59,270 +56,249 @@ static const uint32_t events[] = {
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-static void storeDCD(const uint8_t *data,
-                     uint8_t len,
-                     dcd_t *pD);
+static void __dcd_store(const uint8_t *data,
+                        uint8_t len,
+                        config_cache_t *cache);
 
-static int getDcdOnce(tbcCache_t *tbc, networkConfig_t *pconfig)
+static int __dcd_get(config_cache_t *cache, mng_t *mng)
 {
   struct gecko_msg_mesh_config_client_get_dcd_rsp_t *rsp;
 
-  rsp = gecko_cmd_mesh_config_client_get_dcd(
-    getNetworkIdByNodeId(tbc->nodeIndex),
-    pconfig->pNodes[tbc->nodeIndex].uniAddr,
-    0);
+  rsp = gecko_cmd_mesh_config_client_get_dcd(mng->cfg->subnets[0].netkey.id,
+                                             cache->node->addr,
+                                             0);
 
   if (rsp->result != bg_err_success) {
     if (rsp->result == bg_err_out_of_memory) {
-      OOM_SET(tbc);
-      return E_OOM;
+      OOM_SET(cache);
+      return asr_oom;
     }
-    FAIL_P(tbc, pconfig, rsp->result);
-    err_set_to_end(tbc, rsp->result, bgapi_em);
-    CS_ERR("Node[%d]: To <<st_end>> State\n", tbc->nodeIndex);
-    return E_BGAPI;
+    FAIL_P(cache, rsp->result);
+    err_set_to_end(cache, rsp->result, bgapi_em);
+    LOGE("Node[%x]: To <<End>> State\n", cache->node->addr);
+    return asr_bgapi;
   } else {
-    ONCE_P(tbc, pconfig);
-    WAIT_RESPONSE_SET(tbc);
-    tbc->handle = rsp->handle;
-    startTimer(tbc, 1);
+    ONCE_P(cache);
+    WAIT_RESPONSE_SET(cache);
+    cache->cc_handle = rsp->handle;
+    /* TODO: startTimer(cache, 1); */
   }
 
-  return E_SUC;
+  return asr_suc;
 }
 
-int getDcdEntryGuard(const void *in)
+bool getdcd_guard(const config_cache_t *cache)
 {
-  tbcCache_t *tbc = (tbcCache_t *)in;
-  networkConfig_t *pconfig = (networkConfig_t *)tbc->pconfig;
-
-  if (pconfig->pNodes[tbc->nodeIndex].uniAddr != UNASSIGNED_ADDRESS) {
-    return true;
-  }
-  return false;
+  return (cache->node && cache->node->addr != UNASSIGNED_ADDRESS);
 }
 
-/* Design notes: */
-/* 1. Needs to start the alarm in engine */
-int getDcdStateEntry(void *in, funcGuard guard)
+int getdcd_entry(config_cache_t *cache, func_guard guard)
 {
   /* Alarm SHOULD be set in the main engine */
-  tbcCache_t *tbc = (tbcCache_t *)in;
-  networkConfig_t *pconfig = (networkConfig_t *)tbc->pconfig;
-
-  if (guard) {
-    if (!guard(in)) {
-      CS_MSG("To Next State Since %s Guard Not Passed\n",
-             stateNames[tbc->state]);
-      /* err_set_to_end(tbc, 0, bg_err_invalid_em); */
-      /* CS_ERR("Node[%d]: To <<st_end>> State\n", tbc->nodeIndex); */
-      /* tbc->nextState = -1; */
-      return E_TONEXT;
-    }
+  if (guard && !guard(cache)) {
+    LOGM("To Next State Since %s Guard Not Passed\n",
+         stateNames[cache->state]);
+    return asr_tonext;
   }
-
-  return getDcdOnce(tbc, pconfig);
+  return __dcd_get(cache, get_mng());
 }
 
-/* Design notes: */
-/* 1. Needs to stop the alarm in engine */
-int getDcdStateInprogress(void *in, void *cache)
+int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
 {
-  uint32_t evtId;
-  struct gecko_cmd_packet *e = NULL;
-  tbcCache_t *tbc = (tbcCache_t *)cache;
-  networkConfig_t *pconfig = (networkConfig_t *)tbc->pconfig;
+  uint32_t evtid;
 
-  hardASSERT(pconfig);
-  hardASSERT(tbc);
-  hardASSERT(in);
-  e = in;
-
-  evtId = BGLIB_MSG_ID(e->header);
-  startTimer(tbc, 0);
-  switch (evtId) {
+  evtid = BGLIB_MSG_ID(evt->header);
+  /* TODO: startTimer(cache, 0); */
+  switch (evtid) {
     case gecko_evt_mesh_config_client_dcd_data_id:
-    {
       /* Ignore pages other than 0 for now */
-      if (e->data.evt_mesh_config_client_dcd_data.page == 0) {
-        accDEBUG("Node[%d]: DCD Page 0 Received\n", tbc->nodeIndex);
-        storeDCD(e->data.evt_mesh_config_client_dcd_data.data.data,
-                 e->data.evt_mesh_config_client_dcd_data.data.len,
-                 &tbc->dcdP0);
+      if (evt->data.evt_mesh_config_client_dcd_data.page == 0) {
+        LOGD("Node[%x]: DCD Page 0 Received\n", cache->node->addr);
+        __dcd_store(evt->data.evt_mesh_config_client_dcd_data.data.data,
+                    evt->data.evt_mesh_config_client_dcd_data.data.len,
+                    cache);
       }
-    }
-    break;
+      break;
 
     case gecko_evt_mesh_config_client_dcd_data_end_id:
     {
-      WAIT_RESPONSE_CLEAR(tbc);
-      switch (e->data.evt_mesh_config_client_dcd_data_end.result) {
+      WAIT_RESPONSE_CLEAR(cache);
+      switch (evt->data.evt_mesh_config_client_dcd_data_end.result) {
         case bg_err_success:
-          RETRY_CLEAR(tbc);
-          SUC_P(tbc, pconfig);
-          if (pconfig->pNodes[tbc->nodeIndex].errBits > ERROR_BIT(getDcd_em)
-              && pconfig->pNodes[tbc->nodeIndex].errBits > ERROR_BIT(end_em)) {
-            for (int a = addAppKey_em; a < end_em; a++) {
-              if (pconfig->pNodes[tbc->nodeIndex].errBits & ERROR_BIT(a)) {
-                CS_LOG("Node[%d]: Configure the node from <<<%s>>> state\n",
-                       tbc->nodeIndex,
-                       stateNames[a]);
-                tbc->nextState = a;
+          RETRY_CLEAR(cache);
+          SUC_P(cache);
+          if (cache->node->err > ERROR_BIT(get_dcd_em)
+              && cache->node->err < ERROR_BIT(end_em)) {
+            for (int a = add_appkey_em; a < end_em; a++) {
+              if (cache->node->err & ERROR_BIT(a)) {
+                LOGM("Node[%x]: Configure the node from <<<%s>>> state\n",
+                     cache->node->addr,
+                     stateNames[a]);
+                cache->next_state = a;
               }
             }
           } else {
-            tbc->nextState = -1;
+            cache->next_state = -1;
           }
           break;
         case bg_err_timeout:
           /* add any retry case here */
-          if (!EVER_RETRIED(tbc)) {
-            tbc->retry = GET_DCD_RETRY_TIMES;
-            EVER_RETRIED_SET(tbc);
-          } else if (tbc->retry <= 0) {
-            RETRY_CLEAR(tbc);
-            RETRY_OUT_PRINT(tbc);
-            err_set_to_end(tbc, bg_err_timeout, bgevent_em);
-            CS_LOG("Node[%d]: To <<st_end>> State\n", tbc->nodeIndex);
+          if (!EVER_RETRIED(cache)) {
+            cache->remaining_retry = GET_DCD_RETRY_TIMES;
+            EVER_RETRIED_SET(cache);
+          } else if (cache->remaining_retry <= 0) {
+            RETRY_CLEAR(cache);
+            RETRY_OUT_PRINT(cache);
+            err_set_to_end(cache, bg_err_timeout, bgevent_em);
+            LOGW("Node[%x]: To <<End>> State\n", cache->node->addr);
           }
           break;
         default:
-          FAIL_P(tbc,
-                 pconfig,
-                 e->data.evt_mesh_config_client_dcd_data_end.result);
-          __ERR_P(e->data.evt_mesh_config_client_dcd_data_end.result,
-                  tbc,
-                  stateNames[tbc->state]);
-          err_set_to_end(tbc, bg_err_timeout, bgevent_em);
-          accDEBUG("To <<st_end>> State\n");
+          FAIL_P(cache,
+                 evt->data.evt_mesh_config_client_dcd_data_end.result);
+          err_set_to_end(cache, bg_err_timeout, bgevent_em);
+          LOGW("To <<End>> State\n");
           break;
       }
     }
     break;
 
     default:
-      CS_ERR("Unexpected event [0x%08x] happend in %s state.\n",
-             evtId,
-             stateNames[tbc->state]);
-      return E_UNSPEC;
+      LOGE("Unexpected event [0x%08x] happend in %s state.\n",
+           evtid,
+           stateNames[cache->state]);
+      return asr_unspec;
   }
 
-  return E_SUC;
+  return asr_suc;
 }
 
-int getDcdStateRetry(void *p, int reason)
+int getdcd_retry(config_cache_t *cache, int reason)
 {
   int ret = 0;
-  hardASSERT(p);
-  tbcCache_t *tbc = (tbcCache_t *)p;
-  networkConfig_t *pconfig = (networkConfig_t *)tbc->pconfig;
-  hardASSERT(pconfig);
-  hardASSERT(reason < retry_on_max_em);
+  ASSERT(cache);
+  ASSERT(reason < retry_on_max_em);
 
-  ret = getDcdOnce(tbc, pconfig);
+  ret = __dcd_get(cache, get_mng());
 
-  if (ret == E_SUC) {
-    switch (reason) {
-      case on_timeout_em:
-        if (!EVER_RETRIED(tbc) || tbc->retry-- <= 0) {
-          hardASSERT(0);
-        }
-        RETRY_ONCE_PRINT(tbc);
-        break;
-      case on_oom_em:
-        hardASSERT(OOM(tbc));
-        OOM_ONCE_PRINT(tbc);
-        OOM_CLEAR(tbc);
-        break;
-      case on_guard_timer_expired_em:
-        hardASSERT(tbc->expired);
-        EXPIRED_ONCE_PRINT(tbc);
-        tbc->expired = 0;
-        break;
-    }
+  if (ret != asr_suc) {
+    return ret;
   }
-
+  switch (reason) {
+    case on_timeout_em:
+      if (!EVER_RETRIED(cache) || cache->remaining_retry-- <= 0) {
+        ASSERT(0);
+      }
+      RETRY_ONCE_PRINT(cache);
+      break;
+    case on_oom_em:
+      ASSERT(OOM(cache));
+      OOM_ONCE_PRINT(cache);
+      OOM_CLEAR(cache);
+      break;
+    case on_guard_timer_expired_em:
+      ASSERT(cache->expired);
+      EXPIRED_ONCE_PRINT(cache);
+      cache->expired = 0;
+      break;
+  }
   return ret;
 }
 
-int getDcdStateExit(void *p)
+int getdcd_exit(void *p)
 {
-  return E_SUC;
+  return asr_suc;
 }
 
-int isGetDcdRelatedPacket(uint32_t evtId)
+bool is_getdcd_pkts(uint32_t evtid)
 {
   int i;
   for (i = 0; i < RELATE_EVENTS_NUM(); i++) {
-    if (BGLIB_MSG_ID(evtId) == events[i]) {
+    if (BGLIB_MSG_ID(evtid) == events[i]) {
       return 1;
     }
   }
   return 0;
 }
 
-static void storeDCD(const uint8_t *data,
-                     uint8_t len,
-                     dcd_t *pD)
+static void __dcd_store(const uint8_t *data,
+                        uint8_t len,
+                        config_cache_t *cache)
 {
-  uint8_t i = 0, eles = 0, numS = 0, numV = 0;
+  uint8_t i = 0, eles = 0, sigm_cnt = 0, vm_cnt = 0;
+  dcd_t *dcd = &cache->dcd;
   i = 12;
-  numS = data[i];
-  numV = data[i + 1];
+  sigm_cnt = data[i];
+  vm_cnt = data[i + 1];
   i += 2;
   do {
-    i += sizeof(uint16_t) * numS;
-    i += sizeof(uint16_t) * numV * 2;
+    i += sizeof(uint16_t) * sigm_cnt;
+    i += sizeof(uint16_t) * vm_cnt * 2;
     eles++;
   } while (i < len);
 
-  pD->eleCnt = eles;
+  dcd->element_cnt = eles;
 
   i = 8;
-  pD->featureBits = BUILD_UINT16(data[i], data[i + 1]);
+  dcd->feature = BUILD_UINT16(data[i], data[i + 1]);
   i += 2;
-  pD->pElm = (element_t *)malloc(sizeof(element_t) * pD->eleCnt);
-  memset(pD->pElm, 0, sizeof(element_t) * pD->eleCnt);
+  if (dcd->elems) {
+    free(dcd->elems);
+  }
+  dcd->elems = (elem_t *)calloc(dcd->element_cnt, sizeof(elem_t));
   i += 2;   /* skip loc */
-  for (uint8_t e = 0; e < pD->eleCnt; e++) {
+  for (uint8_t e = 0; e < dcd->element_cnt; e++) {
     if (e) {
       i += 2;   /* skip loc */
     }
-    pD->pElm[e].numS = data[i++];
-    pD->pElm[e].numV = data[i++];
-    if (pD->pElm[e].numS) {
-      pD->pElm[e].pSm = (uint16_t *)malloc(sizeof(uint16_t) * pD->pElm[e].numS);
-      memset(pD->pElm[e].pSm, 0, sizeof(uint16_t) * pD->pElm[e].numS);
+    dcd->elems[e].sigm_cnt = data[i++];
+    dcd->elems[e].vm_cnt = data[i++];
+    if (dcd->elems[e].sigm_cnt) {
+      if (dcd->elems[e].sig_models) {
+        free(dcd->elems[e].sig_models);
+      }
+      dcd->elems[e].sig_models = (uint16_t *)calloc(dcd->elems[e].sigm_cnt,
+                                                    sizeof(uint16_t));
       uint8_t offset = 0;
-      for (uint8_t ms = 0; ms < pD->pElm[e].numS; ms++) {
+      for (uint8_t ms = 0; ms < dcd->elems[e].sigm_cnt; ms++) {
         uint16_t mdid = BUILD_UINT16(data[i], data[i + 1]);
+        if (mdid == GENERIC_ONOFF_CLIENT_MDID) {
+          cache->node->models.light_supt = MAX(cache->node->models.light_supt,
+                                               onoff_support);
+        } else if (mdid == LIGHT_LIGHTNESS_SERVER_MDID) {
+          cache->node->models.light_supt = MAX(cache->node->models.light_supt,
+                                               lightness_support);
+        } else if (mdid == LIGHT_CTL_SERVER_MDID) {
+          cache->node->models.light_supt = MAX(cache->node->models.light_supt,
+                                               ctl_support);
+        }
+#if 0
         if (mdid == GENERIC_ONOFF_CLIENT_MDID) {
           CS_LOG("-|||>>>OnOff Client Node (Switch)<<<|||-\n");
         } else if (mdid == GENERIC_ONOFF_SERVER_MDID) {
           CS_LOG("-|||>>>OnOff Server Node (Light)<<<|||-\n");
         }
+#endif
         i += 2;
         if (mdid == CONFIGURATION_CLIENT_MDID
-            || mdid == CONFIGURATION_SERVER_MDID
-            /* || mdid == HEALTH_CLIENT_MDID */
-            /* || mdid == HEALTH_SERVER_MDID */
-            ) {
+            || mdid == CONFIGURATION_SERVER_MDID) {
           offset++;
           continue;
         }
-        pD->pElm[e].pSm[ms - offset] = mdid;
+        dcd->elems[e].sig_models[ms - offset] = mdid;
       }
-      pD->pElm[e].numS -= offset;
+      dcd->elems[e].sigm_cnt -= offset;
     }
-    if (pD->pElm[e].numV) {
-      pD->pElm[e].pVd = (uint16_t *)malloc(sizeof(uint16_t) * pD->pElm[e].numV);
-      pD->pElm[e].pVm = (uint16_t *)malloc(sizeof(uint16_t) * pD->pElm[e].numV);
-      memset(pD->pElm[e].pVd, 0, sizeof(uint16_t) * pD->pElm[e].numV);
-      memset(pD->pElm[e].pVm, 0, sizeof(uint16_t) * pD->pElm[e].numV);
-      for (uint8_t ms = 0; ms < pD->pElm[e].numV; ms++) {
-        pD->pElm[e].pVd[ms] = BUILD_UINT16(data[i], data[i + 1]);
+    if (dcd->elems[e].vm_cnt) {
+      if (dcd->elems[e].vm) {
+        free(dcd->elems[e].vm);
+      }
+      dcd->elems[e].vm = (vendor_model_t *)calloc(dcd->elems[e].vm_cnt,
+                                                  sizeof(vendor_model_t));
+      for (uint8_t ms = 0; ms < dcd->elems[e].vm_cnt; ms++) {
+        dcd->elems[e].vm[ms].vid = BUILD_UINT16(data[i], data[i + 1]);
         i += 2;
-        pD->pElm[e].pVm[ms] = BUILD_UINT16(data[i], data[i + 1]);
+        dcd->elems[e].vm[ms].mid = BUILD_UINT16(data[i], data[i + 1]);
         i += 2;
       }
     }
