@@ -7,6 +7,9 @@
 
 /* Includes *********************************************************** */
 /* #include "dev_add.h" */
+#include <glib.h>
+
+#include "cfgdb.h"
 #include "mng.h"
 #include "utils.h"
 #include "logging.h"
@@ -45,11 +48,26 @@ static inline int iscached(const mng_t *mng,
   return -1;
 }
 
+static inline void rmcached(mng_t *mng,
+                            const uint8_t *uuid)
+{
+  for (int i = 0; i < MAX_PROV_SESSIONS; i++) {
+    if (!mng->cache.add[i].busy
+        || memcmp(mng->cache.add[i].uuid, uuid, 16)) {
+      continue;
+    }
+    memset(&mng->cache.add[i], 0, sizeof(add_cache_t));
+  }
+}
+
 int dev_add_hdr(const struct gecko_cmd_packet *evt)
 {
+  mng_t *mng = get_mng();
   ASSERT(evt);
 
-  /* TODO: if both adding action and free mode are not set, return */
+  if (mng->state != adding_devices_em && mng->status.free_mode != 2) {
+    return 1;
+  }
 
   switch (BGLIB_MSG_ID(evt->header)) {
     case gecko_evt_mesh_prov_unprov_beacon_id:
@@ -99,7 +117,6 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
 
   n = cfgdb_unprov_dev_get(evt->uuid.data);
   if (!n) {
-    /* TODO: if free mode is on, add it to backlog if hasn't */
     if (NULL == cfgdb_backlog_get(evt->uuid.data)) {
       err_t e = backlog_dev(evt->uuid.data);
       if (ec_success == e) {
@@ -117,7 +134,6 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
   }
 
   LOGM("Unprovisioned beacon match. Start provisioning it\n");
-  /* TODO: Provision it */
   ret = gecko_cmd_mesh_prov_provision_device(mng->cfg->subnets[0].netkey.id,
                                              16,
                                              evt->uuid.data)->result;
@@ -131,18 +147,28 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
 
 static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_evt_t *evt)
 {
+  err_t e;
+  mng_t *mng = get_mng();
+  node_t *n;
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
   LOGM("%s Provisioned\n", uuid_str);
-  /*
-   * TODO:
-   *
-   * 1. inform cfg to move the device from unprovisioned list to node list,
-   * meanwhile, set the address
-   * 2. inform config there is a new device added
-   * 3. Remove from cache.
-   * 4. onDeviceDone(actionTBA, *(int *)p); and forceGenericReloadActions();
-   */
+
+  /* inform cfg to move the device from unprovisioned list to node list,
+   * meanwhile, set the address */
+  e = upl_nodeset_addr(evt->uuid.data, evt->address);
+  elog(e);
+
+  /* move the node from add list to config list */
+  n = cfgdb_node_get(evt->address);
+  ASSERT(n);
+  mng->lists.add = g_list_remove(mng->lists.add, n);
+  mng->lists.config = g_list_append(mng->lists.config, n);
+
+  /* Remove from cache. */
+  rmcached(mng, evt->uuid.data);
+
+  on_lists_changed();
 }
 
 static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
@@ -156,4 +182,5 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
    * 1. Remove from cache.
    * 2. Set the error bits to cfg
    */
+  TODOASSERT();
 }

@@ -45,6 +45,7 @@
 
 #define G_KEY(n) ((n)->addr == 0 ? UNPROV_DEV_KEY((n)) : NODE_KEY((n)))
 #define G_HTB(n) (__HTB(n->addr, n->tmpl))
+
 /* Static Variables *************************************************** */
 static cfgdb_t db = { 0 };
 
@@ -58,7 +59,6 @@ void dump__(gpointer key,
 
 void cfgdb_test(void)
 {
-  g_hash_table_foreach(db.devdb.templates, dump__, NULL);
 }
 
 static void node_free(void *p)
@@ -94,14 +94,15 @@ static void tmpl_free(void *p)
   SAFE_FREE(t);
 }
 
-guint u16_hash(gconstpointer key)
+gint u16_comp(gconstpointer a, gconstpointer b, gpointer user_data)
 {
-  return (guint)(*(uint16_t *)key);
+  return (*(uint16_t *)a == *(uint16_t *)b ? 0
+          : *(uint16_t *)a > *(uint16_t *)b ? 1 : -1);
 }
 
-gboolean u16_equal(gconstpointer a, gconstpointer b)
+gint uuid_comp(gconstpointer a, gconstpointer b, gpointer user_data)
 {
-  return ((*(uint16_t *)a) == (*(uint16_t *)b));
+  return memcmp(a, b, 16);
 }
 
 err_t cfgdb_init(void)
@@ -111,20 +112,13 @@ err_t cfgdb_init(void)
   }
 
   /* Initialize the device database */
-  /* TODO: Is it OK to use direct hash for both case - str and integer? While
-   * using str hash, need to check if it requires the str ends with '\0' */
-  db.devdb.unprov_devs = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, node_free);
-  db.devdb.nodes = g_hash_table_new_full(u16_hash, u16_equal, NULL, node_free);
-  db.devdb.templates = g_hash_table_new_full(u16_hash, u16_equal, NULL, tmpl_free);
+  db.devdb.unprov_devs = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
+  db.devdb.nodes = g_tree_new_full(u16_comp, NULL, NULL, node_free);
+  db.devdb.templates = g_tree_new_full(u16_comp, NULL, NULL, tmpl_free);
+  db.devdb.backlog = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
   db.devdb.lights = g_queue_new();
-  db.devdb.backlog = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, node_free);
   db.initialized = 1;
 
-  uint8_t uuid1[16] = { 0x00, 0x0b, 0x57, 0x31, 0x55, 0x5c, 0x2d, 0x76, 0x65, 0x44, 0x73, 0x62, 0x61, 0x6c, 0x69, 0x53 };
-  uint8_t uuid2[16] = { 0x00, 0x0b, 0x57, 0xef, 0x2b, 0x87, 0x2d, 0x76, 0x65, 0x44, 0x73, 0x62, 0x61, 0x6c, 0x69, 0x53 };
-  LOGD("UUID1 hash = %u\n", g_str_hash(uuid1));
-  LOGD("UUID2 hash = %u\n", g_str_hash(uuid2));
-  LOGD("UUID1 key %s= UUID2 key\n", memcmp(uuid1, uuid2, 16) ? "!" : "=");
   return ec_success;
 }
 
@@ -146,8 +140,7 @@ void cfgdb_deinit(void)
     db.self.subnets = NULL;
   }
   if (db.devdb.backlog) {
-    g_hash_table_remove_all(db.devdb.backlog);
-    g_hash_table_unref(db.devdb.backlog);
+    g_tree_destroy(db.devdb.backlog);
     db.devdb.backlog = NULL;
   }
   if (db.devdb.lights) {
@@ -155,18 +148,15 @@ void cfgdb_deinit(void)
     db.devdb.lights = NULL;
   }
   if (db.devdb.unprov_devs) {
-    g_hash_table_remove_all(db.devdb.unprov_devs);
-    g_hash_table_unref(db.devdb.unprov_devs);
+    g_tree_destroy(db.devdb.unprov_devs);
     db.devdb.unprov_devs = NULL;
   }
   if (db.devdb.nodes) {
-    g_hash_table_remove_all(db.devdb.nodes);
-    g_hash_table_unref(db.devdb.nodes);
+    g_tree_destroy(db.devdb.nodes);
     db.devdb.nodes = NULL;
   }
   if (db.devdb.templates) {
-    g_hash_table_remove_all(db.devdb.templates);
-    g_hash_table_unref(db.devdb.templates);
+    g_tree_destroy(db.devdb.templates);
     db.devdb.templates = NULL;
   }
   SAFE_FREE(db.self.net_txp);
@@ -181,7 +171,8 @@ err_t cfgdb_remove_all_nodes(void)
   if (!db.initialized) {
     return err(ec_state);
   }
-  g_hash_table_remove_all(db.devdb.nodes);
+  g_tree_destroy(db.devdb.nodes);
+  db.devdb.nodes = g_tree_new_full(u16_comp, NULL, NULL, node_free);
   return ec_success;
 }
 
@@ -190,10 +181,11 @@ err_t cfgdb_remove_all_upl(void)
   if (!db.initialized) {
     return err(ec_state);
   }
-  g_hash_table_remove_all(db.devdb.unprov_devs);
+  g_tree_destroy(db.devdb.unprov_devs);
+  db.devdb.unprov_devs = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
   return ec_success;
 }
-
+#if 0
 int cfgdb_contains(const node_t *n)
 {
   CHECK_STATE(0);
@@ -202,18 +194,19 @@ int cfgdb_contains(const node_t *n)
   }
   return g_hash_table_contains(G_HTB(n), G_KEY(n));
 }
+#endif
 
 int cfgdb_devnum(bool proved)
 {
   CHECK_STATE(0);
-  return g_hash_table_size(_HTB(proved));
+  return g_tree_nnodes(_HTB(proved));
 }
 
 node_t *cfgdb_node_get(uint16_t addr)
 {
   CHECK_NULL_RET();
-  return (node_t *)g_hash_table_lookup(db.devdb.nodes,
-                                       KEY_FROM_ADDR(addr));
+  return (node_t *)g_tree_lookup(db.devdb.nodes,
+                                 KEY_FROM_ADDR(addr));
 }
 
 node_t *cfgdb_unprov_dev_get(const uint8_t *uuid)
@@ -222,8 +215,8 @@ node_t *cfgdb_unprov_dev_get(const uint8_t *uuid)
   if (!uuid) {
     return NULL;
   }
-  return (node_t *)g_hash_table_lookup(db.devdb.unprov_devs,
-                                       KEY_FROM_UUID(uuid));
+  return (node_t *)g_tree_lookup(db.devdb.unprov_devs,
+                                 KEY_FROM_UUID(uuid));
 }
 
 node_t *cfgdb_backlog_get(const uint8_t *uuid)
@@ -232,13 +225,13 @@ node_t *cfgdb_backlog_get(const uint8_t *uuid)
   if (!uuid) {
     return NULL;
   }
-  return (node_t *)g_hash_table_lookup(db.devdb.backlog,
-                                       KEY_FROM_UUID(uuid));
+  return (node_t *)g_tree_lookup(db.devdb.backlog,
+                                 KEY_FROM_UUID(uuid));
 }
 
 static node_t *__cfgdb_get(node_t *n)
 {
-  return (node_t *)g_hash_table_lookup(G_HTB(n), G_KEY(n));
+  return (node_t *)g_tree_lookup(G_HTB(n), G_KEY(n));
 }
 
 /* err_t cfgdb_tmpl_add(tmpl_t *t) */
@@ -247,7 +240,8 @@ static node_t *__cfgdb_get(node_t *n)
 
 tmpl_t *cfgdb_tmpl_get(uint16_t refid)
 {
-  return (tmpl_t *)g_hash_table_lookup(db.devdb.templates, TMPL_KEY(refid));
+  return (tmpl_t *)g_tree_lookup(db.devdb.templates,
+                                 TMPL_KEY(refid));
 }
 
 err_t cfgdb_tmpl_remove(tmpl_t *n)
@@ -256,7 +250,7 @@ err_t cfgdb_tmpl_remove(tmpl_t *n)
   if (!n) {
     return err(ec_param_invalid);
   }
-  g_hash_table_remove(db.devdb.templates, TMPL_KEY(n->refid));
+  g_tree_remove(db.devdb.templates, TMPL_KEY(n->refid));
   return ec_success;
 }
 
@@ -281,7 +275,7 @@ err_t cfgdb_tmpl_add(tmpl_t *n)
     return ec_success;
   }
 
-  g_hash_table_insert(db.devdb.templates, TMPL_KEY(n->refid), n);
+  g_tree_insert(db.devdb.templates, TMPL_KEY(n->refid), n);
   return ec_success;
 }
 
@@ -296,7 +290,7 @@ err_t cfgdb_add(node_t *n)
   /* Check if it's already in? */
   tmp = __cfgdb_get(n);
   if (tmp && tmp != n) {
-    /* key n->addr already has a value in hash table and the value doesn't equal
+    /* key n->addr already has a value in tree and the value doesn't equal
      * to n, need to remove and free it first, then add */
     e = cfgdb_remove(tmp, 1);
     if (ec_success != e) {
@@ -306,7 +300,7 @@ err_t cfgdb_add(node_t *n)
     return ec_success;
   }
 
-  g_hash_table_insert(G_HTB(n), G_KEY(n), n);
+  g_tree_insert(G_HTB(n), G_KEY(n), n);
   /* TODO: Also update the lists */
   return ec_success;
 }
@@ -318,9 +312,9 @@ err_t cfgdb_remove(node_t *n, bool destory)
     return err(ec_param_invalid);
   }
   if (destory) {
-    g_hash_table_remove(G_HTB(n), G_KEY(n));
+    g_tree_remove(G_HTB(n), G_KEY(n));
   } else {
-    g_hash_table_steal(G_HTB(n), G_KEY(n));
+    g_tree_steal(G_HTB(n), G_KEY(n));
   }
   /* TODO: Also update the lists */
   return ec_success;
@@ -336,30 +330,27 @@ void set_provcfg(const provcfg_t *src)
 }
 
 static int offs = 0;
-void copy_addr_to_user(gpointer key,
-                       gpointer value,
-                       gpointer ud)
+gboolean copy_addr_to_user(gpointer key,
+                           gpointer value,
+                           gpointer ud)
 {
   uint16_t addr = *(uint16_t *)key;
   ((uint16_t *)ud)[offs++] = addr;
+  return FALSE;
 }
 
 int get_ng_addrs(uint16_t *addrs)
 {
   offs = 0;
-  g_hash_table_foreach(db.devdb.nodes, copy_addr_to_user, addrs);
+  g_tree_foreach(db.devdb.nodes, copy_addr_to_user, addrs);
   return offs;
 }
 
-void cfg_load_mnglists(GHFunc func)
+void cfg_load_mnglists(GTraverseFunc func)
 {
-#if 1
-  g_hash_table_foreach(db.devdb.unprov_devs, func, NULL);
-  g_hash_table_foreach(db.devdb.nodes, func, NULL);
-#else
-  LOGD("UPL size %u\n", g_hash_table_size(db.devdb.unprov_devs));
-  LOGD("Node size %u\n", g_hash_table_size(db.devdb.nodes));
-  g_hash_table_foreach(db.devdb.unprov_devs, dump__, NULL);
-  g_hash_table_foreach(db.devdb.nodes, dump__, NULL);
-#endif
+  LOGD("UPL size %u\n", g_tree_nnodes(db.devdb.unprov_devs));
+  LOGD("Node size %u\n", g_tree_nnodes(db.devdb.nodes));
+
+  g_tree_foreach(db.devdb.unprov_devs, func, NULL);
+  g_tree_foreach(db.devdb.nodes, func, NULL);
 }

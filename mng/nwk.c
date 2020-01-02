@@ -50,6 +50,7 @@ err_t nwk_init(void *p)
     err_t ein = on_initialized_config(&evt->data.evt_mesh_prov_initialized);
     if (ec_success == ein) {
       mng->state = configured;
+      mng_load_lists(); /* do the initial loading */
     }
     return ein;
   }
@@ -192,4 +193,17 @@ static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t 
   self_config(mng);
 
   return ec_success;
+}
+
+
+int bgevt_dflt_hdr(const struct gecko_cmd_packet *evt)
+{
+  switch (BGLIB_MSG_ID(evt->header)) {
+    case gecko_evt_le_gap_adv_timeout_id:
+      /* Ignore */
+      break;
+    default:
+      return 0;
+  }
+  return 1;
 }

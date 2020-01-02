@@ -55,6 +55,10 @@ extern "C"
  */
 #define MAX_CONCURRENT_CONFIG_NODES 6
 
+/*
+ * Retry times
+ */
+#define GET_DCD_RETRY_TIMES             5
 #ifdef __cplusplus
 }
 #endif

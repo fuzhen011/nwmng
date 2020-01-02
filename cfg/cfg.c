@@ -78,86 +78,16 @@ void dump_tmpl(int k)
   LOGN();
 }
 
-#if 0
-static void cfg_test(void)
-{
-  err_t e;
-  /* LOGD("%d devices in DB.\n", cfgdb_devnum(0)); */
-  /* LOGD("%d nodes in DB.\n", cfgdb_devnum(1)); */
-
-  e = json_cfg_open(TEMPLATE_FILE,
-                    TMPLATE_FILE_PATH,
-                    0);
-  elog(e);
-  json_cfg_close(TEMPLATE_FILE);
-
-  /* dump_tmpl(1); */
-  /* dump_tmpl(0x21); */
-#if 0
-  sleep(5);
-  e = json_cfg_open(TEMPLATE_FILE,
-                    TMPLATE_FILE_PATH,
-                    0,
-                    NULL);
-  elog(e);
-  json_cfg_close(TEMPLATE_FILE);
-  test_print_ttl(1);
-  test_print_ttl(0x21);
-#endif
-
-  e = json_cfg_open(NW_NODES_CFG_FILE,
-                    NWNODES_FILE_PATH,
-                    0);
-  elog(e);
-  e = json_cfg_open(PROV_CFG_FILE,
-                    SELFCFG_FILE_PATH,
-                    0);
-  elog(e);
-
-  node_t *n = cfgdb_node_get(0x0001);
-  n->err++;
-  json_cfg_write(NW_NODES_CFG_FILE, wrt_errbits, n->uuid, &n->err);
-#if 0
-  node_t *n = cfgdb_node_get(0x0001);
-  if (n) {
-    n->addr = 0x2;
-    json_cfg_write(NW_NODES_CFG_FILE, wrt_node_addr, n->uuid, &n->addr);
-  }
-#endif
-
-#if 0
-  e = json_cfg_write(NW_NODES_CFG_FILE,
-                     wrt_add_node,
-                     NULL,
-                     "\x01\x02\x03\x04\x05\x06\x07\x07\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10");
-  elog(e);
-  e = json_cfg_write(NW_NODES_CFG_FILE,
-                     wrt_add_node,
-                     NULL,
-                     "\x11\x02\x03\x04\x05\x06\x07\x07\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10");
-  elog(e);
-  e = json_cfg_write(NW_NODES_CFG_FILE,
-                     wrt_add_node,
-                     NULL,
-                     "\x21\x02\x03\x04\x05\x06\x07\x07\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10");
-  elog(e);
-#endif
-  json_cfg_close(NW_NODES_CFG_FILE);
-  json_cfg_close(PROV_CFG_FILE);
-}
-#endif
-
 err_t cfg_init(void *p)
 {
   err_t e;
   EC(ec_success, cfgdb_init());
   gp_init(cft_json, NULL);
-
-  e = load_cfg_file(TEMPLATE_FILE);
+  e = load_cfg_file(TEMPLATE_FILE, 1);
   elog(e);
-  e = load_cfg_file(NW_NODES_CFG_FILE);
+  e = load_cfg_file(NW_NODES_CFG_FILE, 1);
   elog(e);
-  e = load_cfg_file(PROV_CFG_FILE);
+  e = load_cfg_file(PROV_CFG_FILE, 1);
   elog(e);
   return e;
 }

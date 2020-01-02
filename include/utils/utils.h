@@ -46,6 +46,10 @@ enum {
 #define ASSERT_MSG(x, fmt, ...) do { if (!(x)) { LOGA(fmt, ##__VA_ARGS__); abort(); } } while (0)
 #endif
 
+#ifndef TODOASSERT
+#define TODOASSERT() do { LOGA("TODO at [%s:%lu]\n", __FILE__, __LINE__); abort(); } while (0)
+#endif
+
 #ifndef MAX
 #define MAX(a, b)                                   ((a) > (b) ? (a) : (b))
 #endif

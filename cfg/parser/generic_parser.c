@@ -138,7 +138,7 @@ int file_modified(int cfg_fd)
   return r;
 }
 
-err_t load_cfg_file(int cfg_fd)
+err_t load_cfg_file(int cfg_fd, bool force_reload)
 {
   err_t e;
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
@@ -146,13 +146,29 @@ err_t load_cfg_file(int cfg_fd)
   }
   const char *fp = (cfg_fd == TEMPLATE_FILE ? TMPLATE_FILE_PATH
                     : cfg_fd == NW_NODES_CFG_FILE ? NWNODES_FILE_PATH : SELFCFG_FILE_PATH);
-  e = gp.open(cfg_fd, fp, 0);
+  e = gp.open(cfg_fd, fp, force_reload ? FL_FORCE_RELOAD : 0);
   if (ec_success != e) {
     elog(e);
     return e;
   }
+#if 1
   if (cfg_fd == NW_NODES_CFG_FILE) {
     mng_load_lists();
   }
+#endif
   return ec_success;
+}
+
+err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr)
+{
+  err_t e;
+  node_t *n;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_addr, uuid, (void *)&addr);
+  elog(e);
+
+  n = cfgdb_unprov_dev_get(uuid);
+  cfgdb_remove(n, 0);
+  n->addr = addr;
+  cfgdb_add(n);
+  return e;
 }

@@ -76,8 +76,10 @@ typedef struct {
 typedef struct {
   int state;
   int next_state;
+  /* NULL if not in use */
   node_t *node;
-  bbitmap_t flag;
+  bool expired; /* only used when timer is supported */
+  bbitmap_t flags;
   uint8_t remaining_retry;
   struct {
     uint32_t bgcall;
@@ -109,7 +111,7 @@ typedef struct {
   }status;
 }bl_cache_t;
 
-enum {
+typedef enum {
   nil,
   syncup,
   initialized,
@@ -121,7 +123,7 @@ enum {
   blacklisting_devices_em,
   stopping,
   state_reload
-};
+}mng_state_t;
 
 enum {
   fm_idle,
@@ -130,7 +132,7 @@ enum {
 };
 
 typedef struct {
-  int state;
+  mng_state_t state;
   uint8_t conn;
   provcfg_t *cfg;
   struct {
@@ -167,8 +169,11 @@ void cmd_enq(const char *str, int offs);
 wordexp_t *cmd_deq(int *offs);
 
 int dev_add_hdr(const struct gecko_cmd_packet *evt);
-err_t clicb_sync(int argc, char *argv[]);
 void mng_load_lists(void);
+void on_lists_changed(void);
+
+err_t clicb_sync(int argc, char *argv[]);
+err_t clicb_list(int argc, char *argv[]);
 #ifdef __cplusplus
 }
 #endif

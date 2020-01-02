@@ -55,7 +55,6 @@ extern err_t cmd_ret;
 DECLARE_VAGET_FUN(addrs);
 
 DECLARE_CB(reset);
-DECLARE_CB(list);
 DECLARE_CB(info);
 DECLARE_CB(help);
 DECLARE_CB(quit);
@@ -723,14 +722,9 @@ static err_t clicb_reset(int argc, char *argv[])
     r = atoi(argv[1]);
   }
   bt_shell_printf("%s\n", __FUNCTION__);
+  get_mng()->state = nil;
   longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
   return 0;
-}
-
-static err_t clicb_list(int argc, char *argv[])
-{
-  bt_shell_printf("%s\n", __FUNCTION__);
-  return err(ec_param_invalid);
 }
 
 static err_t clicb_info(int argc, char *argv[])
@@ -756,7 +750,7 @@ static err_t clicb_scan(int argc, char *argv[])
   int onoff = 1;
   if (argc > 1) {
     if (!strcmp(argv[1], "on")) {
-      onoff = 1;
+      onoff = 2;
     } else if (!strcmp(argv[1], "off")) {
       onoff = 0;
     } else {

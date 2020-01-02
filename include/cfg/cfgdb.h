@@ -141,14 +141,10 @@ typedef struct {
 }provcfg_t;
 
 typedef struct {
-#if 0
-  GHashTable *templates;
-  GHashTable *unprov_devs;
-  GHashTable *nodes;
-  GHashTable *backlog;
-#else
-
-#endif
+  GTree *templates;
+  GTree *unprov_devs;
+  GTree *nodes;
+  GTree *backlog;
   GQueue *lights;
   /* TODO: Add queue to each item */
   GList *pubgroups;
@@ -184,7 +180,7 @@ err_t cfgdb_tmpl_remove(tmpl_t *n);
 err_t cfgdb_tmpl_add(tmpl_t *n);
 
 provcfg_t *get_provcfg(void);
-void cfg_load_mnglists(GHFunc func);
+void cfg_load_mnglists(GTraverseFunc func);
 #ifdef __cplusplus
 }
 #endif

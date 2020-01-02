@@ -25,6 +25,7 @@ enum {
   wrt_add_node,
   wrt_errbits,
   wrt_node_addr,
+  wrt_node_addr_clr,
   wrt_done,
   /* For prov cfg file */
   wrt_prov_addr,
@@ -103,7 +104,8 @@ err_t provset_appkeydone(const uint16_t *refid, const uint8_t *done);
 err_t _upldev_check(int len, const char *arg);
 err_t backlog_dev(const uint8_t *uuid);
 int file_modified(int cfg_fd);
-err_t load_cfg_file(int cfg_fd);
+err_t load_cfg_file(int cfg_fd, bool force_reload);
+err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr);
 #ifdef __cplusplus
 }
 #endif
