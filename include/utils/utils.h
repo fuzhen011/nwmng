@@ -248,6 +248,12 @@ static inline void err_exit_en(int errnum, const char *pMsg)
     }                                                 \
   } while (0)
 
+int utils_popcount(uint32_t u);
+int utils_ctz(uint32_t u);
+int utils_clz(uint32_t u);
+int utils_ffs(uint32_t u);
+int utils_frz(uint32_t u);
+
 #ifdef __cplusplus
 }
 #endif

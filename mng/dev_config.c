@@ -11,6 +11,7 @@
 #include "dev_config.h"
 #include "logging.h"
 #include "cli.h"
+#include "utils.h"
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -53,6 +54,7 @@ const char *stateNames[] = {
   "Remove Node",
   "Remove Node End"
 };
+
 /* Static Functions Declaractions ************************************* */
 static int config_engine(void);
 static inline void __cache_reset(config_cache_t *c,
@@ -65,6 +67,12 @@ static inline void __cache_reset(config_cache_t *c,
   /* c->nodeIndex = INVALID_NODE_INDEX; */
   /* c->selfId = index; */
   c->node = n;
+}
+
+static inline void __cache_reset_idx(int i)
+{
+  BIT_CLR(get_mng()->cache.config.used, i);
+  __cache_reset(&get_mng()->cache.config.cache[i], NULL);
 }
 
 err_t add_state_after(const acc_state_t *ps, acc_state_emt state)
@@ -106,7 +114,7 @@ err_t add_state_after(const acc_state_t *ps, acc_state_emt state)
 
 static inline void __add_default_states(void)
 {
-  /* add_state_after(&addAppKeyIns, getDcd_em); */
+  /* add_state_after(&addAppKeyIns, get_dcd_em); */
   /* add_state_after(&bindAppKeyIns, addAppKey_em); */
   /* add_state_after(&setPubIns, bindAppKey_em); */
   /* add_state_after(&addSubIns, setPub_em); */
@@ -119,13 +127,14 @@ static void __acc_reset(bool use_default)
   mng_t *mng = get_mng();
 
   if (mng->lists.fail) {
-    g_list_free(mng->lists.fail);
+    mng->lists.config = g_list_concat(mng->lists.config, mng->lists.fail);
     mng->lists.fail = NULL;
   }
 
   for (int i = 0; i < MAX_CONCURRENT_CONFIG_NODES; i++) {
-    __cache_reset(&mng->cache.config[i], NULL);
+    __cache_reset(&mng->cache.config.cache[i], NULL);
   }
+  mng->cache.config.used = 0;
 
   acc.started = 0;
   acc.state_num = 0;
@@ -148,6 +157,9 @@ static void __acc_reset(bool use_default)
 
 void acc_init(bool use_default)
 {
+  if (acc.started) {
+    return;
+  }
   if (!use_default) {
     TODOASSERT();
     return;
@@ -158,9 +170,93 @@ void acc_init(bool use_default)
   acc.started = true;
 }
 
+enum {
+  type_config,
+  type_rm,
+};
+static void __cache_item_load(mng_t *mng,
+                              int ofs,
+                              node_t *node,
+                              int type)
+{
+  config_cache_t * cache = &mng->cache.config.cache[ofs];
+
+  /* TODO: needed? */
+  __cache_reset_idx(ofs);
+
+  cache->node = node;
+  if (type == type_config) {
+    cache->state = provisioned_em;
+    cache->next_state = get_dcd_em;
+    /* TODO:parseFeatures(&cache->features, &pconfig->pNodes[nodeId]); */
+    LOGM("Node[%x]: Configuring started\n", node->addr);
+  } else if (type == type_rm) {
+    cache->state = end_em;
+    cache->next_state = reset_node_em;
+    LOGM("Node[%x]: Removing\n", node->addr);
+  }
+  BIT_SET(mng->cache.config.used, ofs);
+}
+
+static int __caches_load(mng_t *mng, int type)
+{
+  int loaded = 0, ofs;
+#if 0
+  if (type == actionTBC) {
+    if (newDeviceAdded) {
+      getAction(actionTBC, 1);
+      newDeviceAdded = 0;
+      CS_LOG("Reload Action since new device added.\n");
+    }
+  }
+
+  actions = getLoadedActions();
+  if (!IS_ACTION_BIT_SET(actions, type)) {
+    return 0;
+  }
+
+  getNetworkConfig((void **)&pconfig);
+  hardASSERT(pconfig);
+#endif
+  if (MAX_CONCURRENT_CONFIG_NODES == utils_popcount(mng->cache.config.used)
+      || g_list_length(mng->lists.config) == 0) {
+    /* No nodes to config or no room for config for now */
+    return 0;
+  }
+
+  while ((ofs = utils_frz(mng->cache.config.used)) < MAX_CONCURRENT_CONFIG_NODES) {
+    GList *item = g_list_first(mng->lists.config);
+    if (!item) {
+      break;
+    }
+    __cache_item_load(mng, ofs, item->data, type);
+    loaded++;
+    mng->lists.config = g_list_remove_link(mng->lists.config, item);
+    g_list_free(item);
+  }
+
+  return loaded;
+}
+
 bool acc_loop(void *p)
 {
+  int cnt;
   if (!acc.started) {
+    return false;
+  }
+  mng_t *mng = (mng_t *)p;
+  if (mng->state == removing_devices_em) {
+    /* TODO: Load the rm nodes */
+    cnt = __caches_load(mng, type_rm);
+    if (cnt) {
+      LOGM("Loaded %d nodes to remove\n", cnt);
+    }
+  } else if (mng->state == adding_devices_em || mng->state == configuring_devices_em) {
+    cnt = __caches_load(mng, type_config);
+    if (cnt) {
+      LOGM("Loaded %d nodes to config\n", cnt);
+    }
+  } else {
     return false;
   }
   return config_engine();
@@ -247,51 +343,164 @@ static int config_engine(void)
   int ret = 0;
   acc_state_t *as = NULL;
   mng_t *mng = get_mng();
-  config_cache_t *pc = NULL;
+  config_cache_t *cache = NULL;
+  lbitmap_t usedmap;
 
-  /*
-   * Check if any **Exception** (OOM | Guard timer expired) happened in last round
-   */
-  for (int i = 0; i < MAX_CONCURRENT_CONFIG_NODES; i++) {
-    if (!mng->cache.config[i].node) {
-      continue;
-    }
-    as = as_get(mng->cache.config[i].state);
-    if (mng->cache.config[i].expired && as->retry) {
-      ret = as->retry(&mng->cache.config[i], on_guard_timer_expired_em);
+  usedmap = mng->cache.config.used;
+  while (usedmap) {
+    i = utils_ctz(usedmap);
+    ASSERT(i < MAX_CONCURRENT_CONFIG_NODES);
+    BIT_CLR(usedmap, i);
+    cache = &mng->cache.config.cache[i];
+    as = as_get(cache->state);
+
+    /*
+     * Check if any **Exception** (OOM | Guard timer expired) happened in last round
+     */
+    if (cache->expired && as->retry) {
+      ret = as->retry(cache, on_guard_timer_expired_em);
       if (ret != asr_suc) {
         LOGE("Expired Retry Return %d\n", ret);
       }
-    } else if (OOM(&mng->cache.config[i]) && as->retry) {
-      ret = as->retry(&mng->cache.config[i], on_oom_em);
-      LOGD("Node[0x%x]: OOM Recovery Once.\n", mng->cache.config[i].node->addr);
+    } else if (OOM(cache) && as->retry) {
+      ret = as->retry(cache, on_oom_em);
+      LOGD("Node[0x%x]: OOM Recovery Once.\n", cache->node->addr);
       if (ret != asr_suc && ret != asr_oom) {
         LOGE("OOM Retry Return %d\n", ret);
       }
     }
-  }
 
-  /* 4. Check if any state needs to update */
-  for (i = 0; i < MAX_CONCURRENT_CONFIG_NODES; i++) {
-    pc = &mng->cache.config[i];
-    if (!pc->node || WAIT_RESPONSE(pc)) {
+    /*
+     * Check if any state needs to update
+     */
+    if (WAIT_RESPONSE(cache) || cache->state == cache->next_state) {
       continue;
     }
 
-    if (pc->state != pc->next_state) {
-      busy |= to_next_state(pc);
-      if (pc->state == end_em || pc->state == reset_node_end_em) {
-        if (pc->err_cache.bgcall != 0
-            || pc->err_cache.bgevt != 0) {
-          /* Error happens, add the node to fail list */
-          mng->lists.fail = g_list_append(mng->lists.fail, pc->node);
-        }
-        bt_shell_printf("Node[0x%x] Configured", pc->node->addr);
-        LOGM("Node[0x%x] Configured", pc->node->addr);
-        __cache_reset(pc, NULL);
+    busy |= to_next_state(cache);
+    if (cache->state == end_em || cache->state == reset_node_end_em) {
+      if (cache->err_cache.bgcall != 0
+          || cache->err_cache.bgevt != 0) {
+        /* Error happens, add the node to fail list */
+        mng->lists.fail = g_list_append(mng->lists.fail, cache->node);
       }
+      bt_shell_printf("Node[0x%x] Configured\n", cache->node->addr);
+      LOGM("Node[0x%x] Configured\n", cache->node->addr);
+      __cache_reset_idx(i);
     }
   }
 
   return busy;
+}
+
+static inline bool is_config_device_events(const struct gecko_cmd_packet *e)
+{
+  uint32_t evt_id = BGLIB_MSG_ID(e->header);
+  return ((evt_id & 0x000000ff) == 0x000000a0
+          && (evt_id & 0x00ff0000) == 0x00270000);
+}
+
+static config_cache_t *cache_from_cchandle(const struct gecko_cmd_packet *e)
+{
+  int i;
+  uint32_t handle;
+  lbitmap_t usedmap;
+  mng_t *mng = get_mng();
+
+  switch (BGLIB_MSG_ID(e->header)) {
+    case gecko_evt_mesh_config_client_dcd_data_id:
+      handle = e->data.evt_mesh_config_client_dcd_data.handle;
+      break;
+    case gecko_evt_mesh_config_client_dcd_data_end_id:
+      handle = e->data.evt_mesh_config_client_dcd_data_end.handle;
+      break;
+    case gecko_evt_mesh_config_client_appkey_status_id:
+      handle = e->data.evt_mesh_config_client_appkey_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_binding_status_id:
+      handle = e->data.evt_mesh_config_client_binding_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_model_pub_status_id:
+      handle = e->data.evt_mesh_config_client_model_pub_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_model_sub_status_id:
+      handle = e->data.evt_mesh_config_client_model_sub_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_relay_status_id:
+      handle = e->data.evt_mesh_config_client_relay_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_friend_status_id:
+      handle = e->data.evt_mesh_config_client_friend_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_gatt_proxy_status_id:
+      handle = e->data.evt_mesh_config_client_gatt_proxy_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_default_ttl_status_id:
+      handle = e->data.evt_mesh_config_client_default_ttl_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_network_transmit_status_id:
+      handle = e->data.evt_mesh_config_client_network_transmit_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_reset_status_id:
+      handle = e->data.evt_mesh_config_client_reset_status.handle;
+      break;
+    case gecko_evt_mesh_config_client_beacon_status_id:
+      handle = e->data.evt_mesh_config_client_beacon_status.handle;
+      break;
+
+    default:
+      LOGA("NEED ADD a case[0x%08x] to %s\n",
+           BGLIB_MSG_ID(e->header),
+           __FUNCTION__);
+      break;
+  }
+
+  usedmap = mng->cache.config.used;
+  while (usedmap) {
+    i = utils_ctz(usedmap);
+    ASSERT(i < MAX_CONCURRENT_CONFIG_NODES);
+    BIT_CLR(usedmap, i);
+    if (mng->cache.config.cache[i].node && mng->cache.config.cache[i].cc_handle == handle) {
+      return &mng->cache.config.cache[i];
+    }
+  }
+
+  LOGA("No Cache Found by handle\n");
+  return NULL;
+}
+
+int dev_config_hdr(const struct gecko_cmd_packet *e)
+{
+  int ret = 0;
+  ASSERT(e);
+  config_cache_t *cache;
+  acc_state_t *state;
+
+  if (!is_config_device_events(e)) {
+    return 0;
+  }
+
+  cache = cache_from_cchandle(e);
+  state = as_get(cache->state);
+  ASSERT(state);
+
+  if (WAIT_RESPONSE(cache) && state->inpg) {
+#if (DEBUG_ACC_VERBOSE == 1)
+    LOGD("onStateInProgress once.\n");
+#endif
+    ret = state->inpg(e, cache);
+  }
+
+  if (!ret
+      && !WAIT_RESPONSE(cache)
+      && EVER_RETRIED(cache)
+      && state->retry) {
+#if (DEBUG_ACC_VERBOSE == 1)
+    CS_LOG("onStateRetry once.\n");
+#endif
+    ret |= state->retry(cache, on_timeout_em);
+  } else if (ret == asr_unspec) {
+    return 0;
+  }
+  return 1;
 }

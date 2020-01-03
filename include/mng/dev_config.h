@@ -113,11 +113,11 @@ typedef enum {
 
 static inline void err_set(config_cache_t *cache,
                            uint16_t errcode,
-                           int which)
+                           int err_type)
 {
-  if (which == bgapi_em) {
+  if (err_type == bgapi_em) {
     BIT_SET(cache->err_cache.bgcall, cache->state);
-  } else if (which == bgevent_em) {
+  } else if (err_type == bgevent_em) {
     BIT_SET(cache->err_cache.bgevt, cache->state);
   } else {
     return;
@@ -127,12 +127,15 @@ static inline void err_set(config_cache_t *cache,
 
 static inline void err_set_to_end(config_cache_t *cache,
                                   uint16_t errcode,
-                                  int which)
+                                  int err_type)
 {
-  err_set(cache, errcode, which);
+  err_set(cache, errcode, err_type);
   cache->next_state = end_em;
 }
 
+int dev_config_hdr(const struct gecko_cmd_packet *e);
+bool acc_loop(void *p);
+void acc_init(bool use_default);
 /******************************************************************
  * State functions
  * ***************************************************************/

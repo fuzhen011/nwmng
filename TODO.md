@@ -24,8 +24,9 @@
 
 ## MNG
 
-- [] Configure itself.
+- [x] Configure itself.
 - [] Adding/Configuring/Removing/Blacklisting devices.
+  - [] clearing the fail list actually moves all the nodes to the config list
 - [] Set light status.
   - [] Set light onoff.
   - [] Set light lightness.

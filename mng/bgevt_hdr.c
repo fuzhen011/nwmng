@@ -19,6 +19,7 @@
 #include "logging.h"
 #include "mng.h"
 #include "nwk.h"
+#include "dev_config.h"
 
 /* Defines  *********************************************************** */
 BGLIB_DEFINE();
@@ -30,6 +31,7 @@ static volatile int ncp_sync = false;
 
 static bgevt_hdr hdrs[] = {
   dev_add_hdr,
+  dev_config_hdr,
   bgevt_dflt_hdr,
   NULL
 };

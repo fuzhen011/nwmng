@@ -31,6 +31,7 @@
 #include "glib.h"
 #include "socket_handler.h"
 #include "gecko_bglib.h"
+#include "dev_config.h"
 /* Defines  *********************************************************** */
 #define INVALID_CONN_HANDLE 0xff
 
@@ -176,8 +177,10 @@ static void set_mng_state(void)
       clm_set_scan(1);
     }
     mng.state = adding_devices_em;
+    acc_init(true);
   } else if (g_list_length(mng.lists.config)) {
     mng.state = configuring_devices_em;
+    acc_init(true);
   } else if (g_list_length(mng.lists.rm)) {
   } else if (g_list_length(mng.lists.bl)) {
   }
@@ -199,6 +202,7 @@ void *mng_mainloop(void *p)
       case adding_devices_em:
       /* Do adding_devices_em only jobs */
       case configuring_devices_em:
+        busy |= acc_loop(&mng);
         break;
       case stopping:
         mng.state = configured;

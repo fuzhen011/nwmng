@@ -144,7 +144,10 @@ typedef struct {
 
   struct {
     add_cache_t add[MAX_PROV_SESSIONS];
-    config_cache_t config[MAX_CONCURRENT_CONFIG_NODES];
+    struct{
+      lbitmap_t used;
+      config_cache_t cache[MAX_CONCURRENT_CONFIG_NODES];
+    }config;
     bl_cache_t bl;
   }cache;
 
