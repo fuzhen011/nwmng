@@ -17,6 +17,8 @@ extern "C"
 #include "mng.h"
 #include "gecko_bglib.h"
 
+#define SIG_VENDOR_ID 0xffff
+
 #define RETRY_MSG \
   "Node[%x]: --- Retry %s on TIMEOUT, remaining %d times before failure\n"
 #define RETRY_OUT_MSG \
@@ -172,6 +174,16 @@ int bindappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
 int bindappkey_retry(config_cache_t *cache, int reason);
 int bindappkey_exit(void *p);
 bool is_bindappkey_pkts(uint32_t evtid);
+
+/*
+ * Set Pub State
+ */
+bool setpub_guard(const config_cache_t *cache);
+int setpub_entry(config_cache_t *cache, func_guard guard);
+int setpub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
+int setpub_retry(config_cache_t *cache, int reason);
+int setpub_exit(void *p);
+bool is_setpub_pkts(uint32_t evtid);
 
 /*
  * End State

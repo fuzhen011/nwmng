@@ -12,7 +12,6 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-#define SIG_VENDOR_ID 0xffff
 
 /* Global Variables *************************************************** */
 
@@ -21,11 +20,11 @@
 /* Static Functions Declaractions ************************************* */
 
 #define BIND_KEY_MSG \
-  "Node[%d]:  --- Bind App Key[%d (Ref ID)] to %s Model[%04x:%04x]\n"
+  "Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)]\n"
 #define BIND_KEY_SUC_MSG \
-  "Node[%d]:  --- Bind App Key[%d (Ref ID)] to %s Model[%04x:%04x] SUCCESS\n"
+  "Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n"
 #define BIND_KEY_FAIL_MSG \
-  "Node[%d]:  --- Bind App Key[%d (Ref ID)] to %s Model[%04x:%04x] FAILED, Err <0x%04x>\n"
+  "Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] FAILED, Err <0x%04x>\n"
 
 #define ELEMENT_ITERATOR_INDEX  0
 #define MODEL_ITERATOR_INDEX  1
@@ -197,7 +196,7 @@ int bindappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
 
 int bindappkey_retry(config_cache_t *cache, int reason)
 {
-  int ret = 0;
+  int ret;
   ASSERT(cache);
   ASSERT(reason < retry_on_max_em);
 

@@ -289,7 +289,24 @@ static err_t _load_pub(json_object *obj,
           goto free;
         }
       }
-      /* TODO: sanity check, if invalid, memset to 0 */
+      if ((*p)->txp.cnt > 7) {
+        LOGW("Note: Pub retransmission count cannot be greater than 7.\n");
+        (*p)->txp.cnt = 7;
+      } else if ((*p)->txp.cnt) {
+        if ((*p)->txp.intv < 50) {
+          LOGW("Note: Pub retransmission interval cannot be less than 50.\n");
+          (*p)->txp.intv = 50;
+        } else if ((*p)->txp.intv > 3200) {
+          LOGW("Note: Pub retransmission interval cannot be greater than 3200.\n");
+          (*p)->txp.intv = 3200;
+        } else if ((*p)->txp.intv % 50) {
+          LOGW("Note: Pub retransmission interval resolution is 50.\n");
+          (*p)->txp.intv = (((*p)->txp.intv + 49) / 50) * 50;
+        }
+      } else {
+        /* count is 0, interval takes no effect, load a valid value */
+        (*p)->txp.intv = 50;
+      }
     }
   }
   return ec_success;

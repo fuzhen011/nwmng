@@ -52,6 +52,17 @@ static const acc_state_t as_bindappkey = {
   NULL
 };
 
+static const acc_state_t as_setpub = {
+  setpub_em,
+  setpub_guard,
+  setpub_entry,
+  setpub_inprg,
+  setpub_retry,
+  setpub_exit,
+  is_setpub_pkts,
+  NULL
+};
+
 static acc_state_t as_end = {
   end_em,
   NULL,
@@ -138,7 +149,7 @@ static inline void __add_default_states(void)
 {
   add_state_after(&as_addappkey, get_dcd_em);
   add_state_after(&as_bindappkey, addappkey_em);
-  /* add_state_after(&setPubIns, bindAppKey_em); */
+  add_state_after(&as_setpub, bindappkey_em);
   /* add_state_after(&addSubIns, setPub_em); */
   /* add_state_after(&setConfigsIns, addSub_em); */
   /* add_state_after(&removeNodeIns, end_em); */
