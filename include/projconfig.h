@@ -63,6 +63,8 @@ extern "C"
 #define BIND_APP_KEY_RETRY_TIMES 5
 #define SET_PUB_RETRY_TIMES 5
 #define ADD_SUB_RETRY_TIMES 5
+#define SET_CONFIGS_RETRY_TIMES 5
+#define REMOVE_NODE_RETRY_TIMES 3
 
 #ifdef __cplusplus
 }

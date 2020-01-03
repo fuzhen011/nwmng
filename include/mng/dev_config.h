@@ -136,6 +136,14 @@ static inline void err_set_to_end(config_cache_t *cache,
   cache->next_state = end_em;
 }
 
+static inline void err_set_to_rm_end(config_cache_t *cache,
+                                     uint16_t errcode,
+                                     int err_type)
+{
+  err_set(cache, errcode, err_type);
+  cache->next_state = reset_node_end_em;
+}
+
 int dev_config_hdr(const struct gecko_cmd_packet *e);
 bool acc_loop(void *p);
 void acc_init(bool use_default);

@@ -81,9 +81,9 @@ typedef struct {
    * 4. Set the feature if it's not "2-keep"
    */
   struct {
-    bbitmap_t dcd_status;
-    bbitmap_t needset;
-    bbitmap_t value;
+    sbitmap_t dcd_status;
+    sbitmap_t needset;
+    sbitmap_t value;
     txparam_t *relay_txp;
   }features;
 

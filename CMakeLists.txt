@@ -65,6 +65,9 @@ set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_bindappkey.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_setpub.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_addsub.c
+    # ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_setconfig.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_rm.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_rmend.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_end.c)
 set(CFG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
