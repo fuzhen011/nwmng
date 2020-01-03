@@ -13,11 +13,11 @@
 
 /* Defines  *********************************************************** */
 #define SET_PUB_MSG \
-  "Node[%x]:  --- Pub [Element-Model(%d-%04x:%04x) <-> 0x%04x]\n"
+  "Node[%x]:  --- Pub [Element-Model(%d-%04x:%04x) -> 0x%04x]\n"
 #define SET_PUB_SUC_MSG \
-  "Node[%x]:  --- Pub [Element-Model(%d-%04x:%04x) <-> 0x%04x] SUCCESS\n"
+  "Node[%x]:  --- Pub [Element-Model(%d-%04x:%04x) -> 0x%04x] SUCCESS\n"
 #define SET_PUB_FAIL_MSG \
-  "Node[%x]:  --- Pub [Element-Model(%d-%04x:%04x) <-> 0x%04x] FAILED, Err <0x%04x>\n"
+  "Node[%x]:  --- Pub [Element-Model(%d-%04x:%04x) -> 0x%04x] FAILED, Err <0x%04x>\n"
 
 #define ELEMENT_ITERATOR_INDEX  0
 #define MODEL_ITERATOR_INDEX  1

@@ -62,6 +62,7 @@ extern "C"
 #define ADD_APP_KEY_RETRY_TIMES 5
 #define BIND_APP_KEY_RETRY_TIMES 5
 #define SET_PUB_RETRY_TIMES 5
+#define ADD_SUB_RETRY_TIMES 5
 
 #ifdef __cplusplus
 }

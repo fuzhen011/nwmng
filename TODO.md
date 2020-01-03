@@ -26,7 +26,7 @@
 
 - [x] Configure itself.
 - [] Adding/Configuring/Removing/Blacklisting devices.
-  - [] clearing the fail list actually moves all the nodes to the config list
+  - [x] clearing the fail list actually moves all the nodes to the config list
 - [] Set light status.
   - [] Set light onoff.
   - [] Set light lightness.
@@ -34,6 +34,7 @@
 - [] Whenever start provision a new device, check if it's in backlog, if yes,
   delete it;
 - [x] backoff sync NCP with timeout
+- [] Optimize the OOM handler.
 
 ## CFG
 

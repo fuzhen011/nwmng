@@ -186,6 +186,16 @@ int setpub_exit(void *p);
 bool is_setpub_pkts(uint32_t evtid);
 
 /*
+ * Add Sub State
+ */
+bool addsub_guard(const config_cache_t *cache);
+int addsub_entry(config_cache_t *cache, func_guard guard);
+int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
+int addsub_retry(config_cache_t *cache, int reason);
+int addsub_exit(void *p);
+bool is_addsub_pkts(uint32_t evtid);
+
+/*
  * End State
  */
 int end_entry(config_cache_t *cache, func_guard guard);
