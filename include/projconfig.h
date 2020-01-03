@@ -48,17 +48,20 @@ extern "C"
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions
  * definition on the NCP target side
  */
-#define MAX_PROV_SESSIONS 3
+#define MAX_PROV_SESSIONS 2
 /*
  * NOTE: Make sure this value is NOT greater than the Max Foundation Client Cmds
  * definition on the NCP target side
  */
-#define MAX_CONCURRENT_CONFIG_NODES 6
+#define MAX_CONCURRENT_CONFIG_NODES 4
 
 /*
  * Retry times
  */
-#define GET_DCD_RETRY_TIMES             5
+#define GET_DCD_RETRY_TIMES 5
+#define ADD_APP_KEY_RETRY_TIMES 5
+#define BIND_APP_KEY_RETRY_TIMES 5
+
 #ifdef __cplusplus
 }
 #endif

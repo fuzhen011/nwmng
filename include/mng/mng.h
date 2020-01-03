@@ -43,11 +43,18 @@ typedef struct {
 #define EVER_RETRIED_CLEAR(x) BIT_CLR((x)->flags, EVER_RETRIED_BIT_OFFSET)
 
 #define OOM(x) IS_BIT_SET((x)->flags, OOM_BIT_OFFSET)
+
 #define OOM_SET(x)                       \
   do {                                   \
     BIT_SET((x)->flags, OOM_BIT_OFFSET); \
+    OOM_SET_PRINT(x);                    \
   } while (0)
-#define OOM_CLEAR(x) BIT_CLR((x)->flags, OOM_BIT_OFFSET)
+
+#define OOM_CLEAR(x) \
+  do{ \
+    BIT_CLR((x)->flags, OOM_BIT_OFFSET); \
+  }while(0)
+
 
 #define RETRY_CLEAR(x)                            \
   do {                                            \
@@ -144,7 +151,7 @@ typedef struct {
 
   struct {
     add_cache_t add[MAX_PROV_SESSIONS];
-    struct{
+    struct {
       lbitmap_t used;
       config_cache_t cache[MAX_CONCURRENT_CONFIG_NODES];
     }config;

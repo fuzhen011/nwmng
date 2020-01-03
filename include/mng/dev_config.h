@@ -62,8 +62,8 @@ typedef enum {
   provisioned_em,
   /* Configuring devices state(s) */
   get_dcd_em,
-  add_appkey_em,
-  bind_appKey_em,
+  addappkey_em,
+  bindappkey_em,
   setpub_em,
   addsub_em,
   set_config_em,
@@ -103,6 +103,7 @@ enum {
   asr_tonext,
   asr_bgapi,
   asr_unspec,
+  asr_notfnd,
 };
 
 typedef enum {
@@ -139,6 +140,9 @@ void acc_init(bool use_default);
 /******************************************************************
  * State functions
  * ***************************************************************/
+int appkey_by_refid(mng_t *mng,
+                    uint16_t refid,
+                    uint16_t *id);
 /*
  * Get DCD State
  */
@@ -148,6 +152,26 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
 int getdcd_retry(config_cache_t *cache, int reason);
 int getdcd_exit(void *p);
 bool is_getdcd_pkts(uint32_t evtid);
+
+/*
+ * Add Appkey State
+ */
+bool addappkey_guard(const config_cache_t *cache);
+int addappkey_entry(config_cache_t *cache, func_guard guard);
+int addappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
+int addappkey_retry(config_cache_t *cache, int reason);
+int addappkey_exit(void *p);
+bool is_addappkey_pkts(uint32_t evtid);
+
+/*
+ * Bind Appkey State
+ */
+bool bindappkey_guard(const config_cache_t *cache);
+int bindappkey_entry(config_cache_t *cache, func_guard guard);
+int bindappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
+int bindappkey_retry(config_cache_t *cache, int reason);
+int bindappkey_exit(void *p);
+bool is_bindappkey_pkts(uint32_t evtid);
 
 /*
  * End State

@@ -23,8 +23,8 @@
 #define HEALTH_SERVER_MDID              0x0002
 #define HEALTH_CLIENT_MDID              0x0003
 
-#define GET_DCD_MSG                     "Node[%x]: Get DCD\n"
-#define GET_DCD_SUC_MSG                 "Node[%x]:  --- Get DCD Success\n"
+#define GET_DCD_MSG                     "Node[%x]:  --- Get DCD\n"
+#define GET_DCD_SUC_MSG                 "Node[%x]:  --- Get DCD SUCCESS\n"
 #define GET_DCD_FAIL_MSG                "Node[%x]:  --- Get DCD Failed, Err <0x%04x>\n"
 
 #define ONCE_P(cache)                     \
@@ -129,7 +129,7 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
           SUC_P(cache);
           if (cache->node->err > ERROR_BIT(get_dcd_em)
               && cache->node->err < ERROR_BIT(end_em)) {
-            for (int a = add_appkey_em; a < end_em; a++) {
+            for (int a = addappkey_em; a < end_em; a++) {
               if (cache->node->err & ERROR_BIT(a)) {
                 LOGM("Node[%x]: Configure the node from <<<%s>>> state\n",
                      cache->node->addr,

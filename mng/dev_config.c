@@ -19,7 +19,7 @@
 /* Static Variables *************************************************** */
 static acc_t acc = { 0 };
 
-static acc_state_t as_get_dcd = {
+static const acc_state_t as_get_dcd = {
   get_dcd_em,
   getdcd_guard,
   getdcd_entry,
@@ -27,6 +27,28 @@ static acc_state_t as_get_dcd = {
   getdcd_retry,
   getdcd_exit,
   is_getdcd_pkts,
+  NULL
+};
+
+static const acc_state_t as_addappkey = {
+  addappkey_em,
+  addappkey_guard,
+  addappkey_entry,
+  addappkey_inprg,
+  addappkey_retry,
+  addappkey_exit,
+  is_addappkey_pkts,
+  NULL
+};
+
+static const acc_state_t as_bindappkey = {
+  bindappkey_em,
+  bindappkey_guard,
+  bindappkey_entry,
+  bindappkey_inprg,
+  bindappkey_retry,
+  bindappkey_exit,
+  is_bindappkey_pkts,
   NULL
 };
 
@@ -114,8 +136,8 @@ err_t add_state_after(const acc_state_t *ps, acc_state_emt state)
 
 static inline void __add_default_states(void)
 {
-  /* add_state_after(&addAppKeyIns, get_dcd_em); */
-  /* add_state_after(&bindAppKeyIns, addAppKey_em); */
+  add_state_after(&as_addappkey, get_dcd_em);
+  add_state_after(&as_bindappkey, addappkey_em);
   /* add_state_after(&setPubIns, bindAppKey_em); */
   /* add_state_after(&addSubIns, setPub_em); */
   /* add_state_after(&setConfigsIns, addSub_em); */
@@ -363,6 +385,7 @@ static int config_engine(void)
         LOGE("Expired Retry Return %d\n", ret);
       }
     } else if (OOM(cache) && as->retry) {
+      ASSERT(!WAIT_RESPONSE(cache));
       ret = as->retry(cache, on_oom_em);
       LOGD("Node[0x%x]: OOM Recovery Once.\n", cache->node->addr);
       if (ret != asr_suc && ret != asr_oom) {
