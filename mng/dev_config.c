@@ -409,9 +409,12 @@ static int config_engine(void)
     } else if (OOM(cache) && as->retry) {
       ASSERT(!WAIT_RESPONSE(cache));
       ret = as->retry(cache, on_oom_em);
-      LOGD("Node[0x%x]: OOM Recovery Once.\n", cache->node->addr);
-      if (ret != asr_suc && ret != asr_oom) {
+      if (ret == asr_oom) {
+        LOGE("OOM once again, need backoff mechanism\n");
+      } else if (ret != asr_suc) {
         LOGE("OOM Retry Return %d\n", ret);
+      } else {
+        LOGD("Node[0x%x]: OOM Recovery Once.\n", cache->node->addr);
       }
     }
 
@@ -536,6 +539,7 @@ int dev_config_hdr(const struct gecko_cmd_packet *e)
     ret = state->inpg(e, cache);
   }
 
+  /* Drived by timeout event */
   if (!ret
       && !WAIT_RESPONSE(cache)
       && EVER_RETRIED(cache)
