@@ -87,7 +87,7 @@ static void tmpl_free(void *p)
   SAFE_FREE(t->ttl);
   SAFE_FREE(t->snb);
   SAFE_FREE(t->net_txp);
-  SAFE_FREE(t->relay_txp);
+  SAFE_FREE(t->features.relay_txp);
   SAFE_FREE(t->pub);
   SAFE_FREE(t->bindings);
   SAFE_FREE(t->sublist);

@@ -50,6 +50,23 @@ typedef struct publication{
 } publication_t;
 
 /**
+ * @brief features that need to be set
+ *
+ * when setting the features of the node, do below steps:
+ * 1. Check if the feature is enabled in dcd by {dcd_status} if for setting
+ * RELAY/PROXY/FRIEND/LPN, others pass.
+ * 2. Check target^current to get which features need to be configured
+ * 3. Configure the features until target^current=0 
+ *
+ */
+typedef struct {
+  sbitmap_t dcd_status;
+  sbitmap_t target;
+  sbitmap_t current;
+  txparam_t *relay_txp;
+}features_t;
+
+/**
  * @brief - Template structure, only the reference ID is mandatory
  */
 typedef struct {
@@ -57,36 +74,17 @@ typedef struct {
   uint8_t *ttl;
   uint8_t *snb;
   txparam_t *net_txp;
-  txparam_t *relay_txp;
   publication_t *pub;
   uint16list_t *bindings;
   uint16list_t *sublist;
-  struct {
-    bbitmap_t dcd_status;
-    bbitmap_t needset;
-    bbitmap_t value;
-    txparam_t *relay_txp;
-  }*features;
+  features_t features;
 } tmpl_t;
 
 typedef struct {
   uint8_t *ttl;
   uint8_t *snb;
   txparam_t *net_txp;
-  /*
-   * when setting the features of the node, do below steps:
-   * 1. Check if the feature is enabled in dcd, goto step 2 if yes.
-   * 2. Check if the feature needs to be set explicitly, goto step 3 if yes.
-   * 3. Check the target status (1-enable/0-disable/2-keep) in value
-   * 4. Set the feature if it's not "2-keep"
-   */
-  struct {
-    sbitmap_t dcd_status;
-    sbitmap_t needset;
-    sbitmap_t value;
-    txparam_t *relay_txp;
-  }features;
-
+  features_t features;
   publication_t *pub;
   uint16list_t *bindings;
   uint16list_t *sublist;

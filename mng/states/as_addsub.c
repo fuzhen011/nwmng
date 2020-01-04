@@ -80,8 +80,8 @@ static int __addsub(config_cache_t *cache, mng_t *mng)
 {
   struct gecko_msg_mesh_config_client_add_model_sub_rsp_t *arsp;
   struct gecko_msg_mesh_config_client_set_model_sub_rsp_t *srsp;
-  uint16_t *retval = NULL;
-  uint32_t *handle = NULL;
+  uint16_t retval;
+  uint32_t handle;
 
   if (cache->iterators[SUB_ADDR_ITERATOR_INDEX] == 0) {
     cache->vnm.vd =
@@ -100,8 +100,8 @@ static int __addsub(config_cache_t *cache, mng_t *mng)
       cache->vnm.vd,
       cache->vnm.md,
       cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]]);
-    retval = &srsp->result;
-    handle = &srsp->handle;
+    retval = srsp->result;
+    handle = srsp->handle;
   } else {
     cache->vnm.vd =
       cache->iterators[MODEL_ITERATOR_INDEX] >= cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt
@@ -118,23 +118,23 @@ static int __addsub(config_cache_t *cache, mng_t *mng)
       cache->vnm.vd,
       cache->vnm.md,
       cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]]);
-    retval = &arsp->result;
-    handle = &arsp->handle;
+    retval = arsp->result;
+    handle = arsp->handle;
   }
 
-  if (*retval != bg_err_success) {
-    if (*retval == bg_err_out_of_memory) {
+  if (retval != bg_err_success) {
+    if (retval == bg_err_out_of_memory) {
       OOM_SET(cache);
       return asr_oom;
     }
-    FAIL_P(cache, *retval);
-    err_set_to_end(cache, *retval, bgapi_em);
+    FAIL_P(cache, retval);
+    err_set_to_end(cache, retval, bgapi_em);
     LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     ONCE_P(cache);
     WAIT_RESPONSE_SET(cache);
-    cache->cc_handle = *handle;
+    cache->cc_handle = handle;
     /* TODO: startTimer(cache, 1); */
   }
 

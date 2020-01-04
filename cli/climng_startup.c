@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <signal.h>
+
 #include "climng_startup.h"
 #include "logging.h"
 #include "nwk.h"
@@ -86,6 +88,11 @@ int cli_proc(int argc, char *argv[])
   int ret, tmp;
   err_t e;
   LOGD("CLI-MNG Process Started Up\n");
+
+#if (__APPLE__ == 1)
+  signal(SIGTTIN, SIG_IGN);
+  signal(SIGTTOU, SIG_IGN);
+#endif
   if (0 != setprojargs(argc, argv)) {
     LOGE("Set project args error.\n");
     exit(EXIT_FAILURE);

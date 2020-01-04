@@ -23,6 +23,7 @@
 #include "json_parser.h"
 #include "logging.h"
 #include "utils.h"
+#include "dev_config.h"
 
 /* Defines  *********************************************************** */
 #define JSON_ECHO(msg, obj)              \
@@ -94,6 +95,17 @@ typedef struct {
 static json_cfg_t jcfg = { 0 };
 
 /* Static Functions Declaractions ************************************* */
+static inline void __set_feature_config(features_t * f, features_em w, bool on)
+{
+  if (on) {
+    BIT_SET(f->target, w);
+    BIT_CLR(f->current, w);
+  } else {
+    BIT_SET(f->current, w);
+    BIT_CLR(f->target, w);
+  }
+}
+
 static void __kv_replace(json_object *obj,
                          const void *key,
                          void *value);
@@ -110,6 +122,7 @@ DECLLOADER1(snb);
 DECLLOADER1(txp);
 DECLLOADER1(bindings);
 DECLLOADER1(sublist);
+DECLLOADER1(features);
 
 /* Used only for node */
 DECLLOADER1(tmpl);
@@ -122,13 +135,14 @@ static const __load_func_t loaders[] = {
   _load_txp,
   _load_bindings,
   _load_sublist,
+  _load_features,
   /* Used only for node */
   _load_tmpl,
   /* Used only for provself */
 };
 
-static const int tmpl_loader_end = 6;
-static const int node_loader_end = 7;
+static const int tmpl_loader_end = 7;
+static const int node_loader_end = 8;
 
 /**
  * @defgroup single_key_load
@@ -202,6 +216,16 @@ static inline txparam_t **ptxp_from_fd(int cfg_fd, void *out)
   }
 
   ASSERT(0);
+}
+
+static inline features_t *features_from_fd(int cfg_fd, void *out)
+{
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    return (&((node_t *)out)->config.features);
+  } else if (cfg_fd == TEMPLATE_FILE) {
+    return (&((tmpl_t *)out)->features);
+  }
+  return NULL;
 }
 
 static inline uint8_t **psnb_from_fd(int cfg_fd, void *out)
@@ -317,12 +341,96 @@ static err_t _load_pub(json_object *obj,
   return e;
 }
 
+static err_t _load_features(json_object *obj,
+                            int cfg_fd,
+                            void *out)
+{
+  err_t e = ec_success;
+  features_t *p = features_from_fd(cfg_fd, out);
+  json_object *o;
+
+  if (!json_object_object_get_ex(obj, STR_FEATURES, &o)) {
+    goto free;
+  }
+  if (p->relay_txp) {
+    free(p->relay_txp);
+    p->relay_txp = NULL;
+  }
+  p->target &= 0xfff0;
+  p->current &= 0xfff0;
+
+#if (JSON_ECHO_DBG == 1)
+  JSON_ECHO("Features", o);
+#endif
+  const char *v;
+  json_object *tmp;
+
+  if (json_object_object_get_ex(o, STR_RELAY, &tmp)) {
+    if (!p->relay_txp) {
+      p->relay_txp = calloc(1, sizeof(txparam_t));
+    }
+    json_object *tmp1;
+    if (json_object_object_get_ex(tmp, STR_ENABLE, &tmp1)) {
+      v = json_object_get_string(tmp1);
+      if (!strcmp(v, "0x01")) {
+        __set_feature_config(p, RELAY_BITOFS, true);
+      } else {
+        __set_feature_config(p, RELAY_BITOFS, false);
+      }
+    }
+    if (json_object_object_get_ex(tmp, STR_CNT, &tmp1)) {
+      v = json_object_get_string(tmp1);
+      if (ec_success != (e = uint8_loader(v, &p->relay_txp->cnt))) {
+        goto free;
+      }
+    }
+    if (json_object_object_get_ex(tmp, STR_INTV, &tmp1)) {
+      v = json_object_get_string(tmp1);
+      if (ec_success != (e = uint16_loader(v, &p->relay_txp->intv))) {
+        goto free;
+      }
+    }
+    /* TODO */
+    /* Sanity check for count and interval */
+  }
+
+  if (json_object_object_get_ex(o, STR_FRIEND, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (!strcmp(v, "0x01")) {
+      __set_feature_config(p, FRIEND_BITOFS, true);
+    } else {
+      __set_feature_config(p, FRIEND_BITOFS, false);
+    }
+  }
+
+  if (json_object_object_get_ex(o, STR_PROXY, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (!strcmp(v, "0x01")) {
+      __set_feature_config(p, PROXY_BITOFS, true);
+    } else {
+      __set_feature_config(p, PROXY_BITOFS, false);
+    }
+  }
+
+  return ec_success;
+
+  free:
+  if (p->relay_txp) {
+    free(p->relay_txp);
+    p->relay_txp = NULL;
+  }
+  p->target &= 0xfff0;
+  p->current &= 0xfff0;
+  return e;
+}
+
 static err_t _load_txp(json_object *obj,
                        int cfg_fd,
                        void *out)
 {
   err_t e = ec_success;
   txparam_t **p = ptxp_from_fd(cfg_fd, out);
+  features_t *f = features_from_fd(cfg_fd, out);
   json_object *o;
 
   if (!json_object_object_get_ex(obj, STR_TXP, &o)) {
@@ -349,6 +457,9 @@ static err_t _load_txp(json_object *obj,
     if (ec_success != (e = uint16_loader(v, &(*p)->intv))) {
       goto free;
     }
+  }
+  if (cfg_fd != PROV_CFG_FILE) {
+    __set_feature_config(f, NETTX_BITOFS, true);
   }
   return ec_success;
 
@@ -412,6 +523,7 @@ static err_t _load_ttl(json_object *obj,
 {
   err_t e = ec_success;
   uint8_t **p = pttl_from_fd(cfg_fd, out);
+  features_t *f = features_from_fd(cfg_fd, out);
   json_object *o;
 
   if (!json_object_object_get_ex(obj, STR_TTL, &o)) {
@@ -428,6 +540,9 @@ static err_t _load_ttl(json_object *obj,
   if (ec_success != (e = uint8_loader(v, *p))) {
     goto free;
   }
+  if (cfg_fd != PROV_CFG_FILE) {
+    __set_feature_config(f, TTL_BITOFS, true);
+  }
   return ec_success;
 
   free:
@@ -442,6 +557,7 @@ static err_t _load_snb(json_object *obj,
 {
   err_t e = ec_success;
   uint8_t **p = psnb_from_fd(cfg_fd, out);
+  features_t *f = features_from_fd(cfg_fd, out);
   json_object *o;
 
   if (!json_object_object_get_ex(obj, STR_SNB, &o)) {
@@ -458,6 +574,7 @@ static err_t _load_snb(json_object *obj,
   if (ec_success != (e = uint8_loader(v, *p))) {
     goto free;
   }
+  __set_feature_config(f, SNB_BITOFS, **p);
   return ec_success;
 
   free:
@@ -594,14 +711,27 @@ static void copy_tmpl_to_node(const tmpl_t *t,
   if (t->snb && !n->config.snb) {
     alloc_copy(&n->config.snb, t->snb, sizeof(uint8_t));
   }
-  if (t->relay_txp && !n->config.features.relay_txp) {
-    alloc_copy((uint8_t **)&n->config.features.relay_txp, t->relay_txp, sizeof(txparam_t));
+  if (!(n->config.features.target & 0xf)
+      && !(n->config.features.current & 0xf)) {
+    /* The 4 LSB bits are all 0 */
+    n->config.features.target |= (t->features.target & 0xf);
+    n->config.features.current |= (t->features.current & 0xf);
+    if (n->config.features.relay_txp) {
+      ASSERT(0);
+    }
+    if (t->features.relay_txp) {
+      alloc_copy((uint8_t **)&n->config.features.relay_txp,
+                 t->features.relay_txp,
+                 sizeof(txparam_t));
+    }
   }
   if (t->pub && !n->config.pub) {
     alloc_copy((uint8_t **)&n->config.pub, t->pub, sizeof(publication_t));
   }
   if (t->net_txp && !n->config.net_txp) {
-    alloc_copy((uint8_t **)&n->config.net_txp, t->net_txp, sizeof(txparam_t));
+    alloc_copy((uint8_t **)&n->config.net_txp,
+               t->net_txp,
+               sizeof(txparam_t));
   }
   if (t->bindings && !n->config.bindings) {
     alloc_copy_u16list(&n->config.bindings, t->bindings);

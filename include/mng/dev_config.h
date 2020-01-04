@@ -58,6 +58,17 @@ typedef int (*func_exit)(void *p);
 typedef bool (*func_delegate)(uint32_t evtid);
 
 typedef enum {
+  RELAY_BITOFS,
+  PROXY_BITOFS,
+  FRIEND_BITOFS,
+  LPN_BITOFS, /* Informative, not affect anything */
+  NETTX_BITOFS,
+  TTL_BITOFS,
+  SNB_BITOFS,
+  FEATURE_MAX_BITOFS
+}features_em;
+
+typedef enum {
   to_next_state_em = -1,
   /* Adding devices state(s) */
   provisioning_em = 0,
