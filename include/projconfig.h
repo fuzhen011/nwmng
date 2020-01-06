@@ -21,7 +21,8 @@ extern "C"
 
 #if __APPLE__ == 1
 #define PROJ_DIR  "/Users/zhfu/work/projs/nwmng/"
-#define PORT      "/dev/tty.usbmodem0004400502021"
+/* #define PORT      "/dev/tty.usbmodem0004400502021" */
+#define PORT      "/dev/tty.usbmodem0004400531901"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
 #define PORT      "/dev/ttyACM2"
