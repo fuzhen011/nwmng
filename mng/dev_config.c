@@ -74,6 +74,17 @@ static const acc_state_t as_addsub = {
   NULL
 };
 
+static const acc_state_t as_setconfig = {
+  setconfig_em,
+  setconfig_guard,
+  setconfig_entry,
+  setconfig_inprg,
+  setconfig_retry,
+  setconfig_exit,
+  is_setconfig_pkts,
+  NULL
+};
+
 static acc_state_t as_end = {
   end_em,
   NULL,
@@ -162,7 +173,7 @@ static inline void __add_default_states(void)
   add_state_after(&as_bindappkey, addappkey_em);
   add_state_after(&as_setpub, bindappkey_em);
   add_state_after(&as_addsub, setpub_em);
-  /* add_state_after(&setConfigsIns, addSub_em); */
+  add_state_after(&as_setconfig, addsub_em);
   /* add_state_after(&removeNodeIns, end_em); */
 }
 

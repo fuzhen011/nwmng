@@ -79,7 +79,7 @@ typedef enum {
   bindappkey_em,
   setpub_em,
   addsub_em,
-  set_config_em,
+  setconfig_em,
   end_em,
   /* Removing devices state(s) */
   reset_node_em,
@@ -213,6 +213,16 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
 int addsub_retry(config_cache_t *cache, int reason);
 int addsub_exit(void *p);
 bool is_addsub_pkts(uint32_t evtid);
+
+/*
+ * Set Config State
+ */
+bool setconfig_guard(const config_cache_t *cache);
+int setconfig_entry(config_cache_t *cache, func_guard guard);
+int setconfig_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
+int setconfig_retry(config_cache_t *cache, int reason);
+int setconfig_exit(void *p);
+bool is_setconfig_pkts(uint32_t evtid);
 
 /*
  * End State

@@ -359,12 +359,12 @@ int setconfig_retry(config_cache_t *cache, int reason)
   return ret;
 }
 
-int setConfigsStateExit(void *p)
+int setconfig_exit(void *p)
 {
   return asr_suc;
 }
 
-int isSetConfigsRelatedPacket(uint32_t evtid)
+bool is_setconfig_pkts(uint32_t evtid)
 {
   int i;
   for (i = 0; i < RELATE_EVENTS_NUM(); i++) {

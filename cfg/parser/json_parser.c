@@ -703,12 +703,14 @@ static void copy_tmpl_to_node(const tmpl_t *t,
 {
   ASSERT(t && n);
   if (t->ttl && !n->config.ttl) {
+    __set_feature_config(&n->config.features, TTL_BITOFS, true);
     alloc_copy(&n->config.ttl, t->ttl, sizeof(uint8_t));
   }
   if (t->sublist && !n->config.sublist) {
     alloc_copy_u16list(&n->config.sublist, t->sublist);
   }
   if (t->snb && !n->config.snb) {
+    __set_feature_config(&n->config.features, SNB_BITOFS, true);
     alloc_copy(&n->config.snb, t->snb, sizeof(uint8_t));
   }
   if (!(n->config.features.target & 0xf)
@@ -729,6 +731,7 @@ static void copy_tmpl_to_node(const tmpl_t *t,
     alloc_copy((uint8_t **)&n->config.pub, t->pub, sizeof(publication_t));
   }
   if (t->net_txp && !n->config.net_txp) {
+    __set_feature_config(&n->config.features, NETTX_BITOFS, true);
     alloc_copy((uint8_t **)&n->config.net_txp,
                t->net_txp,
                sizeof(txparam_t));
