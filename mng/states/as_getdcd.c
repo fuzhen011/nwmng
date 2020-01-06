@@ -23,37 +23,32 @@
 #define HEALTH_SERVER_MDID              0x0002
 #define HEALTH_CLIENT_MDID              0x0003
 
-#define GET_DCD_MSG                     "Node[%x]:  --- Get DCD\n"
-#define GET_DCD_SUC_MSG                 "Node[%x]:  --- Get DCD SUCCESS\n"
-#define GET_DCD_FAIL_MSG                "Node[%x]:  --- Get DCD Failed, Err <0x%04x>\n"
-
-#define ONCE_P(cache)                     \
-  do {                                    \
-    LOGD(GET_DCD_MSG, cache->node->addr); \
+#define ONCE_P(cache)                                    \
+  do {                                                   \
+    LOGD("Node[%x]:  --- Get DCD\n", cache->node->addr); \
   } while (0)
 
-#define SUC_P(cache)                          \
-  do {                                        \
-    LOGD(GET_DCD_SUC_MSG, cache->node->addr); \
+#define SUC_P(cache)                                             \
+  do {                                                           \
+    LOGD("Node[%x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
   } while (0)
 
-#define FAIL_P(cache, err)  \
-  do {                      \
-    LOGE(GET_DCD_FAIL_MSG,  \
-         cache->node->addr, \
-         err);              \
+#define FAIL_P(cache, err)                                \
+  do {                                                    \
+    LOGE("Node[%x]:  --- Get DCD Failed, Err <0x%04x>\n", \
+         cache->node->addr,                               \
+         err);                                            \
   } while (0)
 
 /* Global Variables *************************************************** */
 extern const char *stateNames[];
 
+/* Static Variables *************************************************** */
 static const uint32_t events[] = {
   gecko_evt_mesh_config_client_dcd_data_id,
   gecko_evt_mesh_config_client_dcd_data_end_id
 };
-
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))
-/* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
 static void __dcd_store(const uint8_t *data,
@@ -70,7 +65,7 @@ static int __dcd_get(config_cache_t *cache, mng_t *mng)
 
   if (rsp->result != bg_err_success) {
     if (rsp->result == bg_err_out_of_memory) {
-      OOM_SET(cache);
+      oom_set(cache);
       return asr_oom;
     }
     FAIL_P(cache, rsp->result);

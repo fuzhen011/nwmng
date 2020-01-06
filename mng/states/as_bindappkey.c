@@ -12,27 +12,13 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-
-/* Global Variables *************************************************** */
-
-/* Static Variables *************************************************** */
-
-/* Static Functions Declaractions ************************************* */
-
-#define BIND_KEY_MSG \
-  "Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)]\n"
-#define BIND_KEY_SUC_MSG \
-  "Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n"
-#define BIND_KEY_FAIL_MSG \
-  "Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] FAILED, Err <0x%04x>\n"
-
 #define ELEMENT_ITERATOR_INDEX  0
 #define MODEL_ITERATOR_INDEX  1
 #define APP_KEY_ITERATOR_INDEX  2
 
 #define ONCE_P(cache)                                                                    \
   do {                                                                                   \
-    LOGD(BIND_KEY_MSG,                                                                   \
+    LOGD("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)]\n",                    \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
@@ -42,7 +28,7 @@
 
 #define SUC_P(cache, config)                                                             \
   do {                                                                                   \
-    LOGD(BIND_KEY_SUC_MSG,                                                               \
+    LOGD("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n",            \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
@@ -50,26 +36,25 @@
          cache->vnm.md);                                                                 \
   } while (0)
 
-#define FAIL_P(cache, config, err)                                                       \
-  do {                                                                                   \
-    LOGE(BIND_KEY_FAIL_MSG,                                                              \
-         cache->node->addr,                                                              \
-         get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
-         cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
-         cache->vnm.vd,                                                                  \
-         cache->vnm.md,                                                                  \
-         err);                                                                           \
+#define FAIL_P(cache, config, err)                                                         \
+  do {                                                                                     \
+    LOGE("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] FAILED, Err <0x%04x>\n", \
+         cache->node->addr,                                                                \
+         get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id,   \
+         cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                                \
+         cache->vnm.vd,                                                                    \
+         cache->vnm.md,                                                                    \
+         err);                                                                             \
   } while (0)
 
 /* Global Variables *************************************************** */
 extern const char *stateNames[];
 
+/* Static Variables *************************************************** */
 static const uint32_t events[] = {
   gecko_evt_mesh_config_client_binding_status_id
 };
-
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))
-/* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
 static int iter_bindings(config_cache_t *cache);
@@ -105,7 +90,7 @@ static int __bind_appkey(config_cache_t *cache, mng_t *mng)
 
   if (rsp->result != bg_err_success) {
     if (rsp->result == bg_err_out_of_memory) {
-      OOM_SET(cache);
+      oom_set(cache);
       return asr_oom;
     }
     FAIL_P(cache, pconfig, rsp->result);

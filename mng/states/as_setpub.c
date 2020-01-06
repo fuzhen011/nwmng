@@ -113,7 +113,7 @@ static int __setpub(config_cache_t *cache, mng_t *mng)
 
   if (rsp->result != bg_err_success) {
     if (rsp->result == bg_err_out_of_memory) {
-      OOM_SET(cache);
+      oom_set(cache);
       return asr_oom;
     }
     FAIL_P(cache, rsp->result);

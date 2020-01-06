@@ -66,7 +66,7 @@ int dev_add_hdr(const struct gecko_cmd_packet *evt)
   ASSERT(evt);
 
   if (mng->state != adding_devices_em && mng->status.free_mode != 2) {
-    return 1;
+    return 0;
   }
 
   switch (BGLIB_MSG_ID(evt->header)) {

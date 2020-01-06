@@ -44,17 +44,10 @@ typedef struct {
 
 #define OOM(x) IS_BIT_SET((x)->flags, OOM_BIT_OFFSET)
 
-#define OOM_SET(x)                       \
+#define OOM_CLEAR(x)                     \
   do {                                   \
-    BIT_SET((x)->flags, OOM_BIT_OFFSET); \
-    OOM_SET_PRINT(x);                    \
-  } while (0)
-
-#define OOM_CLEAR(x) \
-  do{ \
     BIT_CLR((x)->flags, OOM_BIT_OFFSET); \
-  }while(0)
-
+  } while (0)
 
 #define RETRY_CLEAR(x)                            \
   do {                                            \
@@ -166,6 +159,8 @@ typedef struct {
     GList *fail;
   }lists;
 }mng_t;
+
+
 
 err_t mng_init(void *p);
 err_t init_ncp(void *p);

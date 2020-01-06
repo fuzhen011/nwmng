@@ -182,7 +182,7 @@ static int __setconfig(config_cache_t *cache, mng_t *mng)
 
   if (retval != bg_err_success) {
     if (retval == bg_err_out_of_memory) {
-      OOM_SET(cache);
+      oom_set(cache);
       return asr_oom;
     }
     set_configs_print_state(which, failed_em, cache, retval);

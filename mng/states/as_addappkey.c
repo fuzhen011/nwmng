@@ -12,35 +12,25 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-
-/* Global Variables *************************************************** */
-
-/* Static Variables *************************************************** */
-
-/* Static Functions Declaractions ************************************* */
-#define ADD_KEY_MSG        "Node[%x]:  --- Add App Key[%d (Ref ID)]\n"
-#define ADD_KEY_SUC_MSG    "Node[%x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n"
-#define ADD_KEY_FAIL_MSG   "Node[%x]:  --- Add App Key[%d (Ref ID)] FAILED, Err <0x%04x>\n"
-
 #define APP_KEY_ITERATOR_INDEX  0
 
 #define ONCE_P(cache)                                                                     \
   do {                                                                                    \
-    LOGD(ADD_KEY_MSG,                                                                     \
+    LOGD("Node[%x]:  --- Add App Key[%d (Ref ID)]\n",                                     \
          cache->node->addr,                                                               \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id); \
   } while (0)
 
 #define SUC_P(cache)                                                                      \
   do {                                                                                    \
-    LOGD(ADD_KEY_SUC_MSG,                                                                 \
+    LOGD("Node[%x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n",                            \
          cache->node->addr,                                                               \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id); \
   } while (0)
 
 #define FAIL_P(cache, err)                                                               \
   do {                                                                                   \
-    LOGE(ADD_KEY_FAIL_MSG,                                                               \
+    LOGE("Node[%x]:  --- Add App Key[%d (Ref ID)] FAILED, Err <0x%04x>\n",               \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          err);                                                                           \
@@ -49,12 +39,11 @@
 /* Global Variables *************************************************** */
 extern const char *stateNames[];
 
+/* Static Variables *************************************************** */
 static const uint32_t events[] = {
   gecko_evt_mesh_config_client_appkey_status_id
 };
-
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))
-/* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
 static int iter_appkey(config_cache_t *cache);
@@ -79,7 +68,7 @@ static int __add_appkey(config_cache_t *cache, mng_t *mng)
 
   if (rsp->result != bg_err_success) {
     if (rsp->result == bg_err_out_of_memory) {
-      OOM_SET(cache);
+      oom_set(cache);
       return asr_oom;
     }
     FAIL_P(cache, rsp->result);

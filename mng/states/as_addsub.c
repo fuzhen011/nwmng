@@ -12,26 +12,14 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-#define ADD_SUB_MSG \
-  "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n"
-#define ADD_SUB_SUC_MSG \
-  "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n"
-#define ADD_SUB_FAIL_MSG \
-  "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] FAILED, Err <0x%04x>\n"
-
 #define ELEMENT_ITERATOR_INDEX  0
 #define MODEL_ITERATOR_INDEX  1
 #define SUB_ADDR_ITERATOR_INDEX  2
 
-/* Global Variables *************************************************** */
-
-/* Static Variables *************************************************** */
-
-/* Static Functions Declaractions ************************************* */
 #define ONCE_P(cache)                                                                \
   do {                                                                               \
     LOGD(                                                                            \
-      ADD_SUB_MSG,                                                                   \
+      "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",                \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -42,7 +30,7 @@
 #define SUC_P(cache)                                                                 \
   do {                                                                               \
     LOGD(                                                                            \
-      ADD_SUB_SUC_MSG,                                                               \
+      "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -50,28 +38,26 @@
       cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]]); \
   } while (0)
 
-#define FAIL_P(cache, err)                                                          \
-  do {                                                                              \
-    LOGE(                                                                           \
-      ADD_SUB_FAIL_MSG,                                                             \
-      cache->node->addr,                                                            \
-      cache->iterators[ELEMENT_ITERATOR_INDEX],                                     \
-      cache->vnm.vd,                                                                \
-      cache->vnm.md,                                                                \
-      cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]], \
-      err);                                                                         \
+#define FAIL_P(cache, err)                                                                 \
+  do {                                                                                     \
+    LOGE(                                                                                  \
+      "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] FAILED, Err <0x%04x>\n", \
+      cache->node->addr,                                                                   \
+      cache->iterators[ELEMENT_ITERATOR_INDEX],                                            \
+      cache->vnm.vd,                                                                       \
+      cache->vnm.md,                                                                       \
+      cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]],        \
+      err);                                                                                \
   } while (0)
 
 /* Global Variables *************************************************** */
 extern const char *stateNames[];
 
+/* Static Variables *************************************************** */
 static const uint32_t events[] = {
   gecko_evt_mesh_config_client_model_sub_status_id
 };
-
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))
-/* Static Variables *************************************************** */
-typedef int (*funcPack)(void *, void *, void *);
 
 /* Static Functions Declaractions ************************************* */
 static int iter_addsub(config_cache_t *cache);
@@ -124,7 +110,7 @@ static int __addsub(config_cache_t *cache, mng_t *mng)
 
   if (retval != bg_err_success) {
     if (retval == bg_err_out_of_memory) {
-      OOM_SET(cache);
+      oom_set(cache);
       return asr_oom;
     }
     FAIL_P(cache, retval);
@@ -194,7 +180,8 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
           return asr_suc;
           break;
         case bg_err_mesh_foundation_insufficient_resources:
-          LOGW("Cannot sub more address, pass to next model\n");
+          LOGW("Node[%x]: Cannot sub more address, pass to next model\n",
+               cache->node->addr);
           cache->iterators[SUB_ADDR_ITERATOR_INDEX] = cache->node->config.sublist->len - 1;
           break;
         default:
@@ -231,26 +218,29 @@ int addsub_retry(config_cache_t *cache, int reason)
 
   ret = __addsub(cache, get_mng());
 
-  if (ret == asr_suc) {
-    switch (reason) {
-      case on_timeout_em:
-        if (!EVER_RETRIED(cache) || cache->remaining_retry-- <= 0) {
-          ASSERT(0);
-        }
-        RETRY_ONCE_PRINT(cache);
-        break;
-      case on_oom_em:
-        ASSERT(OOM(cache));
-        OOM_ONCE_PRINT(cache);
-        OOM_CLEAR(cache);
-        break;
-      case on_guard_timer_expired_em:
-        ASSERT(cache->expired);
-        EXPIRED_ONCE_PRINT(cache);
-        cache->expired = 0;
-        break;
-    }
+  if (ret != asr_suc) {
+    return ret;
   }
+
+  switch (reason) {
+    case on_timeout_em:
+      if (!EVER_RETRIED(cache) || cache->remaining_retry-- <= 0) {
+        ASSERT(0);
+      }
+      RETRY_ONCE_PRINT(cache);
+      break;
+    case on_oom_em:
+      ASSERT(OOM(cache));
+      OOM_ONCE_PRINT(cache);
+      OOM_CLEAR(cache);
+      break;
+    case on_guard_timer_expired_em:
+      ASSERT(cache->expired);
+      EXPIRED_ONCE_PRINT(cache);
+      cache->expired = 0;
+      break;
+  }
+
   return ret;
 }
 

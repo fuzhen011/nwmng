@@ -96,6 +96,28 @@ static acc_state_t as_end = {
   NULL
 };
 
+static const acc_state_t as_rm = {
+  rm_em,
+  rm_guard,
+  rm_entry,
+  rm_inprg,
+  rm_retry,
+  rm_exit,
+  is_rm_pkts,
+  NULL
+};
+
+static acc_state_t as_rmend = {
+  rmend_em,
+  NULL,
+  rmend_entry,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
+
 const char *stateNames[] = {
   "Provisioning",
   "Provisioned",
@@ -174,7 +196,7 @@ static inline void __add_default_states(void)
   add_state_after(&as_setpub, bindappkey_em);
   add_state_after(&as_addsub, setpub_em);
   add_state_after(&as_setconfig, addsub_em);
-  /* add_state_after(&removeNodeIns, end_em); */
+  /* add_state_after(&as_rm, end_em); */
 }
 
 static void __acc_reset(bool use_default)
@@ -204,7 +226,7 @@ static void __acc_reset(bool use_default)
 
   add_state_after(&as_get_dcd, -1);
   add_state_after(&as_end, get_dcd_em);
-  /* add_state_after(&removeendins, end_em); */
+  /* add_state_after(&as_rmend, end_em); */
   if (use_default) {
     __add_default_states();
   }
@@ -247,7 +269,7 @@ static void __cache_item_load(mng_t *mng,
     LOGM("Node[%x]: Configuring started\n", node->addr);
   } else if (type == type_rm) {
     cache->state = end_em;
-    cache->next_state = reset_node_em;
+    cache->next_state = rmend_em;
     LOGM("Node[%x]: Removing\n", node->addr);
   }
   BIT_SET(mng->cache.config.used, ofs);
@@ -256,23 +278,7 @@ static void __cache_item_load(mng_t *mng,
 static int __caches_load(mng_t *mng, int type)
 {
   int loaded = 0, ofs;
-#if 0
-  if (type == actionTBC) {
-    if (newDeviceAdded) {
-      getAction(actionTBC, 1);
-      newDeviceAdded = 0;
-      CS_LOG("Reload Action since new device added.\n");
-    }
-  }
 
-  actions = getLoadedActions();
-  if (!IS_ACTION_BIT_SET(actions, type)) {
-    return 0;
-  }
-
-  getNetworkConfig((void **)&pconfig);
-  hardASSERT(pconfig);
-#endif
   if (MAX_CONCURRENT_CONFIG_NODES == utils_popcount(mng->cache.config.used)
       || g_list_length(mng->lists.config) == 0) {
     /* No nodes to config or no room for config for now */
@@ -289,7 +295,6 @@ static int __caches_load(mng_t *mng, int type)
     mng->lists.config = g_list_remove_link(mng->lists.config, item);
     g_list_free(item);
   }
-
   return loaded;
 }
 
@@ -419,6 +424,7 @@ static int config_engine(void)
       }
     } else if (OOM(cache) && as->retry) {
       ASSERT(!WAIT_RESPONSE(cache));
+      LOGD("OOM set, now try to recover\n");
       ret = as->retry(cache, on_oom_em);
       if (ret == asr_oom) {
         LOGE("OOM once again, need backoff mechanism\n");
@@ -437,7 +443,7 @@ static int config_engine(void)
     }
 
     busy |= to_next_state(cache);
-    if (cache->state == end_em || cache->state == reset_node_end_em) {
+    if (cache->state == end_em || cache->state == rmend_em) {
       if (cache->err_cache.bgcall != 0
           || cache->err_cache.bgevt != 0) {
         /* Error happens, add the node to fail list */
@@ -544,20 +550,11 @@ int dev_config_hdr(const struct gecko_cmd_packet *e)
   ASSERT(state);
 
   if (WAIT_RESPONSE(cache) && state->inpg) {
-#if (DEBUG_ACC_VERBOSE == 1)
-    LOGD("onStateInProgress once.\n");
-#endif
     ret = state->inpg(e, cache);
   }
 
   /* Drived by timeout event */
-  if (!ret
-      && !WAIT_RESPONSE(cache)
-      && EVER_RETRIED(cache)
-      && state->retry) {
-#if (DEBUG_ACC_VERBOSE == 1)
-    CS_LOG("onStateRetry once.\n");
-#endif
+  if (!ret && !WAIT_RESPONSE(cache) && EVER_RETRIED(cache) && state->retry) {
     ret |= state->retry(cache, on_timeout_em);
   } else if (ret == asr_unspec) {
     return 0;

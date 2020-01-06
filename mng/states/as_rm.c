@@ -12,52 +12,35 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-#define REMOVE_NODE_MSG \
-  "Node[%x]:  --- RM\n"
-#define REMOVE_NODasr_suc_MSG \
-  "Node[%x]:  --- SUCCESS\n"
-#define REMOVE_NODE_FAIL_MSG \
-  "Node[%x]:  --- RM FAILED, Err <0x%04x>\n"
-
-/* Global Variables *************************************************** */
-
-/* Static Variables *************************************************** */
-
-/* Static Functions Declaractions ************************************* */
-#define ONCE_P(cache)     \
-  do {                    \
-    LOGD(                 \
-      REMOVE_NODE_MSG,    \
-      cache->node->addr); \
+#define ONCE_P(cache)           \
+  do {                          \
+    LOGD("Node[%x]:  --- RM\n", \
+         cache->node->addr);    \
   } while (0)
 
-#define SUC_P(cache)         \
-  do {                       \
-    LOGD(                    \
-      REMOVE_NODasr_suc_MSG, \
-      cache->node->addr);    \
+#define SUC_P(cache)                 \
+  do {                               \
+    LOGD("Node[%x]:  --- SUCCESS\n", \
+         cache->node->addr);         \
   } while (0)
 
-#define FAIL_P(cache, err)  \
-  do {                      \
-    LOGE(                   \
-      REMOVE_NODE_FAIL_MSG, \
-      cache->node->addr,    \
-      err);                 \
+#define FAIL_P(cache, err)                           \
+  do {                                               \
+    LOGE("Node[%x]:  --- RM FAILED, Err <0x%04x>\n", \
+         cache->node->addr,                          \
+         err);                                       \
   } while (0)
 
 /* Global Variables *************************************************** */
 extern const char *stateNames[];
 
+/* Static Variables *************************************************** */
 static const uint32_t events[] = {
   gecko_evt_mesh_config_client_reset_status_id
 };
-
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))
-/* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-
 static int __rm(config_cache_t *cache, mng_t *mng)
 {
   struct gecko_msg_mesh_config_client_reset_node_rsp_t *rsp;
@@ -69,7 +52,7 @@ static int __rm(config_cache_t *cache, mng_t *mng)
 
   if (rsp->result != bg_err_success) {
     if (rsp->result == bg_err_out_of_memory) {
-      OOM_SET(cache);
+      oom_set(cache);
       return asr_oom;
     }
     FAIL_P(cache, rsp->result);
@@ -191,7 +174,7 @@ int rm_exit(void *p)
   return asr_suc;
 }
 
-int is_rm_pkts(uint32_t evtid)
+bool is_rm_pkts(uint32_t evtid)
 {
   int i;
   for (i = 0; i < RELATE_EVENTS_NUM(); i++) {

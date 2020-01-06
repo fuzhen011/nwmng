@@ -16,6 +16,7 @@ extern "C"
 
 #include "mng.h"
 #include "gecko_bglib.h"
+#include "logging.h"
 
 #define SIG_VENDOR_ID 0xffff
 
@@ -82,8 +83,8 @@ typedef enum {
   setconfig_em,
   end_em,
   /* Removing devices state(s) */
-  reset_node_em,
-  reset_node_end_em
+  rm_em,
+  rmend_em
 }acc_state_emt;
 
 typedef enum {
@@ -152,7 +153,14 @@ static inline void err_set_to_rm_end(config_cache_t *cache,
                                      int err_type)
 {
   err_set(cache, errcode, err_type);
-  cache->next_state = reset_node_end_em;
+  cache->next_state = rmend_em;
+}
+
+extern const char *stateNames[];
+static inline void oom_set(config_cache_t *cache)
+{
+  BIT_SET(cache->flags, OOM_BIT_OFFSET);
+  LOGW(OOM_SET_MSG, cache->node->addr, stateNames[cache->state]);
 }
 
 int dev_config_hdr(const struct gecko_cmd_packet *e);
@@ -228,6 +236,21 @@ bool is_setconfig_pkts(uint32_t evtid);
  * End State
  */
 int end_entry(config_cache_t *cache, func_guard guard);
+
+/*
+ * RM State
+ */
+bool rm_guard(const config_cache_t *cache);
+int rm_entry(config_cache_t *cache, func_guard guard);
+int rm_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache);
+int rm_retry(config_cache_t *cache, int reason);
+int rm_exit(void *p);
+bool is_rm_pkts(uint32_t evtid);
+
+/*
+ * RM End State
+ */
+int rmend_entry(config_cache_t *cache, func_guard guard);
 #ifdef __cplusplus
 }
 #endif
