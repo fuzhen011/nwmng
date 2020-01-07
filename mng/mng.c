@@ -450,12 +450,6 @@ err_t clicb_info(int argc, char *argv[])
 {
   uint16_t addr;
   node_t *n;
-#if 0
-  if (mng.state != configured) {
-    bt_shell_printf("Busy, use sync 0 or wait\n");
-    return ec_success;
-  }
-#endif
   if (argc < 2) {
     return err(ec_param_invalid);
   }
@@ -466,6 +460,7 @@ err_t clicb_info(int argc, char *argv[])
     }
     if (NULL == (n = cfgdb_node_get(addr))) {
       LOGW("Info CMD invalid address[%s]\n", argv[i]);
+      bt_shell_printf("Info CMD invalid address[%s]\n", argv[i]);
       continue;
     }
     info_addr(n);
