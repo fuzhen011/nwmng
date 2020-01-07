@@ -41,6 +41,7 @@ enum {
 /* read type */
 enum {
   rdt_node,
+  rdt_node_str,
   rdt_modified
 };
 
@@ -111,6 +112,7 @@ err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr);
 err_t nodeset_errbits(uint16_t addr, lbitmap_t err);
 err_t nodeset_done(uint16_t addr, uint8_t done);
 err_t nodes_rm(uint16_t addr);
+const char *nodeget_cfgstr(uint16_t addr);
 #ifdef __cplusplus
 }
 #endif

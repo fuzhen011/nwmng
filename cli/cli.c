@@ -53,7 +53,6 @@ extern err_t cmd_ret;
 DECLARE_VAGET_FUN(addrs);
 
 DECLARE_CB(reset);
-DECLARE_CB(info);
 DECLARE_CB(help);
 DECLARE_CB(quit);
 DECLARE_CB(ct);
@@ -722,13 +721,6 @@ static err_t clicb_reset(int argc, char *argv[])
   get_mng()->state = nil;
   longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
   return 0;
-}
-
-static err_t clicb_info(int argc, char *argv[])
-{
-  bt_shell_printf("%s\n", __FUNCTION__);
-  get_mng()->state = adding_devices_em;
-  return err(ec_param_invalid);
 }
 
 static err_t clicb_help(int argc, char *argv[])

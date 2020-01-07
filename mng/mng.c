@@ -409,10 +409,6 @@ static gboolean load_lists(gpointer key, gpointer value, gpointer data)
   return FALSE;
 }
 
-/* int mng_evt_hdr(const void *ve) */
-/* { */
-/* } */
-
 err_t clicb_sync(int argc, char *argv[])
 {
   int s = 1;
@@ -434,7 +430,45 @@ err_t clicb_sync(int argc, char *argv[])
   return 0;
 }
 
-void on_lists_changed(void)
+static void info_addr(const node_t *node)
 {
-  set_mng_state();
+  const char *v = nodeget_cfgstr(node->addr);
+  struct gecko_msg_mesh_prov_ddb_get_rsp_t *rsp
+    = gecko_cmd_mesh_prov_ddb_get(16, node->uuid);
+
+  if (bg_err_success != rsp->result) {
+    LOGE("Error (0x%04x) Happened when trying getting dcd\n", rsp->result);
+    return;
+  }
+  cli_print_dev(node, rsp);
+  if (v) {
+    bt_shell_printf("%s\n", v);
+  }
+}
+
+err_t clicb_info(int argc, char *argv[])
+{
+  uint16_t addr;
+  node_t *n;
+#if 0
+  if (mng.state != configured) {
+    bt_shell_printf("Busy, use sync 0 or wait\n");
+    return ec_success;
+  }
+#endif
+  if (argc < 2) {
+    return err(ec_param_invalid);
+  }
+  for (int i = 1; i < argc; i++) {
+    if (ec_success != str2uint(argv[i], strlen(argv[i]), &addr, sizeof(uint16_t))) {
+      LOGD("str2uint failed\n");
+      continue;
+    }
+    if (NULL == (n = cfgdb_node_get(addr))) {
+      LOGW("Info CMD invalid address[%s]\n", argv[i]);
+      continue;
+    }
+    info_addr(n);
+  }
+  return ec_success;
 }

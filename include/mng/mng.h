@@ -182,6 +182,7 @@ void on_lists_changed(void);
 
 err_t clicb_sync(int argc, char *argv[]);
 err_t clicb_list(int argc, char *argv[]);
+err_t clicb_info(int argc, char *argv[]);
 #ifdef __cplusplus
 }
 #endif

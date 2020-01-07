@@ -52,7 +52,8 @@ set(HAL_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/hal/common/uart/uart_posix.c
     ${CMAKE_CURRENT_LIST_DIR}/hal/bg_uart_cbs.c
     ${CMAKE_CURRENT_LIST_DIR}/hal/socket_handler.c)
-set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c)
+set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c
+    ${CMAKE_CURRENT_LIST_DIR}/cli/cli_print.c)
 set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_add.c

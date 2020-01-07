@@ -1814,7 +1814,17 @@ err_t json_cfg_read(int cfg_fd,
       }
       *(uint8_t *)data = 0;
       return ec_success;
-      break;
+    case rdt_node_str:
+    {
+      json_object *obj = find_node(key, 0);
+      if (!obj) {
+        *(const char **)data = NULL;
+        return err(ec_not_exist);
+      }
+      const char *v = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY);
+      *(const char **)data = v;
+    }
+    break;
     default:
       return ec_param_invalid;
   }

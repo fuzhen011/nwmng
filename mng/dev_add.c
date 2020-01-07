@@ -167,8 +167,6 @@ static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_
 
   /* Remove from cache. */
   rmcached(mng, evt->uuid.data);
-
-  on_lists_changed();
 }
 
 static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)

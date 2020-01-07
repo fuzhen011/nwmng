@@ -16,6 +16,8 @@ extern "C"
 #include <readline/readline.h>
 
 #include "err.h"
+#include "cfgdb.h"
+#include "gecko_bglib.h"
 
 #define __DUMP_PARAMS
 #ifdef __DUMP_PARAMS
@@ -77,6 +79,8 @@ void *cli_mainloop(void *pIn);
  */
 void bt_shell_printf(const char *fmt, ...);
 
+void cli_print_dev(const node_t *node,
+                   const struct gecko_msg_mesh_prov_ddb_get_rsp_t *e);
 #ifdef __cplusplus
 }
 #endif

@@ -208,3 +208,13 @@ err_t nodeset_done(uint16_t addr, uint8_t done)
   elog(e);
   return e;
 }
+
+const char *nodeget_cfgstr(uint16_t addr)
+{
+  err_t e;
+  const char *v;
+  node_t *n = cfgdb_node_get(addr);
+  e = gp.read(NW_NODES_CFG_FILE, rdt_node_str, n->uuid, (void *)&v);
+  elog(e);
+  return v;
+}
