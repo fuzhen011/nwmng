@@ -20,17 +20,6 @@
 #include "nwk.h"
 #include "cfg.h"
 
-#if 0
-#include <sys/wait.h>
-
-#include <unistd.h>
-
-#include "bg_uart_cbs.h"
-#include "bg_uart_cbs.h"
-#include "projconfig.h"
-#include "utils.h"
-#endif
-
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */

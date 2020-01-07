@@ -134,3 +134,12 @@ Format: \[Time\]\[File:Line]\[Level\]: Log Message...
 \[2019-12-12 21:22:33\]\[xxx_source_xxx.c:225][MSG]: Initializing...
 
 ![Logging](doc/pic/logging.png)
+
+### Recommended NCP Target Configuration
+
+| Item                    | Value     | Note                                         |
+| ----------------------- | --------- | -------------------------------------------- |
+| Feature bitmask         | 0x0001    |                                              |
+| RPL size                | 128(0x80) | set to the expected network size if possible |
+| Net Cache Size          | 128(0x80) | set to the expected network size if possible |
+| Max Provisioned Devices | 128(0x80) | set to the expected network size             |

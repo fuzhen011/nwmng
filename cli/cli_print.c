@@ -6,6 +6,8 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <stdio.h>
+
 #include "cli.h"
 #include "logging.h"
 #include "utils.h"
@@ -17,12 +19,12 @@
 #define UUID_INFO     "UUID   --- "
 
 #define TMP_BUF_LEN 0xff
+
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-
 void cli_print_dev(const node_t *node,
                    const struct gecko_msg_mesh_prov_ddb_get_rsp_t *e)
 {

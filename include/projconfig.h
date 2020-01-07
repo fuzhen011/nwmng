@@ -19,18 +19,21 @@ extern "C"
 #define MAXSLEEP 128
 #define GC_EXP_DEV_NUM  128
 
+#define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"
+
 #if __APPLE__ == 1
 #define PROJ_DIR  "/Users/zhfu/work/projs/nwmng/"
-/* #define PORT      "/dev/tty.usbmodem0004400502021" */
-#define PORT      "/dev/tty.usbmodem0004400531901"
+#define PORT      "/dev/tty.usbmodem0004400502021"
+/* #define PORT      "/dev/tty.usbmodem0004400531901" */
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
 #define PORT      "/dev/ttyACM2"
-#endif
-
-#define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/test1/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/test1/nwk.json"
+#endif
+
 
 #define CLI_LOG_FILE_PATH PROJ_DIR "logs/cli.log"
 

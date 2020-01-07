@@ -20,7 +20,7 @@
         "TTL":"0x11",
         "TX Parameters":{
           "Count":"0x03",
-          "Interval":"0x001E"
+          "Interval":"0x01F4"
         }
       },
       "Secure Network Beacon":"0x01",
@@ -35,8 +35,6 @@
       "Subscribe from":[
         "0xD051",
         "0xD052",
-        "0xD053",
-        "0xD054",
         "0xC021"
       ]
     },
@@ -60,8 +58,6 @@
         "0x0000"
       ],
       "Subscribe from":[
-        "0xD051",
-        "0xD052",
         "0xD053",
         "0xD054",
         "0xC001"

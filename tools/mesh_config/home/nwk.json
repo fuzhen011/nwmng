@@ -1,0 +1,36 @@
+{
+  "SyncTime":"0x5e14aa2c",
+  "Subnets":[
+    {
+      "RefId":"0x0000",
+      "Nodes":[
+        {
+          "UUID":"53696c6162734465762d5a5631570b00",
+          "Address":"0x0004",
+          "Err":"0x00000000",
+          "Template ID":"0x01",
+          "RM_Blacklist":"0x00",
+          "Done":"0x01"
+        },
+        {
+          "UUID":"53696c6162734465762d525531570b00",
+          "Address":"0x0002",
+          "Err":"0x00000000",
+          "Template ID":"0x01",
+          "RM_Blacklist":"0x00",
+          "Done":"0x01"
+        },
+        {
+          "UUID":"53696c6162734465762d5c5531570b00",
+          "Address":"0x0001",
+          "Err":"0x00000000",
+          "Template ID":"0x21",
+          "RM_Blacklist":"0x00",
+          "Done":"0x00"
+        }
+      ]
+    }
+  ],
+  "Backlog":[
+  ]
+}
