@@ -8,6 +8,7 @@
 /* Includes *********************************************************** */
 #include "dev_config.h"
 #include "logging.h"
+#include "generic_parser.h"
 
 /* Defines  *********************************************************** */
 
@@ -22,30 +23,20 @@ static void __on_failed(config_cache_t *cache);
 
 int end_entry(config_cache_t *cache, func_guard guard)
 {
-  /* Alarm SHOULD be set in the main engine */
   if (cache->err_cache.bgcall != 0 || cache->err_cache.bgevt != 0) {
     __on_failed(cache);
   } else {
     /* Node is configured successfully */
     __on_success(cache);
   }
-
-  /* TODO: */
-  /* onDeviceDone(actionTBC, cache->nodeIndex); */
-  /* forceGenericReloadActions(); */
   return asr_suc;
 }
 
 static void __on_success(config_cache_t *cache)
 {
-  LOGM("Node[%x] Configured\n", cache->node->addr);
-
-  cache->node->err = 0;
-  /* TODO: */
-  /* setNodeErrBitsToFile(pconfig->pNodes[cache->nodeIndex].uuid, 0); */
-  cache->node->done = 0x01;
-  /* TODO: */
-  /* setNodeDoneToFile(pconfig->pNodes[cache->nodeIndex].uuid, 0x11); */
+  LOGM("Node[%x]: Configured\n", cache->node->addr);
+  nodeset_errbits(cache->node->addr, 0);
+  nodeset_done(cache->node->addr, 0x1);
 }
 
 static void __on_failed(config_cache_t *cache)
@@ -70,9 +61,6 @@ static void __on_failed(config_cache_t *cache)
            cache->err_cache.general);
     }
   }
-
   err = (cache->err_cache.bgevt | cache->err_cache.bgcall) & 0x7FFFFFFF;
-  cache->node->err = err;
-  /* TODO: */
-  /* setNodeErrBitsToFile(pconfig->pNodes[cache->nodeIndex].uuid, err); */
+  nodeset_errbits(cache->node->addr, err);
 }

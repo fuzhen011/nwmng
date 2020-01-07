@@ -145,7 +145,7 @@ int rm_retry(config_cache_t *cache, int reason)
 
   ret = __rm(cache, get_mng());
 
-  if (ret == asr_suc) {
+  if (ret != asr_suc) {
     return ret;
   }
   switch (reason) {

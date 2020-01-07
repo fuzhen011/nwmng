@@ -170,6 +170,47 @@ err_t init_ncp(void *p)
  */
 static void set_mng_state(void)
 {
+  if (mng.state < starting || mng.state > blacklisting_devices_em) {
+    return;
+  }
+
+  if (mng.state == adding_devices_em) {
+    if (g_list_length(mng.lists.add)) {
+      return;
+    }
+    /* All unprovisioned devices have been provisioned */
+    if (mng.status.free_mode < 2) {
+      clm_set_scan(0);
+    }
+    if (g_list_length(mng.lists.config) || mng.cache.config.used) {
+      /* configuring in progress, switch directly */
+      mng.state = configuring_devices_em;
+    }
+    mng.state = state_reload;
+  } else if (mng.state == configuring_devices_em) {
+    if (g_list_length(mng.lists.config) || mng.cache.config.used) {
+      return;
+    }
+    /* All nodes have been configured properly */
+    /* TODO */
+    /* Need to stop the acc engine */
+    mng.state = state_reload;
+  } else if (mng.state == removing_devices_em) {
+    if (g_list_length(mng.lists.rm) || mng.cache.config.used) {
+      return;
+    }
+    /* All RM set nodes have been removed properly */
+    /* TODO */
+    /* Need to stop the acc engine */
+    mng.state = state_reload;
+  } else if (mng.state == blacklisting_devices_em) {
+    if (g_list_length(mng.lists.rm) || mng.cache.bl.state != bl_idle) {
+      return;
+    }
+    /* All RM set nodes have been removed properly */
+    mng.state = state_reload;
+  }
+
   if (g_list_length(mng.lists.add)) {
     if (mng.status.free_mode == 0) {
       clm_set_scan(1);
@@ -180,7 +221,13 @@ static void set_mng_state(void)
     mng.state = configuring_devices_em;
     acc_init(true);
   } else if (g_list_length(mng.lists.rm)) {
+    mng.state = removing_devices_em;
+    acc_init(true);
   } else if (g_list_length(mng.lists.bl)) {
+    mng.state = blacklisting_devices_em;
+    acc_init(true);
+  } else {
+    mng.state = configured;
   }
 }
 
@@ -195,11 +242,13 @@ void *mng_mainloop(void *p)
         if (file_modified(NW_NODES_CFG_FILE)) {
           load_cfg_file(NW_NODES_CFG_FILE, 0);
         }
-        set_mng_state();
         break;
       case adding_devices_em:
       /* Do adding_devices_em only jobs */
       case configuring_devices_em:
+        busy |= acc_loop(&mng);
+        break;
+      case removing_devices_em:
         busy |= acc_loop(&mng);
         break;
       case stopping:
@@ -211,6 +260,7 @@ void *mng_mainloop(void *p)
       default:
         break;
     }
+    set_mng_state();
     if (!busy) {
       usleep(10 * 1000);
     }

@@ -382,13 +382,6 @@ gboolean copy_addr_to_user(gpointer key,
   return FALSE;
 }
 
-int get_ng_addrs(uint16_t *addrs)
-{
-  offs = 0;
-  g_tree_foreach(db.devdb.nodes, copy_addr_to_user, addrs);
-  return offs;
-}
-
 uint16list_t *get_node_addrs(void)
 {
   uint16list_t *addr;

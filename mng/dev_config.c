@@ -251,6 +251,7 @@ enum {
   type_config,
   type_rm,
 };
+
 static void __cache_item_load(mng_t *mng,
                               int ofs,
                               node_t *node,
@@ -269,8 +270,8 @@ static void __cache_item_load(mng_t *mng,
     LOGM("Node[%x]: Configuring started\n", node->addr);
   } else if (type == type_rm) {
     cache->state = end_em;
-    cache->next_state = rmend_em;
-    LOGM("Node[%x]: Removing\n", node->addr);
+    cache->next_state = rm_em;
+    LOGM("Node[%x]: Removing started\n", node->addr);
   }
   BIT_SET(mng->cache.config.used, ofs);
 }
@@ -280,19 +281,24 @@ static int __caches_load(mng_t *mng, int type)
   int loaded = 0, ofs;
 
   if (MAX_CONCURRENT_CONFIG_NODES == utils_popcount(mng->cache.config.used)
-      || g_list_length(mng->lists.config) == 0) {
+      || g_list_length((type == type_config)
+                       ? mng->lists.config : mng->lists.rm) == 0) {
     /* No nodes to config or no room for config for now */
     return 0;
   }
 
   while ((ofs = utils_frz(mng->cache.config.used)) < MAX_CONCURRENT_CONFIG_NODES) {
-    GList *item = g_list_first(mng->lists.config);
+    GList *item = g_list_first((type == type_config) ? mng->lists.config : mng->lists.rm);
     if (!item) {
       break;
     }
     __cache_item_load(mng, ofs, item->data, type);
     loaded++;
-    mng->lists.config = g_list_remove_link(mng->lists.config, item);
+    if (type == type_config) {
+      mng->lists.config = g_list_remove_link(mng->lists.config, item);
+    } else {
+      mng->lists.rm = g_list_remove_link(mng->lists.rm, item);
+    }
     g_list_free(item);
   }
   return loaded;
@@ -431,7 +437,7 @@ static int config_engine(void)
       } else if (ret != asr_suc) {
         LOGE("OOM Retry Return %d\n", ret);
       } else {
-        LOGD("Node[0x%x]: OOM Recovery Once.\n", cache->node->addr);
+        LOGD("Node[%x]: OOM Recovery Once.\n", cache->node->addr);
       }
     }
 
@@ -449,8 +455,8 @@ static int config_engine(void)
         /* Error happens, add the node to fail list */
         mng->lists.fail = g_list_append(mng->lists.fail, cache->node);
       }
-      bt_shell_printf("Node[0x%x] Configured\n", cache->node->addr);
-      LOGM("Node[0x%x] Configured\n", cache->node->addr);
+      bt_shell_printf("Node[%x] Configured\n", cache->node->addr);
+      LOGM("Node[%x] Configured\n", cache->node->addr);
       __cache_reset_idx(i);
     }
   }

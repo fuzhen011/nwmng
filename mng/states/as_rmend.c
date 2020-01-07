@@ -10,6 +10,7 @@
 #include "dev_config.h"
 #include "utils.h"
 #include "logging.h"
+#include "generic_parser.h"
 
 /* Defines  *********************************************************** */
 
@@ -25,36 +26,22 @@ static void __on_failed(config_cache_t *cache);
 
 int rmend_entry(config_cache_t *cache, func_guard guard)
 {
-  /* Alarm SHOULD be set in the main engine */
   if (cache->err_cache.bgcall != 0 || cache->err_cache.bgevt != 0) {
     __on_failed(cache);
   } else {
-    /* Node is configured successfully */
+    /* Node is removed successfully */
     __on_success(cache);
   }
-
-  /* TODO: */
-  /* onDeviceDone(actionTBR, cache->node->addr); */
-  /* forceGenericReloadActions(); */
   return asr_suc;
 }
 
-/* static void __on_success(config_cache_t *cache, networkConfig_t *pconfig) */
-/* { */
-/* } */
 static void __on_success(config_cache_t *cache)
 {
-  LOGM("Node[%x] Has Been Removed Properly.\n", cache->node->addr);
+  LOGM("Node[%x]: Has Been Removed Properly.\n", cache->node->addr);
 
-  cache->node->err = 0;
-  /* TODO */
-  /* setNodeErrBitsToFile(pconfig->pNodes[cache->node->addr].uuid, 0); */
-
-  cache->node->done = 0;
-  /* TODO */
-  /* setNodeDoneToFile(pconfig->pNodes[cache->node->addr].uuid, */
-                    /* pconfig->pNodes[cache->node->addr].done); */
-  /* removeDeviceFromLDDB(typeTBR, cache->node->addr); */
+  nodeset_errbits(cache->node->addr, 0);
+  nodeset_done(cache->node->addr, 0);
+  nodes_rm(cache->node->addr);
 }
 
 static void __on_failed(config_cache_t *cache)
@@ -81,7 +68,5 @@ static void __on_failed(config_cache_t *cache)
   }
 
   err = (cache->err_cache.bgevt | cache->err_cache.bgcall) & 0x7FFFFFFF;
-  cache->node->err = err;
-  /* TODO */
-  /* setNodeErrBitsToFile(pconfig->pNodes[cache->node->addr].uuid, err); */
+  nodeset_errbits(cache->node->addr, err);
 }

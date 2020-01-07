@@ -35,7 +35,7 @@ extern "C"
 
 #define RETRY_OUT_PRINT(x) LOGE(RETRY_OUT_MSG, (x)->node->addr);
 #define RETRY_ONCE_PRINT(x) \
-  LOGD(RETRY_MSG, (x)->node->addr, stateNames[(x)->state], (x)->remaining_retry);
+  LOGW(RETRY_MSG, (x)->node->addr, stateNames[(x)->state], (x)->remaining_retry);
 #define OOM_SET_PRINT(x) \
   LOGD(OOM_SET_MSG, (x)->node->addr, stateNames[(x)->state]);
 #define OOM_ONCE_PRINT(x) \

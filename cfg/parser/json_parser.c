@@ -928,9 +928,9 @@ static err_t load_template(void)
     }
     e = load_to_tmpl_item(n, t);
     elog(e);
+    t->refid = refid;
     if (add) {
       if (e == ec_success) {
-        t->refid = refid;
         EC(ec_success, cfgdb_tmpl_add(t));
       } else {
         free(t);
@@ -1171,14 +1171,16 @@ static void __load_node_arr(json_object *pnode, bool backlog)
     e = load_to_node_item(n, t);
     elog(e);
 
+    t->addr = addr;
+    memcpy(t->uuid, uuid, 16);
+    t->done = done;
+    t->rmorbl = rmbl;
+    t->err = errbits;
     if (add) {
       if (e == ec_success) {
-        t->addr = addr;
-        memcpy(t->uuid, uuid, 16);
-        t->done = done;
-        t->rmorbl = rmbl;
-        t->err = errbits;
-        if (addr) {
+        if (backlog) {
+          e = cfgdb_backlog_add(t);
+        } else if (addr) {
           e = cfgdb_nodes_add(t);
         } else {
           e = cfgdb_unpl_add(t);

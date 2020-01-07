@@ -151,11 +151,10 @@ err_t load_cfg_file(int cfg_fd, bool force_reload)
     elog(e);
     return e;
   }
-#if 1
   if (cfg_fd == NW_NODES_CFG_FILE) {
     mng_load_lists();
   }
-#endif
+  gp.flush(cfg_fd); /* Update the synctime value */
   return ec_success;
 }
 
@@ -170,5 +169,42 @@ err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr)
   cfgdb_unpl_remove(n, 0);
   n->addr = addr;
   cfgdb_nodes_add(n);
+  return e;
+}
+
+err_t nodes_rm(uint16_t addr)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  cfgdb_nodes_remove(n, 0);
+  n->addr = 0;
+  cfgdb_unpl_add(n);
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_addr, n->uuid, (void *)&n->addr);
+  elog(e);
+  return e;
+}
+
+err_t nodeset_errbits(uint16_t addr, lbitmap_t err)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  n->err = err;
+
+  e = gp.write(NW_NODES_CFG_FILE, wrt_errbits, (void *)n->uuid, (void *)&err);
+  elog(e);
+  return e;
+}
+
+err_t nodeset_done(uint16_t addr, uint8_t done)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  n->done = done;
+
+  e = gp.write(NW_NODES_CFG_FILE, wrt_done, (void *)n->uuid, (void *)&done);
+  elog(e);
   return e;
 }

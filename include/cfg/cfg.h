@@ -11,11 +11,9 @@
 extern "C"
 {
 #endif
-
 #include "err.h"
 
 err_t cfg_init(void *p);
-int get_ng_addrs(uint16_t *addrs);
 
 #ifdef __cplusplus
 }
