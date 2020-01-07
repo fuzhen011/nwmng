@@ -1178,7 +1178,11 @@ static void __load_node_arr(json_object *pnode, bool backlog)
         t->done = done;
         t->rmorbl = rmbl;
         t->err = errbits;
-        e = cfgdb_add(t);
+        if (addr) {
+          e = cfgdb_nodes_add(t);
+        } else {
+          e = cfgdb_unpl_add(t);
+        }
         elog(e);
       } else {
         free(t);
@@ -1207,8 +1211,8 @@ static err_t load_json_file(int cfg_fd, bool clrdb)
     return load_template();
   } else if (cfg_fd == NW_NODES_CFG_FILE) {
     if (clrdb) {
-      elog(cfgdb_remove_all_nodes());
-      elog(cfgdb_remove_all_upl());
+      cfgdb_remove_all_nodes();
+      cfgdb_remove_all_upl();
     }
     return load_nodes();
   } else if (cfg_fd == PROV_CFG_FILE) {
@@ -1496,14 +1500,14 @@ static err_t _backlog_node_add(const uint8_t *uuid)
 
   n = calloc(1, sizeof(node_t));
   memcpy(n->uuid, uuid, 16);
-  if (ec_success != (e = cfgdb_add(n))) {
+  if (ec_success != (e = cfgdb_backlog_add(n))) {
     free(n);
     goto fail;
   }
 
   fail:
   if (e != ec_success) {
-    cfgdb_remove(n, 1);
+    cfgdb_backlog_remove(n, 1);
     json_object_put(obj);
   }
   return ec_success;

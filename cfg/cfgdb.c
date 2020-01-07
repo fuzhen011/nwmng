@@ -6,6 +6,7 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -36,11 +37,13 @@
 #define NODE_KEY(n) (KEY_FROM_ADDR(n->addr))
 
 #define TMPL_KEY(refid) ((gpointer)(&(refid)))
+
 /* Get the hash table by address and template ID fields */
 #define __HTB(addr, tmpl)                       \
   ((addr) ? db.devdb.nodes                      \
    : ((tmpl) && *(tmpl)) ? db.devdb.unprov_devs \
    : db.devdb.backlog)
+
 #define _HTB(addr) ((addr) ? db.devdb.nodes : db.devdb.unprov_devs)
 
 #define G_KEY(n) ((n)->addr == 0 ? UNPROV_DEV_KEY((n)) : NODE_KEY((n)))
@@ -50,6 +53,7 @@
 static cfgdb_t db = { 0 };
 
 /* Static Functions Declaractions ************************************* */
+static err_t __cfgdb_remove(node_t *n, GTree *tree, bool destory);
 void dump__(gpointer key,
             gpointer value,
             gpointer ud)
@@ -94,23 +98,27 @@ static void tmpl_free(void *p)
   SAFE_FREE(t);
 }
 
-gint u16_comp(gconstpointer a, gconstpointer b, gpointer user_data)
+static gint u16_comp(gconstpointer a, gconstpointer b, gpointer user_data)
 {
   return (*(uint16_t *)a == *(uint16_t *)b ? 0
           : *(uint16_t *)a > *(uint16_t *)b ? 1 : -1);
 }
 
-gint uuid_comp(gconstpointer a, gconstpointer b, gpointer user_data)
+static gint uuid_comp(gconstpointer a, gconstpointer b, gpointer user_data)
 {
   return memcmp(a, b, 16);
 }
 
 err_t cfgdb_init(void)
 {
+  int ret;
   if (db.initialized) {
     return ec_success;
   }
 
+  if (0 != (ret = pthread_rwlock_init(&db.lock, NULL))) {
+    err_exit_en(ret, "pthread_rwlock_init");
+  }
   /* Initialize the device database */
   db.devdb.unprov_devs = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
   db.devdb.nodes = g_tree_new_full(u16_comp, NULL, NULL, node_free);
@@ -118,7 +126,6 @@ err_t cfgdb_init(void)
   db.devdb.backlog = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
   db.devdb.lights = g_queue_new();
   db.initialized = 1;
-
   return ec_success;
 }
 
@@ -127,6 +134,8 @@ void cfgdb_deinit(void)
   if (!db.initialized) {
     return;
   }
+  pthread_rwlock_destroy(&db.lock);
+
   if (db.devdb.pubgroups) {
     g_list_free_full(db.devdb.pubgroups, free);
     db.devdb.pubgroups = NULL;
@@ -166,47 +175,35 @@ void cfgdb_deinit(void)
   db.initialized = 0;
 }
 
-err_t cfgdb_remove_all_nodes(void)
+int cfgdb_get_devnum(int which)
 {
-  if (!db.initialized) {
-    return err(ec_state);
-  }
-  g_tree_destroy(db.devdb.nodes);
-  db.devdb.nodes = g_tree_new_full(u16_comp, NULL, NULL, node_free);
-  return ec_success;
-}
-
-err_t cfgdb_remove_all_upl(void)
-{
-  if (!db.initialized) {
-    return err(ec_state);
-  }
-  g_tree_destroy(db.devdb.unprov_devs);
-  db.devdb.unprov_devs = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
-  return ec_success;
-}
-#if 0
-int cfgdb_contains(const node_t *n)
-{
+  int ret;
   CHECK_STATE(0);
-  if (!n) {
-    return 0;
+  pthread_rwlock_rdlock(&db.lock);
+  switch (which) {
+    case tmpl_em:
+      ret = g_tree_nnodes(db.devdb.templates);
+      break;
+    case upl_em:
+      ret = g_tree_nnodes(db.devdb.unprov_devs);
+      break;
+    case nodes_em:
+      ret = g_tree_nnodes(db.devdb.nodes);
+      break;
+    case backlog_em:
+      ret = g_tree_nnodes(db.devdb.backlog);
+      break;
+    default:
+      ret = 0;
   }
-  return g_hash_table_contains(G_HTB(n), G_KEY(n));
-}
-#endif
-
-int cfgdb_devnum(bool proved)
-{
-  CHECK_STATE(0);
-  return g_tree_nnodes(_HTB(proved));
+  pthread_rwlock_unlock(&db.lock);
+  return ret;
 }
 
 node_t *cfgdb_node_get(uint16_t addr)
 {
   CHECK_NULL_RET();
-  return (node_t *)g_tree_lookup(db.devdb.nodes,
-                                 KEY_FROM_ADDR(addr));
+  return (node_t *)g_tree_lookup(db.devdb.nodes, KEY_FROM_ADDR(addr));
 }
 
 node_t *cfgdb_unprov_dev_get(const uint8_t *uuid)
@@ -215,8 +212,7 @@ node_t *cfgdb_unprov_dev_get(const uint8_t *uuid)
   if (!uuid) {
     return NULL;
   }
-  return (node_t *)g_tree_lookup(db.devdb.unprov_devs,
-                                 KEY_FROM_UUID(uuid));
+  return (node_t *)g_tree_lookup(db.devdb.unprov_devs, KEY_FROM_UUID(uuid));
 }
 
 node_t *cfgdb_backlog_get(const uint8_t *uuid)
@@ -225,24 +221,18 @@ node_t *cfgdb_backlog_get(const uint8_t *uuid)
   if (!uuid) {
     return NULL;
   }
-  return (node_t *)g_tree_lookup(db.devdb.backlog,
-                                 KEY_FROM_UUID(uuid));
+  return (node_t *)g_tree_lookup(db.devdb.backlog, KEY_FROM_UUID(uuid));
 }
-
-static node_t *__cfgdb_get(node_t *n)
-{
-  return (node_t *)g_tree_lookup(G_HTB(n), G_KEY(n));
-}
-
-/* err_t cfgdb_tmpl_add(tmpl_t *t) */
-/* { */
-/* } */
 
 tmpl_t *cfgdb_tmpl_get(uint16_t refid)
 {
-  return (tmpl_t *)g_tree_lookup(db.devdb.templates,
-                                 TMPL_KEY(refid));
+  return (tmpl_t *)g_tree_lookup(db.devdb.templates, TMPL_KEY(refid));
 }
+
+/* static node_t *__cfgdb_get(node_t *n) */
+/* { */
+/* return (node_t *)g_tree_lookup(G_HTB(n), G_KEY(n)); */
+/* } */
 
 err_t cfgdb_tmpl_remove(tmpl_t *n)
 {
@@ -279,50 +269,103 @@ err_t cfgdb_tmpl_add(tmpl_t *n)
   return ec_success;
 }
 
-err_t cfgdb_add(node_t *n)
+static err_t __cfgdb_add(node_t *n, GTree *tree)
 {
   err_t e;
-  node_t *tmp;
+  node_t *node;
   CHECK_STATE(ec_state);
-  if (!n) {
+  if (!n || !tree) {
     return err(ec_param_invalid);
   }
   /* Check if it's already in? */
-  tmp = __cfgdb_get(n);
-  if (tmp && tmp != n) {
+  pthread_rwlock_rdlock(&db.lock);
+  node = g_tree_lookup(tree, G_KEY(n));
+  pthread_rwlock_unlock(&db.lock);
+  if (node && node != n) {
     /* key n->addr already has a value in tree and the value doesn't equal
      * to n, need to remove and free it first, then add */
-    e = cfgdb_remove(tmp, 1);
-    if (ec_success != e) {
+    if (ec_success != (e = __cfgdb_remove(node, tree, 1))) {
       return e;
     }
-  } else if (n == tmp) {
+  } else if (n == node) {
     return ec_success;
   }
 
-  g_tree_insert(G_HTB(n), G_KEY(n), n);
+  pthread_rwlock_wrlock(&db.lock);
+  g_tree_insert(tree, G_KEY(n), n);
+  pthread_rwlock_unlock(&db.lock);
+
   /* TODO: Also update the lists */
   return ec_success;
 }
 
-err_t cfgdb_remove(node_t *n, bool destory)
+err_t cfgdb_backlog_add(node_t *n)
+{
+  return __cfgdb_add(n, db.devdb.backlog);
+}
+
+err_t cfgdb_unpl_add(node_t *n)
+{
+  return __cfgdb_add(n, db.devdb.unprov_devs);
+}
+
+err_t cfgdb_nodes_add(node_t *n)
+{
+  return __cfgdb_add(n, db.devdb.nodes);
+}
+
+static err_t __cfgdb_remove(node_t *n, GTree *tree, bool destory)
 {
   CHECK_STATE(ec_state);
-  if (!n) {
+  if (!n || !tree) {
     return err(ec_param_invalid);
   }
+  pthread_rwlock_wrlock(&db.lock);
   if (destory) {
     g_tree_remove(G_HTB(n), G_KEY(n));
   } else {
     g_tree_steal(G_HTB(n), G_KEY(n));
   }
-  /* TODO: Also update the lists */
+  pthread_rwlock_unlock(&db.lock);
   return ec_success;
+}
+
+err_t cfgdb_backlog_remove(node_t *n, bool destory)
+{
+  return __cfgdb_remove(n, db.devdb.backlog, destory);
+}
+
+err_t cfgdb_unpl_remove(node_t *n, bool destory)
+{
+  return __cfgdb_remove(n, db.devdb.unprov_devs, destory);
+}
+
+err_t cfgdb_nodes_remove(node_t *n, bool destory)
+{
+  return __cfgdb_remove(n, db.devdb.nodes, destory);
 }
 
 provcfg_t *get_provcfg(void)
 {
   return &db.self;
+}
+
+void cfgdb_remove_all_upl(void)
+{
+  CHECK_VOID_RET();
+  pthread_rwlock_wrlock(&db.lock);
+  g_tree_destroy(db.devdb.unprov_devs);
+  db.devdb.unprov_devs = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
+  pthread_rwlock_unlock(&db.lock);
+}
+
+void cfgdb_remove_all_nodes(void)
+{
+  CHECK_VOID_RET();
+  pthread_rwlock_wrlock(&db.lock);
+  g_tree_destroy(db.devdb.nodes);
+  db.devdb.nodes = g_tree_new_full(u16_comp, NULL, NULL, node_free);
+  pthread_rwlock_unlock(&db.lock);
 }
 
 void set_provcfg(const provcfg_t *src)
@@ -344,6 +387,26 @@ int get_ng_addrs(uint16_t *addrs)
   offs = 0;
   g_tree_foreach(db.devdb.nodes, copy_addr_to_user, addrs);
   return offs;
+}
+
+uint16list_t *get_node_addrs(void)
+{
+  uint16list_t *addr;
+  int num;
+
+  num = cfgdb_get_devnum(nodes_em);
+  if (!num) {
+    return NULL;
+  }
+  addr = calloc(1, sizeof(uint16list_t));
+  addr->data = calloc(num, sizeof(uint16_t));
+
+  addr->len = num;
+  offs = 0;
+  pthread_rwlock_rdlock(&db.lock);
+  g_tree_foreach(db.devdb.nodes, copy_addr_to_user, addr->data);
+  pthread_rwlock_unlock(&db.lock);
+  return addr;
 }
 
 void cfg_load_mnglists(GTraverseFunc func)

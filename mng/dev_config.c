@@ -196,7 +196,7 @@ static inline void __add_default_states(void)
   add_state_after(&as_setpub, bindappkey_em);
   add_state_after(&as_addsub, setpub_em);
   add_state_after(&as_setconfig, addsub_em);
-  /* add_state_after(&as_rm, end_em); */
+  add_state_after(&as_rm, end_em);
 }
 
 static void __acc_reset(bool use_default)
@@ -226,7 +226,7 @@ static void __acc_reset(bool use_default)
 
   add_state_after(&as_get_dcd, -1);
   add_state_after(&as_end, get_dcd_em);
-  /* add_state_after(&as_rmend, end_em); */
+  add_state_after(&as_rmend, end_em);
   if (use_default) {
     __add_default_states();
   }

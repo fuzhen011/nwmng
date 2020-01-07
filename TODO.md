@@ -4,8 +4,6 @@
 
 - [] Config file format
   - [] JSON - Bluetooth SIG JSON device database format - search in SF
-- [] Unix domain socket
-  - [] utils level handler
 
 ## CLI
 
@@ -20,7 +18,6 @@
 - [] Trap Ctrl-C to end all operations.
 - [] Finish the command execs
 - [] Separate CLI and MNG to 2 threads
-  - [] Move all the socket related function to mng component
 
 ## MNG
 

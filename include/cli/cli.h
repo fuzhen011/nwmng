@@ -39,7 +39,16 @@ extern "C"
          (cmd)->doc)
 
 typedef err_t (*cmd_exec_func_t)(int argc, char *argv[]);
-
+/**
+ * @brief - variable parameters get function.
+ *
+ * @param vap - buffer to store the parameters
+ * @param inbuflen - buffer length
+ * @param ulen - parameter unit length
+ * @param rlen - total parameters length
+ *
+ * @return @ref{err_t}
+ */
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
@@ -55,10 +64,6 @@ typedef struct {
 }command_t;
 
 err_t cli_init(void *p);
-
-void on_sock_disconn(void);
-
-int get_children(pid_t **p);
 
 err_t cli_proc_init(int child_num, const pid_t *pids);
 int cli_proc(int argc, char *argv[]);

@@ -28,15 +28,6 @@ it, leave it to future.
 
 3 parts: CLI, MNG, CFG, CLI and MNG are in the same process while CFG runs on a separated process.
 
-### IPC Strategy
-
-Unix domain socket, network socket.
-
-IPC protocol between cli-mng and cfg processes, where cli-mng as socket client and cfg as socket server, using the basic command-response-event mechanism.
-
-Generally, for cli-mng to synchronize the configuration with cfg, it starts with
-one or more commands "set-xxx", followed with a command "execute-yyy".
-
 ## CLI
 
 The command line interface process, which receives commands from user and

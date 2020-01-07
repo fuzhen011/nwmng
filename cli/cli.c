@@ -21,12 +21,10 @@
 
 #include <wordexp.h>
 
-#include <sys/socket.h>
-
 #include <readline/history.h>
 
 #include "projconfig.h"
-#include "climng_startup.h"
+#include "startup.h"
 #include "utils.h"
 #include "err.h"
 #include "logging.h"
@@ -80,7 +78,7 @@ const command_t commands[] = {
   { "info", "[addr...]", clicb_info,
     "Show the device information in the database",
     NULL, NULL, vaget_addrs },
-  { "scan", "[on/off]", clicb_scan,
+  { "freemode", "[on/off]", clicb_scan,
     "Turn on/off unprovisioned beacon scanning" },
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -104,7 +102,6 @@ char **shell_completion(const char *text, int start, int end);
 static int addr_in_cfg(const char *straddr,
                        uint16_t *addr)
 {
-  /* TODO: socket to CFG to get dev */
   uint16_t addrtmp;
   if (ec_success != str2uint(straddr, strlen(straddr), &addrtmp, sizeof(uint16_t))) {
     LOGD("str2uint failed\n");
@@ -133,20 +130,24 @@ static err_t vaget_addrs(void *vap,
     return err(ec_param_null);
   }
   char *p = vap;
+  uint16list_t *addrs;
 
   *ulen = ADDRULEN;
-  uint16_t *addrs = calloc(VAP_LEN / ADDRULEN, sizeof(uint16_t));
-  /* int num = get_ng_addrs(addrs); */
-  int num = 1;
-  /* TODO: Add it when ipc done */
-  if (num * (*ulen) > inbuflen ) {
-    num = inbuflen / (*ulen);
-  }
-  *rlen = num * (*ulen);
 
-  while (num--) {
-    addr_to_buf(addrs[num], &p[num * (*ulen)]);
+  addrs = get_node_addrs();
+  if (!addrs) {
+    return ec_success;
   }
+
+  if (addrs->len * (*ulen) > inbuflen ) {
+    addrs->len = inbuflen / (*ulen);
+  }
+  *rlen = addrs->len * (*ulen);
+
+  while (addrs->len--) {
+    addr_to_buf(addrs->data[addrs->len], &p[addrs->len * (*ulen)]);
+  }
+  free(addrs->data);
   free(addrs);
   return ec_success;
 }
@@ -499,10 +500,6 @@ void readcmd(void)
   wordfree(&w);
 }
 
-/*
- * cli-mng process boot sequence
- *
- */
 err_t cli_proc_init(int child_num, const pid_t *pids)
 {
   err_t e;

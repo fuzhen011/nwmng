@@ -15,13 +15,16 @@ extern "C"
 #include <stdbool.h>
 #include <glib.h>
 
+#include <pthread.h>
+
 #include "utils.h"
 
 enum {
-  relay_bitoffs,
-  proxy_bitoffs,
-  friend_bitoffs,
-  lowpower_bitoffs
+  tmpl_em,
+  upl_em,
+  nodes_em,
+  backlog_em,
+  max_invalid_em
 };
 
 enum {
@@ -56,7 +59,7 @@ typedef struct publication{
  * 1. Check if the feature is enabled in dcd by {dcd_status} if for setting
  * RELAY/PROXY/FRIEND/LPN, others pass.
  * 2. Check target^current to get which features need to be configured
- * 3. Configure the features until target^current=0 
+ * 3. Configure the features until target^current=0
  *
  */
 typedef struct {
@@ -152,6 +155,7 @@ typedef struct {
 
 typedef struct {
   bool initialized;
+  pthread_rwlock_t lock;
   cfg_devdb_t devdb;
   provcfg_t self;
 }cfgdb_t;
@@ -159,27 +163,31 @@ typedef struct {
 err_t cfgdb_init(void);
 void cfgdb_deinit(void);
 
-int cfgdb_devnum(bool proved);
+int cfgdb_get_devnum(int which);
 
 node_t *cfgdb_node_get(uint16_t addr);
 node_t *cfgdb_unprov_dev_get(const uint8_t *uuid);
 node_t *cfgdb_backlog_get(const uint8_t *uuid);
-
-err_t cfgdb_remove(node_t *n, bool destory);
-err_t cfgdb_add(node_t *n);
-
-err_t cfgdb_remove_all_upl(void);
-err_t cfgdb_remove_all_nodes(void);
-
-/*
- * Template related functions
- */
 tmpl_t *cfgdb_tmpl_get(uint16_t refid);
+
+err_t cfgdb_backlog_add(node_t *n);
+err_t cfgdb_unpl_add(node_t *n);
+err_t cfgdb_nodes_add(node_t *n);
+
+err_t cfgdb_backlog_remove(node_t *n, bool destory);
+err_t cfgdb_unpl_remove(node_t *n, bool destory);
+err_t cfgdb_nodes_remove(node_t *n, bool destory);
+
+void cfgdb_remove_all_upl(void);
+void cfgdb_remove_all_nodes(void);
+
 err_t cfgdb_tmpl_remove(tmpl_t *n);
 err_t cfgdb_tmpl_add(tmpl_t *n);
 
 provcfg_t *get_provcfg(void);
 void cfg_load_mnglists(GTraverseFunc func);
+
+uint16list_t *get_node_addrs(void);
 #ifdef __cplusplus
 }
 #endif

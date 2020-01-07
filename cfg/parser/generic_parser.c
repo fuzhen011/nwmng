@@ -167,8 +167,8 @@ err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr)
   elog(e);
 
   n = cfgdb_unprov_dev_get(uuid);
-  cfgdb_remove(n, 0);
+  cfgdb_unpl_remove(n, 0);
   n->addr = addr;
-  cfgdb_add(n);
+  cfgdb_nodes_add(n);
   return e;
 }

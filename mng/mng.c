@@ -12,8 +12,6 @@
 #include <errno.h>
 /* #include <sys/prctl.h> */
 
-#include <sys/socket.h>
-
 #include "hal/bg_uart_cbs.h"
 #include "host_gecko.h"
 
@@ -27,7 +25,7 @@
 #include "nwk.h"
 #include "cli.h"
 #include "cfg.h"
-#include "climng_startup.h"
+#include "startup.h"
 #include "glib.h"
 #include "socket_handler.h"
 #include "gecko_bglib.h"
