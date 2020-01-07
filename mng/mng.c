@@ -361,7 +361,7 @@ void list_nodes(void)
       usleep(500);
       continue;
     }
-    LOGD("dev - [%x:%x:%x]",
+    LOGD("dev - [%x:%x:%x]\n",
          evt->data.evt_mesh_prov_ddb_list.uuid.data[12],
          evt->data.evt_mesh_prov_ddb_list.uuid.data[11],
          evt->data.evt_mesh_prov_ddb_list.uuid.data[10]);
