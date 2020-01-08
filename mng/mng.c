@@ -264,6 +264,7 @@ void *mng_mainloop(void *p)
         break;
     }
     set_mng_state();
+    busy |= models_check(&mng);
     if (!busy) {
       usleep(10 * 1000);
     }

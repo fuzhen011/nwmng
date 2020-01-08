@@ -23,6 +23,7 @@
 
 #include <readline/history.h>
 
+#include "cfgdb.h"
 #include "projconfig.h"
 #include "startup.h"
 #include "utils.h"
@@ -51,13 +52,13 @@ extern err_t cmd_ret;
 /* Static Variables *************************************************** */
 
 DECLARE_VAGET_FUN(addrs);
+DECLARE_VAGET_FUN(onoff_lights_addrs);
+DECLARE_VAGET_FUN(lightness_lights_addrs);
+DECLARE_VAGET_FUN(ctl_lights_addrs);
 
 DECLARE_CB(reset);
 DECLARE_CB(help);
 DECLARE_CB(quit);
-DECLARE_CB(ct);
-DECLARE_CB(lightness);
-DECLARE_CB(onoff);
 DECLARE_CB(scan);
 
 const command_t commands[] = {
@@ -79,13 +80,14 @@ const command_t commands[] = {
     NULL, NULL, vaget_addrs },
   { "freemode", "[on/off]", clicb_scan,
     "Turn on/off unprovisioned beacon scanning" },
+
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
-    "Set the onoff of a light", NULL, NULL, vaget_addrs },
+    "Set the onoff of a light", NULL, NULL, vaget_onoff_lights_addrs },
   { "lightness", "[pecentage] [addr...]", clicb_lightness,
-    "Set the lightness of a light", NULL, NULL, vaget_addrs },
+    "Set the lightness of a light", NULL, NULL, vaget_lightness_lights_addrs },
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
-    "Set the color temperature of a light", NULL, NULL, vaget_addrs },
+    "Set the color temperature of a light", NULL, NULL, vaget_ctl_lights_addrs },
 };
 
 const size_t cli_cmd_num = 3;
@@ -98,28 +100,61 @@ static char *line = NULL;
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
 
-static int addr_in_cfg(const char *straddr,
-                       uint16_t *addr)
+#define ADDRULEN  7
+static err_t _vaget_lights_addrs(void *vap,
+                                 int inbuflen,
+                                 int *ulen,
+                                 int *rlen,
+                                 uint8_t type)
 {
-  uint16_t addrtmp;
-  if (ec_success != str2uint(straddr, strlen(straddr), &addrtmp, sizeof(uint16_t))) {
-    LOGD("str2uint failed\n");
-    return -1;
+  if (!vap || !inbuflen || !ulen || !rlen) {
+    return err(ec_param_null);
+  }
+  char *p = vap;
+  uint16list_t *addrs;
+  *ulen = ADDRULEN;
+  addrs = get_lights_addrs(type);
+  if (!addrs) {
+    return ec_success;
   }
 
-  if (addrtmp == 0x1003
-      || addrtmp == 0xc005
-      || addrtmp == 0x120c
-      || addrtmp == 0x100e
-      || addrtmp == 0x1 ) {
-    *addr = addrtmp;
-    return 0;
+  if (addrs->len * (*ulen) > inbuflen ) {
+    addrs->len = inbuflen / (*ulen);
   }
+  *rlen = addrs->len * (*ulen);
 
-  return -1;
+  while (addrs->len--) {
+    addr_to_buf(addrs->data[addrs->len], &p[addrs->len * (*ulen)]);
+  }
+  free(addrs->data);
+  free(addrs);
+  return ec_success;
 }
 
-#define ADDRULEN  7
+static err_t vaget_onoff_lights_addrs(void *vap,
+                                      int inbuflen,
+                                      int *ulen,
+                                      int *rlen)
+{
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, onoff_support);
+}
+
+static err_t vaget_lightness_lights_addrs(void *vap,
+                                          int inbuflen,
+                                          int *ulen,
+                                          int *rlen)
+{
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, lightness_support);
+}
+
+static err_t vaget_ctl_lights_addrs(void *vap,
+                                    int inbuflen,
+                                    int *ulen,
+                                    int *rlen)
+{
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, ctl_support);
+}
+
 static err_t vaget_addrs(void *vap,
                          int inbuflen,
                          int *ulen,
@@ -756,122 +791,4 @@ static err_t clicb_quit(int argc, char *argv[])
     kill(children[i], SIGKILL);
   }
   exit(EXIT_SUCCESS);
-}
-
-static err_t clicb_ct(int argc, char *argv[])
-{
-  err_t e = ec_success;
-  unsigned int ct;
-  uint16_t *addrs;
-  if (argc < 3) {
-    return err(ec_param_invalid);
-  }
-
-  if (ec_success != (e = str2uint(argv[1],
-                                  strlen(argv[1]),
-                                  &ct,
-                                  sizeof(unsigned int)))) {
-    return err(ec_param_invalid);
-  }
-  if (ct > 100) {
-    return err(ec_param_invalid);
-  }
-
-  addrs = calloc(argc - 2, sizeof(uint16_t));
-
-  for (int i = 2; i < argc; i++) {
-    if (-1 == addr_in_cfg(argv[i], &addrs[i - 2])) {
-      LOGW("Onoff invalid addr[%s]\n", argv[i]);
-      e = ec_param_invalid;
-      break;
-    }
-  }
-  if (e == ec_success) {
-    /* TODO */
-    /* handle ct set to addrs */
-    LOGD("Sending color temperature [%u] to be handled\n", ct);
-    /* IMPL PENDING, now for DEBUG */
-    sleep(1);
-    bt_shell_printf("Success\n");
-    (void)ct;
-  }
-  free(addrs);
-  return e;
-}
-
-static err_t clicb_lightness(int argc, char *argv[])
-{
-  err_t e = ec_success;
-  unsigned int lightness;
-  uint16_t *addrs;
-  if (argc < 3) {
-    return err(ec_param_invalid);
-  }
-
-  if (ec_success != (e = str2uint(argv[1],
-                                  strlen(argv[1]),
-                                  &lightness,
-                                  sizeof(unsigned int)))) {
-    return err(ec_param_invalid);
-  }
-  if (lightness > 100) {
-    return err(ec_param_invalid);
-  }
-  addrs = calloc(argc - 2, sizeof(uint16_t));
-
-  for (int i = 2; i < argc; i++) {
-    if (-1 == addr_in_cfg(argv[i], &addrs[i - 2])) {
-      LOGW("Onoff invalid addr[%s]\n", argv[i]);
-      e = ec_param_invalid;
-      break;
-    }
-  }
-  if (e == ec_success) {
-    /* TODO */
-    /* handle onoff set to addrs */
-    LOGD("Sending lightness [%u] to be handled\n", lightness);
-    /* IMPL PENDING, now for DEBUG */
-    sleep(1);
-    bt_shell_printf("Success\n");
-    (void)lightness;
-  }
-  free(addrs);
-  return e;
-}
-
-static err_t clicb_onoff(int argc, char *argv[])
-{
-  err_t e = ec_success;
-  int onoff;
-  uint16_t *addrs;
-  if (argc < 3) {
-    return err(ec_param_invalid);
-  }
-  if (!strcmp(argv[1], "on")) {
-    onoff = 1;
-  } else if (!strcmp(argv[1], "off")) {
-    onoff = 0;
-  } else {
-    return err(ec_param_invalid);
-  }
-  addrs = calloc(argc - 2, sizeof(uint16_t));
-
-  for (int i = 2; i < argc; i++) {
-    if (-1 == addr_in_cfg(argv[i], &addrs[i - 2])) {
-      LOGW("Onoff invalid addr[%s]\n", argv[i]);
-      e = ec_param_invalid;
-      break;
-    }
-  }
-  if (e == ec_success) {
-    /* TODO */
-    /* handle onoff set to addrs */
-    LOGD("Sending onoff[%s] to be handled\n", onoff ? "on" : "off");
-    /* IMPL PENDING, now for DEBUG */
-    sleep(1);
-    bt_shell_printf("Success\n");
-    (void)onoff;
-  }
-  free(addrs);
-  return e;
 }

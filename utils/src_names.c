@@ -14,22 +14,25 @@ static const char *source_files[] = {
     "nwk", /* 13 */
     "dev_bl", /* 14 */
     "bgevt_hdr", /* 15 */
-    "mng", /* 16 */
-    "as_addappkey", /* 17 */
-    "as_bindappkey", /* 18 */
-    "as_setpub", /* 19 */
-    "as_rm", /* 20 */
-    "as_rmend", /* 21 */
-    "as_end", /* 22 */
-    "as_getdcd", /* 23 */
-    "as_setconfig", /* 24 */
-    "as_addsub", /* 25 */
-    "bg_uart_cbs", /* 26 */
-    "socket_handler", /* 27 */
-    "gecko_bglib", /* 28 */
-    "read_char", /* 29 */
-    "uart_posix", /* 30 */
-    "uart_win", /* 31 */
-    "platform", /* 32 */
-    "cli", /* 33 */
+    "models", /* 16 */
+    "mng", /* 17 */
+    "as_addappkey", /* 18 */
+    "as_bindappkey", /* 19 */
+    "as_setpub", /* 20 */
+    "as_rm", /* 21 */
+    "as_rmend", /* 22 */
+    "as_end", /* 23 */
+    "as_getdcd", /* 24 */
+    "as_setconfig", /* 25 */
+    "as_addsub", /* 26 */
+    "bg_uart_cbs", /* 27 */
+    "socket_handler", /* 28 */
+    "gecko_bglib", /* 29 */
+    "read_char", /* 30 */
+    "uart_posix", /* 31 */
+    "uart_win", /* 32 */
+    "platform", /* 33 */
+    "cli", /* 34 */
+    "cli_print", /* 35 */
+    "main", /* 36 */
 };

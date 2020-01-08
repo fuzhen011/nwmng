@@ -373,12 +373,25 @@ void set_provcfg(const provcfg_t *src)
 }
 
 static int offs = 0;
+static uint8_t kind = 0;
 gboolean copy_addr_to_user(gpointer key,
                            gpointer value,
                            gpointer ud)
 {
   uint16_t addr = *(uint16_t *)key;
   ((uint16_t *)ud)[offs++] = addr;
+  return FALSE;
+}
+
+gboolean copy_light_addr_to_user(gpointer key,
+                                 gpointer value,
+                                 gpointer ud)
+{
+  node_t *n = (node_t *)value;
+  if (n->models.func < kind) {
+    return FALSE;
+  }
+  ((uint16_t *)ud)[offs++] = n->addr;
   return FALSE;
 }
 
@@ -402,10 +415,28 @@ uint16list_t *get_node_addrs(void)
   return addr;
 }
 
-uint16list_t *get_lights_addrs(int kind)
+uint16list_t *get_lights_addrs(uint8_t func)
 {
-  /* TODO */
-  return NULL;
+  uint16list_t *addr;
+  int num;
+  if (!func) {
+    return NULL;
+  }
+
+  num = cfgdb_get_devnum(nodes_em);
+  if (!num) {
+    return NULL;
+  }
+  addr = calloc(1, sizeof(uint16list_t));
+  addr->data = calloc(num, sizeof(uint16_t));
+
+  offs = 0;
+  kind = func;
+  pthread_rwlock_rdlock(&db.lock);
+  g_tree_foreach(db.devdb.nodes, copy_light_addr_to_user, addr->data);
+  pthread_rwlock_unlock(&db.lock);
+  addr->len = offs;
+  return addr;
 }
 
 void cfg_load_mnglists(GTraverseFunc func)

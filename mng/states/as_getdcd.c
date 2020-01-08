@@ -10,6 +10,7 @@
 #include "dev_config.h"
 #include "utils.h"
 #include "logging.h"
+#include "generic_parser.h"
 
 /* Defines  *********************************************************** */
 #define GENERIC_ONOFF_SERVER_MDID       0x1000
@@ -257,15 +258,15 @@ static void __dcd_store(const uint8_t *data,
       uint8_t offset = 0;
       for (uint8_t ms = 0; ms < dcd->elems[e].sigm_cnt; ms++) {
         uint16_t mdid = BUILD_UINT16(data[i], data[i + 1]);
-        if (mdid == GENERIC_ONOFF_CLIENT_MDID) {
-          cache->node->models.light_supt = MAX(cache->node->models.light_supt,
-                                               onoff_support);
+        if (mdid == GENERIC_ONOFF_SERVER_MDID) {
+          cache->node->models.func = MAX(cache->node->models.func,
+                                         onoff_support);
         } else if (mdid == LIGHT_LIGHTNESS_SERVER_MDID) {
-          cache->node->models.light_supt = MAX(cache->node->models.light_supt,
-                                               lightness_support);
+          cache->node->models.func = MAX(cache->node->models.func,
+                                         lightness_support);
         } else if (mdid == LIGHT_CTL_SERVER_MDID) {
-          cache->node->models.light_supt = MAX(cache->node->models.light_supt,
-                                               ctl_support);
+          cache->node->models.func = MAX(cache->node->models.func,
+                                         ctl_support);
         }
 #if 0
         if (mdid == GENERIC_ONOFF_CLIENT_MDID) {
@@ -284,6 +285,7 @@ static void __dcd_store(const uint8_t *data,
       }
       dcd->elems[e].sigm_cnt -= offset;
     }
+    nodeset_func(cache->node->addr, cache->node->models.func);
 
     if (dcd->elems[e].vm_cnt) {
       if (dcd->elems[e].vm) {

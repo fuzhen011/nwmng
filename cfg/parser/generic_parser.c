@@ -203,8 +203,18 @@ err_t nodeset_done(uint16_t addr, uint8_t done)
   node_t *n;
   n = cfgdb_node_get(addr);
   n->done = done;
-
   e = gp.write(NW_NODES_CFG_FILE, wrt_done, (void *)n->uuid, (void *)&done);
+  elog(e);
+  return e;
+}
+
+err_t nodeset_func(uint16_t addr, uint8_t func)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  n->models.func = func;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_func, (void *)n->uuid, (void *)&func);
   elog(e);
   return e;
 }

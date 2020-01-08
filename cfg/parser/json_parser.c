@@ -946,6 +946,7 @@ static const char *mandatory_fields[] = {
   WHOLE_WORD(STR_RMORBL),
   WHOLE_WORD(STR_DONE),
   WHOLE_WORD(STR_ERRBITS),
+  WHOLE_WORD(STR_FUNC),
   NULL
 };
 
@@ -1112,45 +1113,46 @@ static void __load_node_arr(json_object *pnode, bool backlog)
      * Check if it's already provisioned to know which hash table to find the
      * node
      */
-    const char *addr_str, *uuid_str, *rmbl_str, *done_str, *err_str;
+    const char *v;
     uint8_t uuid[16] = { 0 };
     uint32_t errbits;
     uint16_t addr;
-    uint8_t rmbl, done;
+    uint8_t rmbl, done, func;
     node_t *t;
 
     json_object_object_get_ex(n, STR_ADDR, &tmp);
-    addr_str = json_object_get_string(tmp);
-
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &addr, sizeof(uint16_t))) {
+      LOGE("STR to UINT error\n");
+      continue;
+    }
     json_object_object_get_ex(n, STR_UUID, &tmp);
-    uuid_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_RMORBL, &tmp);
-    rmbl_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_DONE, &tmp);
-    done_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_ERRBITS, &tmp);
-    err_str = json_object_get_string(tmp);
-
-    if (ec_success != str2cbuf(uuid_str, 0, (char *)uuid, 16)) {
+    v = json_object_get_string(tmp);
+    if (ec_success != str2cbuf(v, 0, (char *)uuid, 16)) {
       LOGE("STR to CBUF error\n");
       continue;
     }
-    if (ec_success != str2uint(err_str, strlen(err_str), &errbits, sizeof(uint32_t))) {
+    json_object_object_get_ex(n, STR_RMORBL, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &rmbl, sizeof(uint8_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
-    if (ec_success != str2uint(addr_str, strlen(addr_str), &addr, sizeof(uint16_t))) {
+    json_object_object_get_ex(n, STR_DONE, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &done, sizeof(uint8_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
-    if (ec_success != str2uint(rmbl_str, strlen(rmbl_str), &rmbl, sizeof(uint8_t))) {
+    json_object_object_get_ex(n, STR_ERRBITS, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &errbits, sizeof(uint32_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
-    if (ec_success != str2uint(done_str, strlen(done_str), &done, sizeof(uint8_t))) {
+    json_object_object_get_ex(n, STR_FUNC, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &func, sizeof(uint8_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
@@ -1176,6 +1178,7 @@ static void __load_node_arr(json_object *pnode, bool backlog)
     t->done = done;
     t->rmorbl = rmbl;
     t->err = errbits;
+    t->models.func = func;
     if (add) {
       if (e == ec_success) {
         if (backlog) {
@@ -1496,6 +1499,7 @@ static err_t _backlog_node_add(const uint8_t *uuid)
   json_object_object_add(obj, STR_ERRBITS, json_object_new_string("0x00000000"));
   json_object_object_add(obj, STR_TMPL, json_object_new_string("0x00"));
   json_object_object_add(obj, STR_RMORBL, json_object_new_string("0x00"));
+  json_object_object_add(obj, STR_FUNC, json_object_new_string("0x00"));
   json_object_object_add(obj, STR_DONE, json_object_new_string("0x00"));
 
   json_object_array_add(jcfg.nw.backlog, obj);
@@ -1545,6 +1549,21 @@ static err_t set_node_errbits(const void *key,
   return modify_node_field(key, STR_ERRBITS, buf);
 }
 
+static err_t set_node_func(const void *key,
+                           void *data)
+{
+  /* Key is uuid and data is the done */
+  char buf[5] = { 0 };
+
+  if (!key || !data) {
+    return err(ec_param_invalid);
+  }
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint8_tostr(*(uint8_t *)data, buf + 2);
+  return modify_node_field(key, STR_FUNC, buf);
+}
+
 static err_t set_node_done(const void *key,
                            void *data)
 {
@@ -1571,6 +1590,7 @@ static err_t nodes_clrctl(void)
     __kv_replace(node, STR_ADDR, uint16_zero);
     __kv_replace(node, STR_ERRBITS, uint32_zero);
     __kv_replace(node, STR_RMORBL, uint8_zero);
+    __kv_replace(node, STR_FUNC, uint8_zero);
     __kv_replace(node, STR_DONE, uint8_zero);
   }
   if (jcfg.nw.gen.autoflush) {
@@ -1598,6 +1618,9 @@ static err_t write_nodes(int wrtype,
       break;
     case wrt_node_addr:
       e = set_node_addr(key, data);
+      break;
+    case wrt_node_func:
+      e = set_node_func(key, data);
       break;
     case wrt_done:
       e = set_node_done(key, data);

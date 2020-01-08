@@ -56,6 +56,7 @@ set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c
     ${CMAKE_CURRENT_LIST_DIR}/cli/cli_print.c)
 set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/models.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_add.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_config.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_bl.c

@@ -41,6 +41,7 @@ static void __on_success(config_cache_t *cache)
 
   nodeset_errbits(cache->node->addr, 0);
   nodeset_done(cache->node->addr, 0);
+  nodeset_func(cache->node->addr, 0);
   nodes_rm(cache->node->addr);
 }
 

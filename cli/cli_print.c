@@ -25,6 +25,24 @@
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
+void cli_print_modelset_done(uint16_t addr, uint8_t type, uint8_t value)
+{
+  char buf[TMP_BUF_LEN] = { 0 };
+  if (type == onoff_support) {
+    snprintf(buf, TMP_BUF_LEN, "Set 0x%04x OnOff -> %s\n", addr, value ? "ON" : "OFF");
+  } else {
+    snprintf(buf, TMP_BUF_LEN, "Set 0x%04x %s -> %d%%\n", addr,
+             type == lightness_support ? "Lightness" : "CTL",
+             value);
+  }
+  bt_shell_printf("%s", buf);
+}
+
+void cli_print_busy(void)
+{
+  bt_shell_printf("Device is busy and cannot issue the command.\n");
+}
+
 void cli_print_dev(const node_t *node,
                    const struct gecko_msg_mesh_prov_ddb_get_rsp_t *e)
 {

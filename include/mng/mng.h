@@ -151,6 +151,11 @@ typedef struct {
       config_cache_t cache[MAX_CONCURRENT_CONFIG_NODES];
     }config;
     bl_cache_t bl;
+    struct{
+      uint8_t type;
+      uint8_t value;
+      GList *nodes;
+    }model_set;
   }cache;
 
   struct {
@@ -183,6 +188,11 @@ void on_lists_changed(void);
 err_t clicb_sync(int argc, char *argv[]);
 err_t clicb_list(int argc, char *argv[]);
 err_t clicb_info(int argc, char *argv[]);
+err_t clicb_onoff(int argc, char *argv[]);
+err_t clicb_lightness(int argc, char *argv[]);
+err_t clicb_ct(int argc, char *argv[]);
+
+bool models_check(mng_t *mng);
 #ifdef __cplusplus
 }
 #endif

@@ -28,6 +28,7 @@ enum {
 };
 
 enum {
+  unknown,
   onoff_support,
   lightness_support,
   ctl_support,
@@ -108,7 +109,7 @@ typedef struct {
   mesh_config_t config;
   struct {
     /* enum value - see {ctl_support} */
-    uint8_t light_supt;
+    uint8_t func;
     lbitmap_t venmod_supt;
   }models;
 }node_t;
@@ -188,6 +189,7 @@ provcfg_t *get_provcfg(void);
 void cfg_load_mnglists(GTraverseFunc func);
 
 uint16list_t *get_node_addrs(void);
+uint16list_t *get_lights_addrs(uint8_t func);
 #ifdef __cplusplus
 }
 #endif

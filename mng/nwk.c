@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "cli.h"
+#include "host_gecko.h"
 #include "nwk.h"
 #include "mng.h"
 #include "logging.h"
@@ -51,6 +52,10 @@ err_t nwk_init(void *p)
     if (ec_success == ein) {
       mng->state = configured;
       mng_load_lists(); /* do the initial loading */
+    }
+    if (bg_err_success != (ret = gecko_cmd_mesh_generic_client_init()->result)) {
+      LOGBGE("generic client init", ret);
+      return err(ec_bgrsp);
     }
     return ein;
   }
@@ -194,7 +199,6 @@ static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t 
 
   return ec_success;
 }
-
 
 int bgevt_dflt_hdr(const struct gecko_cmd_packet *evt)
 {
