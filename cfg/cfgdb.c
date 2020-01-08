@@ -402,6 +402,12 @@ uint16list_t *get_node_addrs(void)
   return addr;
 }
 
+uint16list_t *get_lights_addrs(int kind)
+{
+  /* TODO */
+  return NULL;
+}
+
 void cfg_load_mnglists(GTraverseFunc func)
 {
   LOGD("UPL size %u\n", g_tree_nnodes(db.devdb.unprov_devs));

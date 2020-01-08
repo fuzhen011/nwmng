@@ -194,20 +194,9 @@ static inline void alloc_copy_u16list(uint16list_t **p,
 
 static inline void addr_to_buf(uint16_t addr, char *buf)
 {
-#if 0
   buf[0] = '0';
   buf[1] = 'x';
-
-  buf[2] = hex_value_to_char(addr / 0x1000);
-  addr &= 0xfff;
-  buf[3] = hex_value_to_char(addr / 0x100);
-  addr &= 0xff;
-  buf[4] = hex_value_to_char(addr / 0x10);
-  addr &= 0xf;
-  buf[5] = hex_value_to_char(addr);
-#else
-  uint2str(addr, BASE_HEX, 6, buf);
-#endif
+  uint16_tostr(addr, buf + 2);
 }
 
 static inline void err_exit(const char *pMsg)

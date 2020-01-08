@@ -454,19 +454,29 @@ err_t clicb_info(int argc, char *argv[])
   uint16_t addr;
   node_t *n;
   if (argc < 2) {
-    return err(ec_param_invalid);
-  }
-  for (int i = 1; i < argc; i++) {
-    if (ec_success != str2uint(argv[i], strlen(argv[i]), &addr, sizeof(uint16_t))) {
-      LOGD("str2uint failed\n");
-      continue;
+    uint16list_t *addrs = get_node_addrs();
+    if (!addrs) {
+      return ec_success;
     }
-    if (NULL == (n = cfgdb_node_get(addr))) {
-      LOGW("Info CMD invalid address[%s]\n", argv[i]);
-      bt_shell_printf("Info CMD invalid address[%s]\n", argv[i]);
-      continue;
+    while (addrs->len) {
+      info_addr(cfgdb_node_get(addrs->data[addrs->len - 1]));
+      addrs->len--;
     }
-    info_addr(n);
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 1; i < argc; i++) {
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), &addr, sizeof(uint16_t))) {
+        LOGD("str2uint failed\n");
+        continue;
+      }
+      if (NULL == (n = cfgdb_node_get(addr))) {
+        LOGW("Info CMD invalid address[%s]\n", argv[i]);
+        bt_shell_printf("Info CMD invalid address[%s]\n", argv[i]);
+        continue;
+      }
+      info_addr(n);
+    }
   }
   return ec_success;
 }

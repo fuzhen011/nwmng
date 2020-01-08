@@ -75,7 +75,7 @@ const command_t commands[] = {
   { "list", NULL, clicb_list,
     "List all devices in the database" },
   { "info", "[addr...]", clicb_info,
-    "Show the device information in the database",
+    "Show the node(s) information in the database",
     NULL, NULL, vaget_addrs },
   { "freemode", "[on/off]", clicb_scan,
     "Turn on/off unprovisioned beacon scanning" },

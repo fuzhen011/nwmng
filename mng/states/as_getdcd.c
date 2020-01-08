@@ -284,6 +284,7 @@ static void __dcd_store(const uint8_t *data,
       }
       dcd->elems[e].sigm_cnt -= offset;
     }
+
     if (dcd->elems[e].vm_cnt) {
       if (dcd->elems[e].vm) {
         free(dcd->elems[e].vm);
