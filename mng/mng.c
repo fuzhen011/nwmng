@@ -185,6 +185,7 @@ static void set_mng_state(void)
     if (g_list_length(mng.lists.config) || mng.cache.config.used) {
       /* configuring in progress, switch directly */
       mng.state = configuring_devices_em;
+      return;
     }
     mng.state = state_reload;
   } else if (mng.state == configuring_devices_em) {

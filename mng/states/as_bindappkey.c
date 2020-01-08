@@ -101,7 +101,7 @@ static int __bind_appkey(config_cache_t *cache, mng_t *mng)
     ONCE_P(cache);
     WAIT_RESPONSE_SET(cache);
     cache->cc_handle = rsp->handle;
-    /* TODO: startTimer(cache, 1); */
+    timer_set(cache, 1);
   }
   return asr_suc;
 }
@@ -129,7 +129,7 @@ int bindappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
   ASSERT(evt);
 
   evtid = BGLIB_MSG_ID(evt->header);
-  /* TODO: startTimer(cache, 0); */
+  timer_set(cache, 0);
   switch (evtid) {
     case gecko_evt_mesh_config_client_binding_status_id:
     {

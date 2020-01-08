@@ -140,11 +140,18 @@ static inline void err_set(config_cache_t *cache,
   cache->err_cache.general = errcode;
 }
 
+static inline void clr_cache_ctl(config_cache_t *cache)
+{
+  cache->expired = 0;
+  cache->flags = 0;
+}
+
 static inline void err_set_to_end(config_cache_t *cache,
                                   uint16_t errcode,
                                   int err_type)
 {
   err_set(cache, errcode, err_type);
+  clr_cache_ctl(cache);
   cache->next_state = end_em;
 }
 
@@ -153,9 +160,11 @@ static inline void err_set_to_rm_end(config_cache_t *cache,
                                      int err_type)
 {
   err_set(cache, errcode, err_type);
+  clr_cache_ctl(cache);
   cache->next_state = rmend_em;
 }
 
+void timer_set(config_cache_t *cache, bool enable);
 extern const char *stateNames[];
 static inline void oom_set(config_cache_t *cache)
 {

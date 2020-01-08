@@ -423,7 +423,7 @@ static int config_engine(void)
     /*
      * Check if any **Exception** (OOM | Guard timer expired) happened in last round
      */
-    if (cache->expired && as->retry) {
+    if (cache->expired && (time(NULL) > cache->expired) && as->retry) {
       ret = as->retry(cache, on_guard_timer_expired_em);
       if (ret != asr_suc) {
         LOGE("Expired Retry Return %d\n", ret);
@@ -566,4 +566,31 @@ int dev_config_hdr(const struct gecko_cmd_packet *e)
     return 0;
   }
   return 1;
+}
+
+void timer_set(config_cache_t *cache, bool enable)
+{
+  mng_t *mng = get_mng();
+  if (!enable) {
+    cache->expired = 0;
+    return;
+  }
+
+  cache->expired = time(NULL) + CONFIG_NO_RSP_TIMEOUT;
+
+  if (!cache->dcd.elems || cache->dcd.feature & LPN_BITOFS) {
+    if (mng->cfg->timeout) {
+      cache->expired += (get_mng()->cfg->timeout->lpn + 999) / 1000;
+      return;
+    }
+    cache->expired += 120;
+    return;
+  }
+
+  if (mng->cfg->timeout) {
+    cache->expired += (get_mng()->cfg->timeout->normal + 999) / 1000;
+    return;
+  }
+  cache->expired += 5;
+  return;
 }

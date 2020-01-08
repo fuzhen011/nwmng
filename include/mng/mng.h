@@ -81,7 +81,9 @@ typedef struct {
   int next_state;
   /* NULL if not in use */
   node_t *node;
-  bool expired; /* only used when timer is supported */
+  /* POSIX timer is not supported by macOS, so use the less efficient way to
+   * poll it in every loop */
+  time_t expired;
   bbitmap_t flags;
   uint8_t remaining_retry;
   struct {
@@ -159,8 +161,6 @@ typedef struct {
     GList *fail;
   }lists;
 }mng_t;
-
-
 
 err_t mng_init(void *p);
 err_t init_ncp(void *p);

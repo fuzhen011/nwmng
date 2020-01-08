@@ -19,7 +19,7 @@
 #define ONCE_P(cache)                                                                \
   do {                                                                               \
     LOGD(                                                                            \
-      "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",                \
+      "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",                \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -30,7 +30,7 @@
 #define SUC_P(cache)                                                                 \
   do {                                                                               \
     LOGD(                                                                            \
-      "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
+      "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -41,7 +41,7 @@
 #define FAIL_P(cache, err)                                                                 \
   do {                                                                                     \
     LOGE(                                                                                  \
-      "Node[%d]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] FAILED, Err <0x%04x>\n", \
+      "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] FAILED, Err <0x%04x>\n", \
       cache->node->addr,                                                                   \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                            \
       cache->vnm.vd,                                                                       \
@@ -115,13 +115,13 @@ static int __addsub(config_cache_t *cache, mng_t *mng)
     }
     FAIL_P(cache, retval);
     err_set_to_end(cache, retval, bgapi_em);
-    LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
+    LOGD("Node[%x]: To <<st_end>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     ONCE_P(cache);
     WAIT_RESPONSE_SET(cache);
     cache->cc_handle = handle;
-    /* TODO: startTimer(cache, 1); */
+    timer_set(cache, 1);
   }
 
   return asr_suc;
@@ -150,7 +150,7 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
   ASSERT(evt);
 
   evtid = BGLIB_MSG_ID(evt->header);
-  /* TODO: startTimer(cache, 0); */
+  timer_set(cache, 0);
   switch (evtid) {
     case gecko_evt_mesh_config_client_model_sub_status_id:
     {
@@ -175,7 +175,7 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
             RETRY_CLEAR(cache);
             RETRY_OUT_PRINT(cache);
             err_set_to_end(cache, bg_err_timeout, bgevent_em);
-            LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
+            LOGD("Node[%x]: To <<st_end>> State\n", cache->node->addr);
           }
           return asr_suc;
           break;

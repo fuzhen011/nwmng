@@ -34,7 +34,6 @@ extern "C"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/test1/nwk.json"
 #endif
 
-
 #define CLI_LOG_FILE_PATH PROJ_DIR "logs/cli.log"
 
 #ifndef CLIENT_ENCRYPTED_PATH
@@ -58,6 +57,18 @@ extern "C"
  * definition on the NCP target side
  */
 #define MAX_CONCURRENT_CONFIG_NODES 4
+
+/*
+ * Typically, each config client bg call will have an event raised no matter
+ * because of the status received or timeout occurs, this is the driver of the
+ * acc state machine. This timeout is added to safe the situation that there is
+ * no event raised by the ncp target (apparently, which is abnormal). The
+ * timerout value is an addition to the default timeout value.
+ *
+ * E.g. for configuring LPN node, if the config client timeout is 20 seconds,
+ * the final timeout of this guard will be 20 + CONFIG_NO_RSP_TIMEOUT seconds.
+ */
+#define CONFIG_NO_RSP_TIMEOUT 3
 
 /*
  * Retry times

@@ -1,15 +1,15 @@
 {
-  "Address":"0x0000",
+  "Address":"0x2001",
   "IVI":"0x00000000",
   "TTL":"0x09",
-  "SyncTime":"0x5e1474c8",
+  "SyncTime":"0x5e156c5b",
   "TX Parameters":{
     "Count":"0x03",
     "Interval":"0x001E"
   },
   "Config Timeout":{
     "Normal":"0x1388",
-    "LPN":"0x1D4C0"
+    "LPN":"0x3A98"
   },
   "Subnets":[
     {
