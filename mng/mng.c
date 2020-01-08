@@ -242,6 +242,8 @@ void *mng_mainloop(void *p)
       case starting:
         if (file_modified(NW_NODES_CFG_FILE)) {
           load_cfg_file(NW_NODES_CFG_FILE, 0);
+        } else {
+          mng_load_lists();
         }
         break;
       case adding_devices_em:

@@ -1,5 +1,5 @@
 {
-  "SyncTime":"0x5e156c5b",
+  "SyncTime":"0x5e1572ba",
   "Subnets":[
     {
       "RefId":"0x0000",
@@ -23,10 +23,10 @@
         {
           "UUID":"53696c6162734465762de0a6685ecfd0",
           "Address":"0x000d",
-          "Err":"0x00000010",
+          "Err":"0x00000000",
           "Template ID":"0x21",
           "RM_Blacklist":"0x00",
-          "Done":"0x00"
+          "Done":"0x01"
         }
       ]
     }
