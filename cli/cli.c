@@ -81,7 +81,7 @@ const command_t commands[] = {
     "Turn on/off unprovisioned beacon scanning" },
   { "rmall", NULL, clicb_rmall,
     "Remove all the nodes" },
-  { "rmblclr", NULL, clicb_rmblclr,
+  { "clrrb", NULL, clicb_rmblclr,
     "Clear the rm_bl fields of all the nodes" },
 
   /* Light Control Commands */

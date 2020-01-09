@@ -466,8 +466,10 @@ err_t clicb_info(int argc, char *argv[])
   if (argc < 2) {
     uint16list_t *addrs = get_node_addrs();
     cli_list_nodes(addrs);
-    free(addrs->data);
-    free(addrs);
+    if (addrs) {
+      free(addrs->data);
+      free(addrs);
+    }
   } else {
     for (int i = 1; i < argc; i++) {
       if (ec_success != str2uint(argv[i], strlen(argv[i]), &addr, sizeof(uint16_t))) {
@@ -499,5 +501,12 @@ err_t clicb_rmall(int argc, char *argv[])
 
 err_t clicb_rmblclr(int argc, char *argv[])
 {
+  err_t e;
+  if (ec_success != (e = nodes_rmblclr())) {
+    elog(e);
+    return e;
+  }
+
+  load_cfg_file(NW_NODES_CFG_FILE, 1);
   return ec_success;
 }

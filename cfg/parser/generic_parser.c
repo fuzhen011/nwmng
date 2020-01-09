@@ -257,3 +257,11 @@ err_t nodes_rmall(void)
   elog(e);
   return e;
 }
+
+err_t nodes_rmblclr(void)
+{
+  err_t e;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_rmblclr, NULL, NULL);
+  elog(e);
+  return e;
+}

@@ -29,6 +29,7 @@ enum {
   wrt_node_addr_clr,
   wrt_node_func,
   wrt_node_rmall,
+  wrt_node_rmblclr,
   wrt_done,
   /* For prov cfg file */
   wrt_prov_addr,
@@ -120,6 +121,7 @@ err_t nodes_rm(uint16_t addr);
 err_t nodes_bl(uint16_t addr);
 const char *nodeget_cfgstr(uint16_t addr);
 err_t nodes_rmall(void);
+err_t nodes_rmblclr(void);
 #ifdef __cplusplus
 }
 #endif
