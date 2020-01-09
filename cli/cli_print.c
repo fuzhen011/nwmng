@@ -54,17 +54,7 @@ void cli_print_dev(const node_t *node,
 
   snprintf(buf + ofs, TMP_BUF_LEN - ofs, "%s%s", DEV_PADDING, UUID_INFO);
   ofs += strlen(DEV_PADDING) + strlen(UUID_INFO);
-
-  for (int i = 0; i < 16; i++) {
-    if (i == 13) {
-      buf[ofs++] = '-';
-    }
-    snprintf(buf + ofs, TMP_BUF_LEN - ofs, "%02x", node->uuid[i]);
-    ofs += 2;
-    if (i == 9) {
-      buf[ofs++] = '-';
-    }
-  }
+  ofs += fmt_uuid(buf + ofs, node->uuid);
   buf[ofs++] = '\n';
   bt_shell_printf(buf);
 
@@ -72,10 +62,32 @@ void cli_print_dev(const node_t *node,
   ofs = 0;
   snprintf(buf + ofs, TMP_BUF_LEN - ofs, "%s%s", DEV_PADDING, DEV_KEY_INFO);
   ofs += strlen(DEV_PADDING) + strlen(DEV_KEY_INFO);
-  for (int i = 0; i < 16; i++) {
-    snprintf(buf + ofs, TMP_BUF_LEN - ofs, "%02x", e->device_key.data[i]);
-    ofs += 2;
-  }
+  ofs += fmt_key(buf + ofs, e->device_key.data);
   buf[ofs++] = '\n';
   bt_shell_printf(buf);
+}
+
+void cli_list_nodes(uint16list_t *ul)
+{
+  node_t *n;
+  char buf[TMP_BUF_LEN] = { 0 };
+  int ofs = 0;
+  if (!ul) {
+    return;
+  }
+  bt_shell_printf("%d Nodes\n", ul->len);
+
+  while (ul->len) {
+    n = cfgdb_node_get(ul->data[ul->len - 1]);
+    buf[ofs++] = '\t';
+    buf[ofs++] = ' ';
+    ofs += fmt_uuid(buf + ofs, n->uuid);
+    sprintf(buf + ofs, " --- 0x");
+    ofs += strlen(" --- 0x");
+    uint16_tostr(n->addr, buf + ofs);
+    ofs += 5;
+    bt_shell_printf("%s\n", buf);
+    ul->len--;
+    ofs = 0;
+  }
 }

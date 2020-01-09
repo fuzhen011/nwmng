@@ -83,6 +83,7 @@ void cli_print_busy(void);
 void cli_print_dev(const node_t *node,
                    const struct gecko_msg_mesh_prov_ddb_get_rsp_t *e);
 void cli_print_modelset_done(uint16_t addr, uint8_t type, uint8_t value);
+void cli_list_nodes(uint16list_t *ul);
 #ifdef __cplusplus
 }
 #endif

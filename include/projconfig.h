@@ -4,7 +4,6 @@
     > Created Time: 2019-12-17
     > Description:
  ************************************************************************/
-
 #ifndef PROJCONFIG_H
 #define PROJCONFIG_H
 #ifdef __cplusplus

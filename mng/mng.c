@@ -38,8 +38,7 @@
 
 /* Global Variables *************************************************** */
 extern const command_t commands[];
-extern pthread_mutex_t qlock, hdrlock;
-extern pthread_cond_t qready, hdrready;
+extern pthread_mutex_t qlock;
 
 err_t cmd_ret = ec_success;
 
@@ -380,7 +379,6 @@ void list_nodes(void)
 
 err_t clicb_list(int argc, char *argv[])
 {
-  list_nodes();
   bt_shell_printf("%s\n", __FUNCTION__);
   return err(ec_param_invalid);
 }
@@ -443,7 +441,7 @@ err_t clicb_sync(int argc, char *argv[])
   return 0;
 }
 
-static void info_addr(const node_t *node)
+static void info_node(const node_t *node)
 {
   const char *v = nodeget_cfgstr(node->addr);
   struct gecko_msg_mesh_prov_ddb_get_rsp_t *rsp
@@ -465,13 +463,7 @@ err_t clicb_info(int argc, char *argv[])
   node_t *n;
   if (argc < 2) {
     uint16list_t *addrs = get_node_addrs();
-    if (!addrs) {
-      return ec_success;
-    }
-    while (addrs->len) {
-      info_addr(cfgdb_node_get(addrs->data[addrs->len - 1]));
-      addrs->len--;
-    }
+    cli_list_nodes(addrs);
     free(addrs->data);
     free(addrs);
   } else {
@@ -485,7 +477,7 @@ err_t clicb_info(int argc, char *argv[])
         bt_shell_printf("Info CMD invalid address[%s]\n", argv[i]);
         continue;
       }
-      info_addr(n);
+      info_node(n);
     }
   }
   return ec_success;

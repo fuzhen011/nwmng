@@ -243,6 +243,32 @@ int utils_clz(uint32_t u);
 int utils_ffs(uint32_t u);
 int utils_frz(uint32_t u);
 
+static inline int fmt_uuid(char *buf, const uint8_t *uuid)
+{
+  int inline_ofs = 0;
+  for (int i = 0; i < 16; i++) {
+    if (i == 13) {
+      buf[inline_ofs++] = '-';
+    }
+    sprintf(buf + inline_ofs, "%02x", uuid[i]);
+    inline_ofs += 2;
+    if (i == 9) {
+      buf[inline_ofs++] = '-';
+    }
+  }
+  return inline_ofs;
+}
+
+static inline int fmt_key(char *buf, const uint8_t *key)
+{
+  int inline_ofs = 0;
+  for (int i = 0; i < 16; i++) {
+    sprintf(buf + inline_ofs, "%02x", key[i]);
+    inline_ofs += 2;
+  }
+  return inline_ofs;
+}
+
 #ifdef __cplusplus
 }
 #endif

@@ -45,8 +45,7 @@
 
 /* Global Variables *************************************************** */
 extern jmp_buf initjmpbuf;
-extern pthread_mutex_t qlock, hdrlock;
-extern pthread_cond_t qready, hdrready;
+extern pthread_mutex_t qlock;
 extern err_t cmd_ret;
 
 /* Static Variables *************************************************** */
