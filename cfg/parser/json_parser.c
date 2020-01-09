@@ -1573,6 +1573,21 @@ static err_t set_node_func(const void *key,
   return modify_node_field(key, STR_FUNC, buf);
 }
 
+static err_t rmall_nodes(void)
+{
+  char val[] = { '0', 'x', '1', '0', 0 };
+  json_object *node, *addr;
+  json_array_foreach(i, n, jcfg.nw.subnets[0].nodes){
+    node = json_object_array_get_idx(jcfg.nw.subnets[0].nodes, i);
+    json_object_object_get_ex(node, STR_ADDR, &addr);
+    if (!strcmp(json_object_get_string(addr), "0x0000")) {
+      continue;
+    }
+    __kv_replace(node, STR_RMORBL, val);
+  }
+  return ec_success;
+}
+
 static err_t set_node_done(const void *key,
                            void *data)
 {
@@ -1630,6 +1645,9 @@ static err_t write_nodes(int wrtype,
       break;
     case wrt_node_func:
       e = set_node_func(key, data);
+      break;
+    case wrt_node_rmall:
+      e = rmall_nodes();
       break;
     case wrt_done:
       e = set_node_done(key, data);

@@ -154,7 +154,7 @@ static uint16_t send_ctl(uint16_t addr, uint8_t ctl)
                                            buf)->result;
 }
 
-bool models_check(mng_t *mng)
+bool models_loop(mng_t *mng)
 {
   uint16_t ret;
 

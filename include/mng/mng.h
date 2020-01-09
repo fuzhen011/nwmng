@@ -197,13 +197,16 @@ void on_lists_changed(void);
 err_t clicb_sync(int argc, char *argv[]);
 err_t clicb_list(int argc, char *argv[]);
 err_t clicb_info(int argc, char *argv[]);
+err_t clicb_rmall(int argc, char *argv[]);
+err_t clicb_rmblclr(int argc, char *argv[]);
+
 err_t clicb_onoff(int argc, char *argv[]);
 err_t clicb_lightness(int argc, char *argv[]);
 err_t clicb_ct(int argc, char *argv[]);
 
-bool models_check(mng_t *mng);
-
+bool models_loop(mng_t *mng);
 bool bl_loop(void *p);
+
 #ifdef __cplusplus
 }
 #endif

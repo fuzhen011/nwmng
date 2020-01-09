@@ -268,7 +268,7 @@ void *mng_mainloop(void *p)
         break;
     }
     set_mng_state();
-    busy |= models_check(&mng);
+    busy |= models_loop(&mng);
     if (!busy) {
       usleep(10 * 1000);
     }
@@ -482,5 +482,22 @@ err_t clicb_info(int argc, char *argv[])
       info_node(n);
     }
   }
+  return ec_success;
+}
+
+err_t clicb_rmall(int argc, char *argv[])
+{
+  err_t e;
+  if (ec_success != (e = nodes_rmall())) {
+    elog(e);
+    return e;
+  }
+
+  load_cfg_file(NW_NODES_CFG_FILE, 1);
+  return ec_success;
+}
+
+err_t clicb_rmblclr(int argc, char *argv[])
+{
   return ec_success;
 }

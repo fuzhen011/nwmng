@@ -79,6 +79,10 @@ const command_t commands[] = {
     NULL, NULL, vaget_addrs },
   { "freemode", "[on/off]", clicb_scan,
     "Turn on/off unprovisioned beacon scanning" },
+  { "rmall", NULL, clicb_rmall,
+    "Remove all the nodes" },
+  { "rmblclr", NULL, clicb_rmblclr,
+    "Clear the rm_bl fields of all the nodes" },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,

@@ -249,3 +249,11 @@ const char *nodeget_cfgstr(uint16_t addr)
   elog(e);
   return v;
 }
+
+err_t nodes_rmall(void)
+{
+  err_t e;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_rmall, NULL, NULL);
+  elog(e);
+  return e;
+}
