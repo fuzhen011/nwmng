@@ -160,12 +160,6 @@ static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t 
   err_t e;
   mng_t *mng = get_mng();
 
-  /* pProv->state = initialized_em; */
-  /* mng->cfg.addr = ein->address; */
-  /* mng->cfg.ivi = ein->ivi; */
-  /* Turncate to 1 since only 1 subnet is supported now */
-  /* mng->cfg.subnet_num = ein->networks ? 1 : 0; */
-
   if (ein->networks == 0 && (mng->cfg->addr || mng->cfg->ivi)) {
     uint16_t ret = gecko_cmd_mesh_prov_initialize_network(mng->cfg->addr,
                                                           mng->cfg->ivi)->result;
