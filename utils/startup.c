@@ -100,7 +100,11 @@ int cli_proc(int argc, char *argv[])
   }
 
   ret = setjmp(initjmpbuf);
-  LOGM("Program Started Up, Initialization Bitmap - 0x%x\n", ret);
+  LOGM("Program <VERSION - %d.%d.%d> Started Up, Initialization Bitmap - 0x%x\n",
+       PROJ_VERSION_MAJOR,
+       PROJ_VERSION_MINOR,
+       PROJ_VERSION_PATCH,
+       ret);
   if (mng_started && 0 != (tmp = pthread_cancel(mng_tid))) {
     LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
   }

@@ -15,6 +15,10 @@ extern "C"
 #define SINGLE_PROC
 #endif
 
+#define PROJ_VERSION_MAJOR  1
+#define PROJ_VERSION_MINOR  0
+#define PROJ_VERSION_PATCH  0
+
 #define FILE_PATH_MAX 108
 #define MAXSLEEP 128
 

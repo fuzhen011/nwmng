@@ -1,2 +1,0 @@
-#define VERSION_MAJOR @nwmng_VERSION_MAJOR@
-#define VERSION_MINOR @nwmng_VERSION_MINOR@

@@ -114,7 +114,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${CMAKE_CURRENT_LIST_DIR}/include/cli
                     ${CMAKE_CURRENT_LIST_DIR}/include/mng
                     ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-                    # ${CMAKE_CURRENT_LIST_DIR}/include/ipc
                     ${CMAKE_CURRENT_LIST_DIR}/hal
                     ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/common
                     ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/host
@@ -126,25 +125,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${RL_LIB} pthread json-c)
-
-if(0)
-  add_executable(cli-mng
-                 ${HAL_SRC_LIST}
-                 ${CLI_SRC_LIST}
-                 ${MNG_SRC_LIST}
-                 ${UTILS_SRC_LIST}
-                 ${CMAKE_CURRENT_LIST_DIR}/main.c
-                 ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
-  target_link_libraries(cli-mng m ${RL_LIB} pthread)
-  target_compile_definitions(cli-mng PUBLIC CLI_MNG)
-  add_executable(cfg
-                 ${CFG_SRC_LIST}
-                 ${UTILS_SRC_LIST}
-                 ${CMAKE_CURRENT_LIST_DIR}/main.c
-                 ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
-  target_link_libraries(cfg m json-c glib-2.0)
-  target_compile_definitions(cfg PUBLIC CFG)
-endif()
 
 add_custom_command(
   TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
