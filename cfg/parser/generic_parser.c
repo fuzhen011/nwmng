@@ -107,6 +107,11 @@ err_t provset_netkeyid(const uint16_t *id)
   return gp.write(PROV_CFG_FILE, wrt_prov_netkey_id, NULL, (void *)id);
 }
 
+err_t provset_netkeyval(const uint8_t *val)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_val, NULL, (void *)val);
+}
+
 err_t provset_netkeydone(const uint8_t *done)
 {
   return gp.write(PROV_CFG_FILE, wrt_prov_netkey_done, NULL, (void *)done);
@@ -180,6 +185,22 @@ err_t nodes_rm(uint16_t addr)
   cfgdb_nodes_remove(n, 0);
   n->addr = 0;
   cfgdb_unpl_add(n);
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_addr, n->uuid, (void *)&n->addr);
+  elog(e);
+  return e;
+}
+
+err_t nodes_bl(uint16_t addr)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  cfgdb_nodes_remove(n, 0);
+  n->addr = 0;
+  n->done = 0;
+  cfgdb_unpl_add(n);
+  e = gp.write(NW_NODES_CFG_FILE, wrt_done, (void *)n->uuid, (void *)&n->done);
+  elog(e);
   e = gp.write(NW_NODES_CFG_FILE, wrt_node_addr, n->uuid, (void *)&n->addr);
   elog(e);
   return e;

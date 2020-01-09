@@ -102,18 +102,25 @@ typedef struct {
 
 enum {
   bl_idle,
+  bl_prepare,
+  bl_starting,
   bl_busy,
   bl_done
 };
+
+typedef struct {
+  node_t *n;
+  uint8_t phase;
+}remainig_nodes_t;
+
 typedef struct {
   int state; /* @ref{bl_xxx} */
-  node_t *node;
-  /* target network size = 32 * 8 = 256 */
+  int offset;
+  int tail;
   struct {
-    lbitmap_t phase1[8];
-    lbitmap_t phase2[8];
-    lbitmap_t phase3[8];
-  }status;
+    int num;
+    remainig_nodes_t *nodes;
+  }rem;
 }bl_cache_t;
 
 typedef enum {
@@ -151,7 +158,7 @@ typedef struct {
       config_cache_t cache[MAX_CONCURRENT_CONFIG_NODES];
     }config;
     bl_cache_t bl;
-    struct{
+    struct {
       uint8_t type;
       uint8_t value;
       GList *nodes;
@@ -182,6 +189,8 @@ void cmd_enq(const char *str, int offs);
 wordexp_t *cmd_deq(int *offs);
 
 int dev_add_hdr(const struct gecko_cmd_packet *evt);
+int bl_hdr(const struct gecko_cmd_packet *e);
+
 void mng_load_lists(void);
 void on_lists_changed(void);
 
@@ -193,6 +202,8 @@ err_t clicb_lightness(int argc, char *argv[]);
 err_t clicb_ct(int argc, char *argv[]);
 
 bool models_check(mng_t *mng);
+
+bool bl_loop(void *p);
 #ifdef __cplusplus
 }
 #endif

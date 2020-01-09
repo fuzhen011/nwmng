@@ -1726,6 +1726,16 @@ static inline void __provself_setnetkeyid(provcfg_t *pc, void *data)
   __kv_replace(jcfg.prov.keys.netkey, STR_ID, buf);
 }
 
+static inline void __provself_setnetkeyval(provcfg_t *pc, void *data)
+{
+  err_t e;
+  memcpy(pc->subnets[0].netkey.val, data, 16);
+  char buf[33] = { 0 };
+  if (ec_success != (e = cbuf2str((char *)data, 16, 0, buf, 33))) {
+    return;
+  }
+  __kv_replace(jcfg.prov.keys.netkey, STR_VALUE, buf);
+}
 static inline void __provself_setnetkeydone(provcfg_t *pc, void *data)
 {
   pc->subnets[0].netkey.done = *(uint8_t *)data;
@@ -1770,6 +1780,9 @@ static err_t write_provself(int wrtype,
       break;
     case wrt_prov_netkey_id:
       __provself_setnetkeyid(provcfg, data);
+      break;
+    case wrt_prov_netkey_val:
+      __provself_setnetkeyval(provcfg, data);
       break;
     case wrt_prov_netkey_done:
       __provself_setnetkeydone(provcfg, data);

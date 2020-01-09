@@ -228,7 +228,6 @@ static void set_mng_state(void)
     acc_init(true);
   } else if (g_list_length(mng.lists.bl)) {
     mng.state = blacklisting_devices_em;
-    acc_init(true);
   } else {
     mng.state = configured;
   }
@@ -255,6 +254,9 @@ void *mng_mainloop(void *p)
         break;
       case removing_devices_em:
         busy |= acc_loop(&mng);
+        break;
+      case blacklisting_devices_em:
+        busy |= bl_loop(&mng);
         break;
       case stopping:
         mng.state = configured;

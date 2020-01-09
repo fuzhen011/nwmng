@@ -34,6 +34,7 @@ enum {
   wrt_prov_ivi,
   wrt_prov_synctime,
   wrt_prov_netkey_id,
+  wrt_prov_netkey_val,
   wrt_prov_netkey_done,
   wrt_prov_appkey_id,
   wrt_prov_appkey_done,
@@ -102,6 +103,7 @@ err_t provset_ivi(const uint32_t *ivi);
 err_t provset_synctime(int len, const char *arg);
 err_t provset_netkeyid(const uint16_t *id);
 err_t provset_netkeydone(const uint8_t *done);
+err_t provset_netkeyval(const uint8_t *val);
 err_t provset_appkeyid(const uint16_t *refid, const uint16_t *id);
 err_t provset_appkeydone(const uint16_t *refid, const uint8_t *done);
 err_t _upldev_check(int len, const char *arg);
@@ -112,8 +114,9 @@ err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr);
 
 err_t nodeset_errbits(uint16_t addr, lbitmap_t err);
 err_t nodeset_done(uint16_t addr, uint8_t done);
-err_t nodes_rm(uint16_t addr);
 err_t nodeset_func(uint16_t addr, uint8_t func);
+err_t nodes_rm(uint16_t addr);
+err_t nodes_bl(uint16_t addr);
 const char *nodeget_cfgstr(uint16_t addr);
 #ifdef __cplusplus
 }

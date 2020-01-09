@@ -32,6 +32,7 @@ static volatile int ncp_sync = false;
 static bgevt_hdr hdrs[] = {
   dev_add_hdr,
   dev_config_hdr,
+  bl_hdr,
   bgevt_dflt_hdr,
   NULL
 };
