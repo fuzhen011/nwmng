@@ -442,13 +442,10 @@ static int config_engine(void)
 
     busy |= to_next_state(cache);
     if (cache->state == end_em || cache->state == rmend_em) {
-      if (cache->err_cache.bgcall != 0
-          || cache->err_cache.bgevt != 0) {
+      if (cache->err_cache.bgcall || cache->err_cache.bgevt) {
         /* Error happens, add the node to fail list */
         mng->lists.fail = g_list_append(mng->lists.fail, cache->node);
       }
-      bt_shell_printf("Node[%x] Configured\n", cache->node->addr);
-      LOGM("Node[%x] Configured\n", cache->node->addr);
       __cache_reset_idx(i);
     }
   }

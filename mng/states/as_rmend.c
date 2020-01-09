@@ -13,6 +13,7 @@
 #include "logging.h"
 #include "generic_parser.h"
 #include "gecko_bglib.h"
+#include "cli.h"
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -39,7 +40,8 @@ int rmend_entry(config_cache_t *cache, func_guard guard)
 static void __on_success(config_cache_t *cache)
 {
   uint16_t ret;
-  LOGM("Node[%x]: Has Been Removed Properly.\n", cache->node->addr);
+  LOGM("Node[%x]: Removed.\n", cache->node->addr);
+  bt_shell_printf("Node[%x] Removed\n", cache->node->addr);
 
   nodeset_errbits(cache->node->addr, 0);
   nodeset_done(cache->node->addr, 0);
