@@ -13,6 +13,10 @@
 #include "cli.h"
 #include "utils.h"
 /* Defines  *********************************************************** */
+enum {
+  type_config,
+  type_rm,
+};
 
 /* Global Variables *************************************************** */
 
@@ -134,22 +138,17 @@ const char *stateNames[] = {
 
 /* Static Functions Declaractions ************************************* */
 static int config_engine(void);
-static inline void __cache_reset(config_cache_t *c,
-                                 node_t *n /* TODO: remove it if not necessary */
-                                 )
+static inline void __cache_reset(config_cache_t *c)
 {
   memset(c, 0, sizeof(config_cache_t));
   c->state = provisioned_em;
   c->next_state = get_dcd_em;
-  /* c->nodeIndex = INVALID_NODE_INDEX; */
-  /* c->selfId = index; */
-  c->node = n;
 }
 
 static inline void __cache_reset_idx(int i)
 {
   BIT_CLR(get_mng()->cache.config.used, i);
-  __cache_reset(&get_mng()->cache.config.cache[i], NULL);
+  __cache_reset(&get_mng()->cache.config.cache[i]);
 }
 
 err_t add_state_after(const acc_state_t *ps, acc_state_emt state)
@@ -209,7 +208,7 @@ static void __acc_reset(bool use_default)
   }
 
   for (int i = 0; i < MAX_CONCURRENT_CONFIG_NODES; i++) {
-    __cache_reset(&mng->cache.config.cache[i], NULL);
+    __cache_reset(&mng->cache.config.cache[i]);
   }
   mng->cache.config.used = 0;
 
@@ -242,15 +241,8 @@ void acc_init(bool use_default)
     return;
   }
   __acc_reset(use_default);
-
-  /* TODO: sigInit(); and timerInit(); */
   acc.started = true;
 }
-
-enum {
-  type_config,
-  type_rm,
-};
 
 static void __cache_item_load(mng_t *mng,
                               int ofs,

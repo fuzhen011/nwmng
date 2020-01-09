@@ -441,9 +441,8 @@ uint16list_t *get_lights_addrs(uint8_t func)
 
 void cfg_load_mnglists(GTraverseFunc func)
 {
-  LOGD("UPL size %u\n", g_tree_nnodes(db.devdb.unprov_devs));
-  LOGD("Node size %u\n", g_tree_nnodes(db.devdb.nodes));
-
+  /* LOGD("UPL size %u\n", g_tree_nnodes(db.devdb.unprov_devs)); */
+  /* LOGD("Node size %u\n", g_tree_nnodes(db.devdb.nodes)); */
   g_tree_foreach(db.devdb.unprov_devs, func, NULL);
   g_tree_foreach(db.devdb.nodes, func, NULL);
 }

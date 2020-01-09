@@ -89,7 +89,6 @@ int cli_proc(int argc, char *argv[])
 {
   int ret, tmp;
   err_t e;
-  LOGD("CLI-MNG Process Started Up\n");
 
 #if (__APPLE__ == 1)
   signal(SIGTTIN, SIG_IGN);
@@ -101,7 +100,7 @@ int cli_proc(int argc, char *argv[])
   }
 
   ret = setjmp(initjmpbuf);
-  LOGM("Init cli-mng from %d\n", ret);
+  LOGM("Program Started Up, Initialization Bitmap - 0x%x\n", ret);
   if (mng_started && 0 != (tmp = pthread_cancel(mng_tid))) {
     LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
   }

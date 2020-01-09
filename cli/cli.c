@@ -194,7 +194,7 @@ err_t cli_init(void *p)
   rl_erase_empty_line = 1;
   using_history();
   read_history(RL_HISTORY);
-  LOGD("cli init done\n");
+  LOGD("CLI Init Done\n");
   return ec_success;
 }
 

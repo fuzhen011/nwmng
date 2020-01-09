@@ -412,6 +412,18 @@ static err_t _load_features(json_object *obj,
     }
   }
 
+  if (json_object_object_get_ex(o, STR_LPN, &tmp)) {
+    /* Informtive */
+    v = json_object_get_string(tmp);
+    if (!strcmp(v, "0x01")) {
+      BIT_SET(p->current, LPN_BITOFS);
+      BIT_SET(p->target, LPN_BITOFS);
+    } else {
+      BIT_CLR(p->current, LPN_BITOFS);
+      BIT_CLR(p->target, LPN_BITOFS);
+    }
+  }
+
   return ec_success;
 
   free:

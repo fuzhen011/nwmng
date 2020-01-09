@@ -46,7 +46,6 @@ err_t nwk_init(void *p)
       usleep(500);
       continue;
     }
-    LOGM("NCP: prov initialized\n");
     mng->state = initialized;
     err_t ein = on_initialized_config(&evt->data.evt_mesh_prov_initialized);
     if (ec_success == ein) {
@@ -57,6 +56,7 @@ err_t nwk_init(void *p)
       LOGBGE("generic client init", ret);
       return err(ec_bgrsp);
     }
+    LOGM("NCP ---> NWK Initialized\n");
     return ein;
   }
 }
@@ -149,7 +149,7 @@ static void self_config(const mng_t *mng)
       LOGBGE("Set local timeouts", ret);
       return;
     }
-    LOGM("Set config client timeout [normal node/LPN] = [%dms/%dms] Success\n",
+    LOGM("Set config client timeout for normal node/LPN [%dms/%dms] Success\n",
          mng->cfg->timeout->normal,
          mng->cfg->timeout->lpn);
   }

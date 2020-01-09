@@ -33,6 +33,9 @@
 /* Defines  *********************************************************** */
 #define INVALID_CONN_HANDLE 0xff
 
+#define BL_BITMASK  0x01
+#define RM_BITMASK  0x10
+
 /* Global Variables *************************************************** */
 extern const command_t commands[];
 extern pthread_mutex_t qlock, hdrlock;
@@ -335,10 +338,12 @@ void mng_load_lists(void)
   }
   __lists_clr();
   cfg_load_mnglists(load_lists);
+  LOGM("[%d-%d-%d-%d] loaded to be [added-configured-removed-blacklisted]\n",
+       g_list_length(mng.lists.add),
+       g_list_length(mng.lists.config),
+       g_list_length(mng.lists.rm),
+       g_list_length(mng.lists.bl));
 }
-
-#define BL_BITMASK  0x01
-#define RM_BITMASK  0x10
 
 void list_nodes(void)
 {
@@ -392,6 +397,7 @@ static gboolean load_lists(gpointer key, gpointer value, gpointer data)
     }
     if (!n->rmorbl) {
       mng.lists.add = g_list_append(mng.lists.add, n);
+      /* LOGM("Lists One Unprovisioned device\n"); */
     }
   } else {
     /* Priority: Blacklist > remove > config */
@@ -404,12 +410,15 @@ static gboolean load_lists(gpointer key, gpointer value, gpointer data)
     if (n->rmorbl & BL_BITMASK) {
       mng.lists.bl = g_list_append(mng.lists.bl, n);
     } else if (n->rmorbl & RM_BITMASK) {
-      mng.lists.rm = g_list_append(mng.lists.rm, n);
+      if ((n->config.features.target & LPN_BITOFS)) {
+        mng.lists.rm = g_list_prepend(mng.lists.rm, n);
+      } else {
+        mng.lists.rm = g_list_append(mng.lists.rm, n);
+      }
     } else if (!n->done) {
       mng.lists.config = g_list_append(mng.lists.config, n);
     }
   }
-  LOGM("Lists One %s\n", n->addr ? "Node" : "Unprovisioned device");
   return FALSE;
 }
 

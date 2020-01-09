@@ -275,7 +275,7 @@ static void log_welcome(void)
   char buf[200] = { 0 };
   snprintf(buf, 200,
            RTT_CTRL_BG_BRIGHT_BLUE
-           "NWMNG LOG - Compiled at %s - %s"
+           "* * * * * NWMNG LOG - Compiled at %s - %s"
            RTT_CTRL_RESET
            "\n"
            ,
