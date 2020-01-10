@@ -17,7 +17,7 @@
 
 #include <sys/stat.h>
 
-#include "cfgdb.h"
+#include "cfg.h"
 #include "generic_parser.h"
 #include "json_object.h"
 #include "json_parser.h"

@@ -269,6 +269,11 @@ static inline int fmt_key(char *buf, const uint8_t *key)
   return inline_ofs;
 }
 
+/******************************************************************
+ * Utils for printing
+ * ***************************************************************/
+void uprint_tmpl(uint16_t refid);
+
 #ifdef __cplusplus
 }
 #endif

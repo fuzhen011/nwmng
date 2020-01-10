@@ -11,7 +11,7 @@
 #include "utils.h"
 #include "generic_parser.h"
 #include "cli.h"
-#include "cfgdb.h"
+#include "cfg.h"
 
 /* Defines  *********************************************************** */
 #define KRF_MSG                                "Key Refresh Started\n"

@@ -78,6 +78,7 @@ set(CFG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/json_parser.c)
 set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/utils.c
+    ${CMAKE_CURRENT_LIST_DIR}/utils/utils_print.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c)
 

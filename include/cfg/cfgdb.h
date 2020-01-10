@@ -19,6 +19,7 @@ extern "C"
 
 #include "utils.h"
 
+/* Tree ID */
 enum {
   tmpl_em,
   upl_em,
@@ -114,6 +115,11 @@ typedef struct {
   }models;
 }node_t;
 
+/**
+ * @brief All the mesh keys used in this program are identified by the @{refid},
+ * the reason why not use the real id is the key could be used before it is
+ * created, so the real id is unknown at that point.
+ */
 typedef struct {
   uint16_t refid;
   uint16_t id;
@@ -148,8 +154,8 @@ typedef struct {
   GTree *unprov_devs;
   GTree *nodes;
   GTree *backlog;
-  GQueue *lights;
-  /* TODO: Add queue to each item */
+  /* TODO: Below 2 lists are not used yet */
+  /* Ideas are to keep them as "set" and add node list to each group entry */
   GList *pubgroups;
   GList *subgroups;
 } cfg_devdb_t;
@@ -161,34 +167,86 @@ typedef struct {
   provcfg_t self;
 }cfgdb_t;
 
+/**
+ * @brief cfgdb_init - initialized the cfg database, allocate initial memory.
+ *
+ * @return @ref{err_t}
+ */
 err_t cfgdb_init(void);
+
+/**
+ * @brief cfgdb_deinit - de-initialized the cfg database, free all the
+ * allocated memory.
+ */
 void cfgdb_deinit(void);
 
+/**
+ * @brief cfgdb_get_devnum - get the node number in the specified device tree.
+ *
+ * @param which - tree ID
+ *
+ * @return - number of nodes in the tree
+ */
 int cfgdb_get_devnum(int which);
-
+/**
+ * @defgroup cfgdb_get
+ *
+ * CFG database get functions. Input is the key, return the node if found and
+ * NULL if not found.
+ *
+ * @{ */
 node_t *cfgdb_node_get(uint16_t addr);
 node_t *cfgdb_unprov_dev_get(const uint8_t *uuid);
 node_t *cfgdb_backlog_get(const uint8_t *uuid);
 tmpl_t *cfgdb_tmpl_get(uint16_t refid);
+/**  @} */
 
+/**
+ * @defgroup cfgdb_add
+ *
+ * CFG database add functions. Node should be allocated outside, functions will
+ * check if it's already in the database, if yes, compare both pointers, if
+ * equal, do nothing, if not, replace the existing one which will be freed
+ * afterwards. If not in, add it.
+ *
+ * @{ */
 err_t cfgdb_backlog_add(node_t *n);
 err_t cfgdb_unpl_add(node_t *n);
 err_t cfgdb_nodes_add(node_t *n);
-
+err_t cfgdb_tmpl_add(tmpl_t *n);
+/**  @} */
+/**
+ * @defgroup cfgdb_remove
+ *
+ * Remove a node from the specified tree, if destory is ture, the memory will be
+ * freed, if destory is false, the memory will be kept.
+ *
+ * @{ */
 err_t cfgdb_backlog_remove(node_t *n, bool destory);
 err_t cfgdb_unpl_remove(node_t *n, bool destory);
 err_t cfgdb_nodes_remove(node_t *n, bool destory);
-
 void cfgdb_remove_all_upl(void);
 void cfgdb_remove_all_nodes(void);
-
 err_t cfgdb_tmpl_remove(tmpl_t *n);
-err_t cfgdb_tmpl_add(tmpl_t *n);
+/**  @} */
 
 provcfg_t *get_provcfg(void);
+
 void cfg_load_mnglists(GTraverseFunc func);
 
+/**
+ * @brief get_node_addrs - get the list of nodes in the provisioned database,
+ * calling function needs to free the returned list if not NULL.
+ *
+ * @return list of nodes, or NULL if empty
+ */
 uint16list_t *get_node_addrs(void);
+/**
+ * @brief get_node_addrs - get the list of light nodes in the provisioned
+ * database, calling function needs to free the returned list if not NULL.
+ *
+ * @return list of nodes, or NULL if empty
+ */
 uint16list_t *get_lights_addrs(uint8_t func);
 #ifdef __cplusplus
 }

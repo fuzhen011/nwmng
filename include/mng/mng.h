@@ -16,7 +16,7 @@ extern "C"
 #include "err.h"
 #include "projconfig.h"
 #include "host_gecko.h"
-#include "cfgdb.h"
+#include "cfg.h"
 
 typedef struct {
   bool busy;

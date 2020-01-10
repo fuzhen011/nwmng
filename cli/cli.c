@@ -23,14 +23,15 @@
 
 #include <readline/history.h>
 
-#include "cfgdb.h"
 #include "projconfig.h"
+#include "cli.h"
+#include "cfg.h"
+#include "mng.h"
+
 #include "startup.h"
 #include "utils.h"
 #include "err.h"
 #include "logging.h"
-#include "cli/cli.h"
-#include "mng.h"
 
 /* Defines  *********************************************************** */
 #define DECLARE_CB(name)  static err_t clicb_##name(int argc, char *argv[])

@@ -9,7 +9,7 @@
 /* #include "dev_add.h" */
 #include <glib.h>
 
-#include "cfgdb.h"
+#include "cfg.h"
 #include "mng.h"
 #include "utils.h"
 #include "logging.h"
@@ -60,10 +60,22 @@ static inline void rmcached(mng_t *mng,
   }
 }
 
+/* only pass the prov class events */
+static inline bool is_add_events(const struct gecko_cmd_packet *e)
+{
+  uint32_t evt_id = BGLIB_MSG_ID(e->header);
+  return ((evt_id & 0x000000ff) == 0x000000a0
+          && (evt_id & 0x00ff0000) == 0x00150000);
+}
+
 int dev_add_hdr(const struct gecko_cmd_packet *evt)
 {
   mng_t *mng = get_mng();
   ASSERT(evt);
+
+  if (!is_add_events(evt)) {
+    return 0;
+  }
 
   if (mng->state != adding_devices_em && mng->status.free_mode != 2) {
     return 0;
@@ -75,7 +87,6 @@ int dev_add_hdr(const struct gecko_cmd_packet *evt)
       on_beacon_recv(&evt->data.evt_mesh_prov_unprov_beacon);
     }
     break;
-
     case gecko_evt_mesh_prov_device_provisioned_id:
     {
       on_prov_success(&evt->data.evt_mesh_prov_device_provisioned);

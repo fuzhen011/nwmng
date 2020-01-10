@@ -12,6 +12,7 @@ extern "C"
 {
 #endif
 #include "err.h"
+#include "cfgdb.h"
 
 err_t cfg_init(void *p);
 

@@ -13,7 +13,6 @@
 #include "projconfig.h"
 #include "json_parser.h"
 #include "generic_parser.h"
-#include "cfgdb.h"
 #include "cfg.h"
 #include "mng.h"
 

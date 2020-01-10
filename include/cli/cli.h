@@ -16,7 +16,7 @@ extern "C"
 #include <readline/readline.h>
 
 #include "err.h"
-#include "cfgdb.h"
+#include "cfg.h"
 #include "gecko_bglib.h"
 
 #define __DUMP_PARAMS

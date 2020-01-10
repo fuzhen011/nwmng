@@ -35,16 +35,13 @@
 /* Provisioned nodes use unicast address as key */
 #define KEY_FROM_ADDR(addr) ((gpointer)(&addr))
 #define NODE_KEY(n) (KEY_FROM_ADDR(n->addr))
-
 #define TMPL_KEY(refid) ((gpointer)(&(refid)))
 
-/* Get the hash table by address and template ID fields */
+/* Get the tree by address and template ID fields */
 #define __HTB(addr, tmpl)                       \
   ((addr) ? db.devdb.nodes                      \
    : ((tmpl) && *(tmpl)) ? db.devdb.unprov_devs \
    : db.devdb.backlog)
-
-#define _HTB(addr) ((addr) ? db.devdb.nodes : db.devdb.unprov_devs)
 
 #define G_KEY(n) ((n)->addr == 0 ? UNPROV_DEV_KEY((n)) : NODE_KEY((n)))
 #define G_HTB(n) (__HTB(n->addr, n->tmpl))
@@ -53,18 +50,6 @@
 static cfgdb_t db = { 0 };
 
 /* Static Functions Declaractions ************************************* */
-static err_t __cfgdb_remove(node_t *n, GTree *tree, bool destory);
-void dump__(gpointer key,
-            gpointer value,
-            gpointer ud)
-{
-  LOGM("%d key found.\n", *(uint8_t *)key);
-}
-
-void cfgdb_test(void)
-{
-}
-
 static void node_free(void *p)
 {
   if (!p) {
@@ -124,7 +109,6 @@ err_t cfgdb_init(void)
   db.devdb.nodes = g_tree_new_full(u16_comp, NULL, NULL, node_free);
   db.devdb.templates = g_tree_new_full(u16_comp, NULL, NULL, tmpl_free);
   db.devdb.backlog = g_tree_new_full(uuid_comp, NULL, NULL, node_free);
-  db.devdb.lights = g_queue_new();
   db.initialized = 1;
   return ec_success;
 }
@@ -151,10 +135,6 @@ void cfgdb_deinit(void)
   if (db.devdb.backlog) {
     g_tree_destroy(db.devdb.backlog);
     db.devdb.backlog = NULL;
-  }
-  if (db.devdb.lights) {
-    g_queue_free_full(db.devdb.lights, free);
-    db.devdb.lights = NULL;
   }
   if (db.devdb.unprov_devs) {
     g_tree_destroy(db.devdb.unprov_devs);
@@ -229,11 +209,6 @@ tmpl_t *cfgdb_tmpl_get(uint16_t refid)
   return (tmpl_t *)g_tree_lookup(db.devdb.templates, TMPL_KEY(refid));
 }
 
-/* static node_t *__cfgdb_get(node_t *n) */
-/* { */
-/* return (node_t *)g_tree_lookup(G_HTB(n), G_KEY(n)); */
-/* } */
-
 err_t cfgdb_tmpl_remove(tmpl_t *n)
 {
   CHECK_STATE(ec_state);
@@ -255,7 +230,7 @@ err_t cfgdb_tmpl_add(tmpl_t *n)
   /* Check if it's already in? */
   tmp = cfgdb_tmpl_get(n->refid);
   if (tmp && tmp != n) {
-    /* key n->addr already has a value in hash table and the value doesn't equal
+    /* key n->addr already has a value in tree and the value doesn't equal
      * to n, need to remove and free it first, then add */
     e = cfgdb_tmpl_remove(tmp);
     if (ec_success != e) {
@@ -266,6 +241,22 @@ err_t cfgdb_tmpl_add(tmpl_t *n)
   }
 
   g_tree_insert(db.devdb.templates, TMPL_KEY(n->refid), n);
+  return ec_success;
+}
+
+static err_t __cfgdb_remove(node_t *n, GTree *tree, bool destory)
+{
+  CHECK_STATE(ec_state);
+  if (!n || !tree) {
+    return err(ec_param_invalid);
+  }
+  pthread_rwlock_wrlock(&db.lock);
+  if (destory) {
+    g_tree_remove(G_HTB(n), G_KEY(n));
+  } else {
+    g_tree_steal(G_HTB(n), G_KEY(n));
+  }
+  pthread_rwlock_unlock(&db.lock);
   return ec_success;
 }
 
@@ -312,22 +303,6 @@ err_t cfgdb_unpl_add(node_t *n)
 err_t cfgdb_nodes_add(node_t *n)
 {
   return __cfgdb_add(n, db.devdb.nodes);
-}
-
-static err_t __cfgdb_remove(node_t *n, GTree *tree, bool destory)
-{
-  CHECK_STATE(ec_state);
-  if (!n || !tree) {
-    return err(ec_param_invalid);
-  }
-  pthread_rwlock_wrlock(&db.lock);
-  if (destory) {
-    g_tree_remove(G_HTB(n), G_KEY(n));
-  } else {
-    g_tree_steal(G_HTB(n), G_KEY(n));
-  }
-  pthread_rwlock_unlock(&db.lock);
-  return ec_success;
 }
 
 err_t cfgdb_backlog_remove(node_t *n, bool destory)
