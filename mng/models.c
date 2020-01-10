@@ -30,7 +30,7 @@ err_t clicb_onoff(int argc, char *argv[])
     cli_print_busy();
     return err(ec_state);
   }
-  if (argc < 3) {
+  if (argc < 2) {
     return err(ec_param_invalid);
   }
   if (!strcmp(argv[1], "on")) {
@@ -41,15 +41,30 @@ err_t clicb_onoff(int argc, char *argv[])
     return err(ec_param_invalid);
   }
 
-  for (int i = 2; i < argc; i++) {
-    uint16 *addr = malloc(sizeof(uint16_t));
-    if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
-      LOGD("str2uint failed\n");
-      free(addr);
-      continue;
+  if (argc == 2) {
+    uint16list_t *addrs = get_lights_addrs(onoff_support);
+    if (!addrs) {
+      return e;
     }
-    mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 2; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGD("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+    }
   }
+
   if (mng->cache.model_set.nodes) {
     mng->cache.model_set.type = onoff_support;
   }
@@ -74,7 +89,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
     cli_print_busy();
     return err(ec_state);
   }
-  if (argc < 3) {
+  if (argc < 2) {
     return err(ec_param_invalid);
   }
 
@@ -86,14 +101,28 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
     return err(ec_param_invalid);
   }
 
-  for (int i = 2; i < argc; i++) {
-    uint16 *addr = malloc(sizeof(uint16_t));
-    if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
-      LOGD("str2uint failed\n");
-      free(addr);
-      continue;
+  if (argc == 2) {
+    uint16list_t *addrs = get_lights_addrs(onoff_support);
+    if (!addrs) {
+      return e;
     }
-    mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 2; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGD("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+    }
   }
   if (mng->cache.model_set.nodes) {
     mng->cache.model_set.type = type;

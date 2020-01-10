@@ -29,7 +29,7 @@
 
 #define SUC_P(cache)                                                                 \
   do {                                                                               \
-    LOGD(                                                                            \
+    LOGM(                                                                            \
       "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \

@@ -3,6 +3,41 @@
     {
       "RefId":"0x0001",
       "TTL":"0x03",
+      "xFeatures":{
+        "Low Power":"0x00",
+        "Proxy":"0x01",
+        "Friend":"0x01",
+        "Relay":{
+          "Enable":"0x01",
+          "Count":"0x02",
+          "Interval":"0x0032"
+        }
+      },
+      "Publish To":{
+        "Address":"0xC001",
+        "AppKey":"0x0000",
+        "xPeriod":"0x00002710",
+        "TTL":"0x11",
+        "TX Parameters":{
+          "Count":"0x03",
+          "Interval":"0x01F4"
+        }
+      },
+      "xSecure Network Beacon":"0x01",
+      "xTX Parameters":{
+        "Count":"0x03",
+        "Interval":"0x001E"
+      },
+      "Bind Appkeys":[
+        "0x0000"
+      ],
+      "Subscribe from":[
+        "0xC021"
+      ]
+    },
+    {
+      "RefId":"0x0011",
+      "TTL":"0x03",
       "Features":{
         "Low Power":"0x00",
         "Proxy":"0x01",

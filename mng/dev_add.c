@@ -184,12 +184,13 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
 {
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
-  LOGW("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
+  LOGE("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
   /*
    * TODO:
    *
    * 1. Remove from cache.
    * 2. Set the error bits to cfg
    */
-  TODOASSERT();
+  /* Remove from cache. */
+  rmcached(get_mng(), evt->uuid.data);
 }

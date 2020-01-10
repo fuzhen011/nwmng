@@ -23,7 +23,7 @@
 
 #define SUC_P(cache)                                                                      \
   do {                                                                                    \
-    LOGD("Node[%x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n",                            \
+    LOGM("Node[%x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n",                            \
          cache->node->addr,                                                               \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id); \
   } while (0)

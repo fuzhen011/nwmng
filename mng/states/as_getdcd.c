@@ -31,7 +31,7 @@
 
 #define SUC_P(cache)                                             \
   do {                                                           \
-    LOGD("Node[%x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
+    LOGM("Node[%x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
   } while (0)
 
 #define FAIL_P(cache, err)                                \

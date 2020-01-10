@@ -389,7 +389,7 @@ static void set_configs_print_state(int which,
                IS_BIT_SET(cache->node->config.features.target, RELAY_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGD(SET_RELAY_SUC_MSG,
+          LOGM(SET_RELAY_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, RELAY_BITOFS) ? "ON" : "OFF");
           break;
@@ -411,7 +411,7 @@ static void set_configs_print_state(int which,
                IS_BIT_SET(cache->node->config.features.target, PROXY_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGD(SET_PROXY_SUC_MSG,
+          LOGM(SET_PROXY_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, PROXY_BITOFS) ? "ON" : "OFF");
           break;
@@ -433,7 +433,7 @@ static void set_configs_print_state(int which,
                IS_BIT_SET(cache->node->config.features.target, FRIEND_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGD(SET_FRIEND_SUC_MSG,
+          LOGM(SET_FRIEND_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, FRIEND_BITOFS) ? "ON" : "OFF");
           break;
@@ -455,7 +455,7 @@ static void set_configs_print_state(int which,
                *cache->node->config.ttl);
           break;
         case success_em:
-          LOGD(SET_TTL_SUC_MSG,
+          LOGM(SET_TTL_SUC_MSG,
                cache->node->addr,
                *cache->node->config.ttl);
           break;
@@ -478,7 +478,7 @@ static void set_configs_print_state(int which,
                cache->node->config.net_txp->intv);
           break;
         case success_em:
-          LOGD(SET_NETTX_SUC_MSG,
+          LOGM(SET_NETTX_SUC_MSG,
                cache->node->addr,
                cache->node->config.net_txp->cnt,
                cache->node->config.net_txp->intv);
@@ -502,7 +502,7 @@ static void set_configs_print_state(int which,
                IS_BIT_SET(cache->node->config.features.target, SNB_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGD(SET_SNB_SUC_MSG,
+          LOGM(SET_SNB_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, SNB_BITOFS) ? "ON" : "OFF");
           break;

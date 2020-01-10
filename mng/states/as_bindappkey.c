@@ -28,7 +28,7 @@
 
 #define SUC_P(cache, config)                                                             \
   do {                                                                                   \
-    LOGD("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n",            \
+    LOGM("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n",            \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
@@ -71,7 +71,7 @@ static int __bind_appkey(config_cache_t *cache, mng_t *mng)
     : 0xFFFF;
   cache->vnm.md =
     (cache->iterators[MODEL_ITERATOR_INDEX] >= cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt)
-    ? cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].vm[cache->iterators[MODEL_ITERATOR_INDEX] - cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt].vid
+    ? cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].vm[cache->iterators[MODEL_ITERATOR_INDEX] - cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt].mid
     : cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sig_models[cache->iterators[MODEL_ITERATOR_INDEX]];
 
   ret = appkey_by_refid(

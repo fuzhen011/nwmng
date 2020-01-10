@@ -20,7 +20,7 @@
 
 #define SUC_P(cache)                 \
   do {                               \
-    LOGD("Node[%x]:  --- SUCCESS\n", \
+    LOGM("Node[%x]:  --- SUCCESS\n", \
          cache->node->addr);         \
   } while (0)
 
