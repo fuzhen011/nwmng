@@ -65,6 +65,8 @@ extern "C"
  */
 #define CONFIG_NO_RSP_TIMEOUT 3
 
+#define ADD_NO_RSP_TIMEOUT 90
+
 /*
  * Retry times - each config client commands may fail with reasons, retry is
  * implemented, this definitions decide how many times to retry before failure

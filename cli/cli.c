@@ -50,7 +50,6 @@ extern pthread_mutex_t qlock;
 extern err_t cmd_ret;
 
 /* Static Variables *************************************************** */
-
 DECLARE_VAGET_FUN(addrs);
 DECLARE_VAGET_FUN(onoff_lights_addrs);
 DECLARE_VAGET_FUN(lightness_lights_addrs);
@@ -97,9 +96,8 @@ const command_t commands[] = {
 const size_t cli_cmd_num = 3;
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
-int children_num = 0;
-pid_t *children = NULL;
 static char *line = NULL;
+static int reset = 0;
 
 /* Static Functions Declaractions ************************************* */
 char **shell_completion(const char *text, int start, int end);
@@ -547,16 +545,6 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
     fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
     return e;
   }
-
-  if (children) {
-    free(children);
-  }
-  if (child_num) {
-    ASSERT(pids);
-    children = calloc(child_num, sizeof(pid_t));
-    memcpy(children, pids, child_num * sizeof(pid_t));
-    children_num = child_num;
-  }
   return e;
 }
 
@@ -697,6 +685,11 @@ void *cli_mainloop(void *pin)
       write_history(RL_HISTORY);
     }
     wordfree(&w);
+    if (reset) {
+      int r = reset;
+      reset = 0;
+      longjmp(initjmpbuf, (r == 2) ? FACTORY_RESET : NORMAL_RESET);
+    }
   }
   return NULL;
 }
@@ -757,8 +750,7 @@ static err_t clicb_reset(int argc, char *argv[])
     r = atoi(argv[1]);
   }
   bt_shell_printf("%s\n", __FUNCTION__);
-  get_mng()->state = nil;
-  longjmp(initjmpbuf, r ? FACTORY_RESET : NORMAL_RESET);
+  reset = r + 1;
   return 0;
 }
 
@@ -791,8 +783,5 @@ static err_t clicb_scan(int argc, char *argv[])
 static err_t clicb_quit(int argc, char *argv[])
 {
   bt_shell_printf("%s\n", __FUNCTION__);
-  for (int i = 0; i < children_num; i++) {
-    kill(children[i], SIGKILL);
-  }
   exit(EXIT_SUCCESS);
 }

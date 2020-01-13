@@ -38,7 +38,7 @@
 
 #define SUC_P(cache)                               \
   do {                                             \
-    LOGD(SET_PUB_SUC_MSG,                          \
+    LOGM(SET_PUB_SUC_MSG,                          \
          cache->node->addr,                        \
          cache->iterators[ELEMENT_ITERATOR_INDEX], \
          cache->vnm.vd,                            \

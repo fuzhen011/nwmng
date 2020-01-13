@@ -230,6 +230,7 @@ static void set_mng_state(void)
     mng.state = blacklisting_devices_em;
   } else {
     mng.state = configured;
+    LOGM("Sync done\n");
   }
 }
 
@@ -248,7 +249,8 @@ void *mng_mainloop(void *p)
         }
         break;
       case adding_devices_em:
-      /* Do adding_devices_em only jobs */
+        /* Do adding_devices_em only jobs */
+        busy |= add_loop(&mng);
       case configuring_devices_em:
         busy |= acc_loop(&mng);
         break;

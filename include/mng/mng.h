@@ -20,8 +20,10 @@ extern "C"
 
 typedef struct {
   bool busy;
+  time_t expired;
   uint8_t uuid[16];
 }add_cache_t;
+
 /*
  * TODO: Need to clear below?
  */
@@ -206,6 +208,7 @@ err_t clicb_ct(int argc, char *argv[]);
 
 bool models_loop(mng_t *mng);
 bool bl_loop(void *p);
+bool add_loop(void *p);
 
 #ifdef __cplusplus
 }

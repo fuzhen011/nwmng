@@ -153,6 +153,7 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
     return;
   }
   mng->cache.add[freeid].busy = 1;
+  mng->cache.add[freeid].expired = time(NULL) + ADD_NO_RSP_TIMEOUT;
   memcpy(mng->cache.add[freeid].uuid, evt->uuid.data, 16);
 }
 
@@ -164,6 +165,7 @@ static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
   LOGM("%s Provisioned\n", uuid_str);
+  bt_shell_printf("%s Provisioned\n", uuid_str);
 
   /* inform cfg to move the device from unprovisioned list to node list,
    * meanwhile, set the address */
@@ -185,6 +187,7 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
   LOGE("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
+  bt_shell_printf("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
   /*
    * TODO:
    *
@@ -193,4 +196,18 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
    */
   /* Remove from cache. */
   rmcached(get_mng(), evt->uuid.data);
+}
+
+bool add_loop(void *p)
+{
+  mng_t *mng = (mng_t *)p;
+  for (int i = 0; i < MAX_PROV_SESSIONS; i++) {
+    if (!mng->cache.add[i].busy || time(NULL) < mng->cache.add[i].expired) {
+      continue;
+    }
+    /* Remove from cache. */
+    LOGE("Adding expired, clear cache.\n");
+    memset(&mng->cache.add[i], 0, sizeof(add_cache_t));
+  }
+  return false;
 }

@@ -87,6 +87,8 @@ void sync_host_and_ncp_target(void)
           ncp_sync = true;
           break;
         default:
+          gecko_cmd_system_reset(0);
+          LOGD("Sent reset signal to NCP target\n");
           /*
            * Delay before trying again.
            */
