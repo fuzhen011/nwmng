@@ -11,6 +11,7 @@
 
 #include "projconfig.h"
 #include "cfg.h"
+#include "err.h"
 #include "mng.h"
 #include "utils.h"
 #include "logging.h"
@@ -22,12 +23,22 @@
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
+static bool scan_need_recover = false;
 
 /* Static Functions Declaractions ************************************* */
 static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t *evt);
 static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt);
 static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_evt_t *evt);
 
+static inline bool is_cache_full(const mng_t *mng)
+{
+  for (int i = 0; i < MAX_PROV_SESSIONS; i++) {
+    if (!mng->cache.add[i].busy) {
+      return false;
+    }
+  }
+  return true;
+}
 static inline int iscached(const mng_t *mng,
                            const uint8_t *uuid,
                            int *free)
@@ -71,33 +82,31 @@ static inline bool is_add_events(const struct gecko_cmd_packet *e)
 
 int dev_add_hdr(const struct gecko_cmd_packet *evt)
 {
+  uint32_t evtid;
   mng_t *mng = get_mng();
   ASSERT(evt);
 
   if (!is_add_events(evt)) {
     return 0;
   }
-
   if (mng->state != adding_devices_em && mng->status.free_mode != 2) {
     return 0;
   }
+  evtid = BGLIB_MSG_ID(evt->header);
 
-  switch (BGLIB_MSG_ID(evt->header)) {
-    case gecko_evt_mesh_prov_unprov_beacon_id:
-      if (mng->status.oom) {
-        return 1;
-      }
-      on_beacon_recv(&evt->data.evt_mesh_prov_unprov_beacon);
-      break;
-    case gecko_evt_mesh_prov_device_provisioned_id:
-      on_prov_success(&evt->data.evt_mesh_prov_device_provisioned);
-      break;
-    case gecko_evt_mesh_prov_provisioning_failed_id:
-      on_prov_failed(&evt->data.evt_mesh_prov_provisioning_failed);
-      break;
-    default:
-      return 0;
+  if (gecko_evt_mesh_prov_unprov_beacon_id == evtid) {
+    if (mng->status.oom) {
+      return 1;
+    }
+    on_beacon_recv(&evt->data.evt_mesh_prov_unprov_beacon);
+  } else if (gecko_evt_mesh_prov_device_provisioned_id == evtid) {
+    on_prov_success(&evt->data.evt_mesh_prov_device_provisioned);
+  } else if (gecko_evt_mesh_prov_provisioning_failed_id == evtid) {
+    on_prov_failed(&evt->data.evt_mesh_prov_provisioning_failed);
+  } else {
+    return 0;
   }
+
   return 1;
 }
 
@@ -157,6 +166,14 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
   mng->cache.add[freeid].busy = 1;
   mng->cache.add[freeid].expired = time(NULL) + ADD_NO_RSP_TIMEOUT;
   memcpy(mng->cache.add[freeid].uuid, evt->uuid.data, 16);
+
+  if (is_cache_full(mng)) {
+    scan_need_recover = true;
+    ret = gecko_cmd_mesh_prov_stop_scan_unprov_beacons()->result;
+    if (bg_err_success != ret) {
+      LOGBGE("stop unprov beacon scanning", ret);
+    }
+  }
 }
 
 static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_evt_t *evt)
@@ -182,6 +199,13 @@ static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_
 
   /* Remove from cache. */
   rmcached(mng, evt->uuid.data);
+  if (scan_need_recover) {
+    scan_need_recover = false;
+    uint16_t ret = gecko_cmd_mesh_prov_scan_unprov_beacons()->result;
+    if (bg_err_success != ret) {
+      LOGBGE("scan unprov beacon", ret);
+    }
+  }
 }
 
 static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
@@ -198,6 +222,13 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
    */
   /* Remove from cache. */
   rmcached(get_mng(), evt->uuid.data);
+  if (scan_need_recover) {
+    scan_need_recover = false;
+    uint16_t ret = gecko_cmd_mesh_prov_scan_unprov_beacons()->result;
+    if (bg_err_success != ret) {
+      LOGBGE("scan unprov beacon", ret);
+    }
+  }
 }
 
 bool add_loop(void *p)
