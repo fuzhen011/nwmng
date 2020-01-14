@@ -83,21 +83,17 @@ int dev_add_hdr(const struct gecko_cmd_packet *evt)
 
   switch (BGLIB_MSG_ID(evt->header)) {
     case gecko_evt_mesh_prov_unprov_beacon_id:
-    {
+      if (mng->status.oom) {
+        return 1;
+      }
       on_beacon_recv(&evt->data.evt_mesh_prov_unprov_beacon);
-    }
-    break;
+      break;
     case gecko_evt_mesh_prov_device_provisioned_id:
-    {
       on_prov_success(&evt->data.evt_mesh_prov_device_provisioned);
-    }
-    break;
+      break;
     case gecko_evt_mesh_prov_provisioning_failed_id:
-    {
       on_prov_failed(&evt->data.evt_mesh_prov_provisioning_failed);
-    }
-    break;
-
+      break;
     default:
       return 0;
   }
@@ -148,10 +144,15 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
   ret = gecko_cmd_mesh_prov_provision_device(mng->cfg->subnets[0].netkey.id,
                                              16,
                                              evt->uuid.data)->result;
-  if (bg_err_success != ret) {
+  if (bg_err_out_of_memory == ret) {
+    LOGW("provision device OOM\n");
+    mng->status.oom = 1;
+    return;
+  } else if (bg_err_success != ret) {
     LOGBGE("provision device", ret);
     return;
   }
+
   mng->cache.add[freeid].busy = 1;
   mng->cache.add[freeid].expired = time(NULL) + ADD_NO_RSP_TIMEOUT;
   memcpy(mng->cache.add[freeid].uuid, evt->uuid.data, 16);

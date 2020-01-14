@@ -222,6 +222,7 @@ static void set_mng_state(void)
   if (mng.state == starting) {
     mng.status.seq.offs = 0;
   }
+
   bool loaded = false;
   for (; mng.status.seq.offs < 3 && !loaded; mng.status.seq.offs++) {
     if (mng.status.seq.prios[mng.status.seq.offs] == 'a') {
@@ -243,26 +244,16 @@ static void set_mng_state(void)
       loaded = true;
     } else if (mng.status.seq.prios[mng.status.seq.offs] == 'b') {
       mng.state = blacklisting_devices_em;
+    } else if (mng.status.seq.prios[mng.status.seq.offs] == '-') {
+      goto idle;
     } else {
       ASSERT(0);
     }
   }
 
-  if (g_list_length(mng.lists.add)) {
-    if (mng.status.free_mode == 0) {
-      clm_set_scan(1);
-    }
-    mng.state = adding_devices_em;
-    acc_init(true);
-  } else if (g_list_length(mng.lists.config)) {
-    mng.state = configuring_devices_em;
-    acc_init(true);
-  } else if (g_list_length(mng.lists.rm)) {
-    mng.state = removing_devices_em;
-    acc_init(true);
-  } else if (g_list_length(mng.lists.bl)) {
-    mng.state = blacklisting_devices_em;
-  } else {
+  idle:
+  if (!loaded) {
+    mng.status.seq.offs = 0;
     mng.state = configured;
     LOGM("Sync done\n");
   }
@@ -286,8 +277,6 @@ void *mng_mainloop(void *p)
         /* Do adding_devices_em only jobs */
         busy |= add_loop(&mng);
       case configuring_devices_em:
-        busy |= acc_loop(&mng);
-        break;
       case removing_devices_em:
         busy |= acc_loop(&mng);
         break;
@@ -318,7 +307,7 @@ static void poll_cmd(void)
   wordexp_t *w = cmd_deq(&i);
   if (w) {
     DUMP_PARAMS(w->we_wordc, w->we_wordv);
-    if (ec_param_invalid == commands[i].fn(w->we_wordc, w->we_wordv)) {
+    if (ec_param_invalid == errof(commands[i].fn(w->we_wordc, w->we_wordv))) {
       printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
       print_cmd_usage(&commands[i]);
     }
@@ -548,8 +537,33 @@ err_t clicb_rmblclr(int argc, char *argv[])
   return ec_success;
 }
 
+static inline bool seq_valid(const char *seq)
+{
+  for (int i = 0; i < 3; i++) {
+    if (seq[i] != 'a' && seq[i] != 'r' && seq[i] != 'b' && seq[i] != '-') {
+      return false;
+    }
+  }
+  return true;
+}
+
 err_t clicb_seqset(int argc, char *argv[])
 {
-  bt_shell_printf("%s\n", __FUNCTION__);
+  const char *seq;
+  /* bt_shell_printf("%s\n", __FUNCTION__); */
+  if (mng.state > configured) {
+    bt_shell_printf("Device is busy. Try it later or stop it.\n");
+    return ec_success;
+  }
+  if (argc != 2) {
+    return err(ec_param_invalid);
+  }
+
+  seq = argv[1];
+  if (strlen(seq) != 3 || !seq_valid(seq)) {
+    return err(ec_param_invalid);
+  }
+
+  memcpy(mng.status.seq.prios, seq, 3);
   return ec_success;
 }

@@ -83,7 +83,9 @@ const command_t commands[] = {
     "Remove all the nodes" },
   { "clrrb", NULL, clicb_rmblclr,
     "Clear the rm_bl fields of all the nodes" },
-  { "seqset", "[arb/abr/rab/rba/bar/bra]", clicb_seqset,
+  { "seqset",
+    "[a--/r--/b--/ar-/ab-/ra-/rb-/ba-/br-/arb/abr/rab/rba/bar/bra]",
+    clicb_seqset,
     "Set the action loading priority\n"
     "\ta - adding devices\n"
     "\tr - removing devices\n"
@@ -352,14 +354,6 @@ static char **args_completion(const command_t *entry,
     }
   }
 
-  /* if ((unsigned) index > args.we_wordc - 1) { */
-  /* if (args.we_offs == 0) { */
-  /* goto done; */
-  /* } else { */
-  /* goto done; */
-  /* } */
-  /* } */
-
   if (!strrchr(args.we_wordv[index], '/')) {
     goto done;
   }
@@ -438,11 +432,6 @@ char **shell_completion(const char *text, int start, int end)
 
     matches = menu_completion(text, w.we_wordc,
                               w.we_wordv[0]);
-    /* if (!matches) */
-    /* matches = menu_completion(data.menu->entries, text, */
-    /* w.we_wordc, */
-    /* w.we_wordv[0]); */
-
     wordfree(&w);
   }
   if (!matches) {

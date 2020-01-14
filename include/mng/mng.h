@@ -154,9 +154,11 @@ typedef struct {
   mng_state_t state;
   uint8_t conn;
   provcfg_t *cfg;
+
   struct {
     int free_mode;
     seqprio_t seq;
+    bool oom;
   }status;
 
   struct {

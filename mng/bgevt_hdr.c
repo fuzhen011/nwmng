@@ -121,28 +121,34 @@ void sync_host_and_ncp_target(void)
 
 void bgevt_dispenser(void)
 {
-  int ret;
+  bool handled;
   struct gecko_cmd_packet *evt = NULL;
+  mng_t *mng = get_mng();
   if (!ncp_sync) {
     sync_host_and_ncp_target();
     return;
   }
 
   do {
-    ret = 0;
+    handled = false;
     if (get_bguart_impl()->enc) {
       poll_update(50);
     }
     evt = gecko_peek_event();
     if (evt) {
       bgevt_hdr *h = hdrs;
-      while (*h && !ret) {
-        ret = (*h)(evt);
+      while (*h && !handled) {
+        handled = (*h)(evt);
         h++;
       }
-      if (!ret) {
+      if (!handled) {
         LOGW("evt[0x%08x] not handled\n", BGLIB_MSG_ID(evt->header));
       }
     }
   } while (evt);
+
+  if (mng->status.oom) {
+    mng->status.oom = 0;
+    LOGM("Device recovered from OOM once\n");
+  }
 }
