@@ -15,6 +15,7 @@
 
 /* Defines  *********************************************************** */
 #ifdef DEMO_EN
+#if 0
 const char *demo_cmds[] = {
   "onoff on 0xc021",
   "onoff on 0xc022",
@@ -38,6 +39,41 @@ const char *demo_cmds[] = {
   "onoff off 0xc022",
   "onoff off 0xc021",
 };
+#else
+const char *demo_cmds[] = {
+  "lightness 1 0xc021",
+  "lightness 50 0xc021",
+  "lightness 100 0xc021",
+  "lightness 1 0xc022",
+  "lightness 50 0xc022",
+  "lightness 100 0xc022",
+  "lightness 1 0xc023",
+  "lightness 50 0xc023",
+  "lightness 100 0xc023",
+  "lightness 1 0xc024",
+  "lightness 50 0xc024",
+  "lightness 100 0xc024",
+  "lightness 1 0xc025",
+  "lightness 50 0xc025",
+  "lightness 100 0xc025",
+  "lightness 1 0xc026",
+  "lightness 50 0xc026",
+  "lightness 100 0xc026",
+  "lightness 1 0xc027",
+  "lightness 50 0xc027",
+  "lightness 100 0xc027",
+  "lightness 1 0xc028",
+  "lightness 50 0xc028",
+  "lightness 100 0xc028",
+  "lightness 1 0xc029",
+  "lightness 50 0xc029",
+  "lightness 100 0xc029",
+  "lightness 1 0xc02a",
+  "lightness 50 0xc02a",
+  "lightness 100 0xc02a",
+  "onoff off"
+};
+#endif
 static const size_t cmds_len = ARR_LEN(demo_cmds);
 
 #define DEMO_INTERVAL 1
@@ -96,7 +132,14 @@ void check_demo(void)
   if (wordexp(demo_cmds[demo.pos++], &w, WRDE_NOCMD)) {
     return;
   }
-  e = clicb_onoff(w.we_wordc, w.we_wordv);
+  if (!strcmp("onoff", w.we_wordv[0])) {
+    e = clicb_onoff(w.we_wordc, w.we_wordv);
+  } else if (!strcmp("lightness", w.we_wordv[0])) {
+    e = clicb_lightness(w.we_wordc, w.we_wordv);
+  } else {
+    ASSERT(0);
+  }
+
   elog(e);
 
   if (demo.pos == cmds_len) {
