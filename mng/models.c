@@ -144,6 +144,7 @@ void check_demo(void)
 
   if (demo.pos == cmds_len) {
     demo.pos = 0;
+    now += 2;
   }
   demo.expired = now + DEMO_INTERVAL;
   wordfree(&w);
