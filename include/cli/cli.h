@@ -15,6 +15,7 @@ extern "C"
 #include <stdbool.h>
 #include <readline/readline.h>
 
+#include "mng.h"
 #include "err.h"
 #include "cfg.h"
 #include "gecko_bglib.h"
@@ -84,6 +85,7 @@ void cli_print_dev(const node_t *node,
                    const struct gecko_msg_mesh_prov_ddb_get_rsp_t *e);
 void cli_print_modelset_done(uint16_t addr, uint8_t type, uint8_t value);
 void cli_list_nodes(uint16list_t *ul);
+void cli_status(const mng_t *mng);
 #ifdef __cplusplus
 }
 #endif

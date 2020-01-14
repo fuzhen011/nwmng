@@ -98,6 +98,10 @@ const command_t commands[] = {
     "Set the lightness of a light", NULL, NULL, vaget_lightness_lights_addrs },
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
     "Set the color temperature of a light", NULL, NULL, vaget_ctl_lights_addrs },
+
+  /* Debug Commands */
+  { "status", NULL, clicb_status,
+    "Print the device status" },
 };
 
 const size_t cli_cmd_num = 3;

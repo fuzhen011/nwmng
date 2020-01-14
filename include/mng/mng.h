@@ -215,6 +215,8 @@ err_t clicb_onoff(int argc, char *argv[]);
 err_t clicb_lightness(int argc, char *argv[]);
 err_t clicb_ct(int argc, char *argv[]);
 
+err_t clicb_status(int argc, char *argv[]);
+
 bool models_loop(mng_t *mng);
 bool bl_loop(void *p);
 bool add_loop(void *p);

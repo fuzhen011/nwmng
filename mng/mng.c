@@ -255,14 +255,16 @@ static void set_mng_state(void)
   if (!loaded) {
     mng.status.seq.offs = 0;
     mng.state = configured;
-    LOGM("Sync done\n");
+    LOGM("Sync Done\n");
+    bt_shell_printf("Sync Done\n");
   }
 }
 
 void *mng_mainloop(void *p)
 {
+  bool busy;
   while (1) {
-    bool busy = false;
+    busy = false;
     poll_cmd();
     bgevt_dispenser();
     switch (mng.state) {
@@ -282,12 +284,6 @@ void *mng_mainloop(void *p)
         break;
       case blacklisting_devices_em:
         busy |= bl_loop(&mng);
-        break;
-      case stopping:
-        mng.state = configured;
-        break;
-      case state_reload:
-        /* TODO: Load actions */
         break;
       default:
         break;
@@ -462,10 +458,9 @@ err_t clicb_sync(int argc, char *argv[])
   if (mng.state < starting && s) {
     mng.state = starting;
   } else if (mng.state >= starting && !s) {
-    mng.state = stopping;
+    __lists_clr();
+    mng.status.seq.offs = 3;
   }
-
-  bt_shell_printf("%s\n", __FUNCTION__);
   return 0;
 }
 
@@ -565,5 +560,11 @@ err_t clicb_seqset(int argc, char *argv[])
   }
 
   memcpy(mng.status.seq.prios, seq, 3);
+  return ec_success;
+}
+
+err_t clicb_status(int argc, char *argv[])
+{
+  cli_status(&mng);
   return ec_success;
 }

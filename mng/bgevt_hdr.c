@@ -123,7 +123,6 @@ void bgevt_dispenser(void)
 {
   bool handled;
   struct gecko_cmd_packet *evt = NULL;
-  mng_t *mng = get_mng();
   if (!ncp_sync) {
     sync_host_and_ncp_target();
     return;
@@ -146,9 +145,4 @@ void bgevt_dispenser(void)
       }
     }
   } while (evt);
-
-  if (mng->status.oom) {
-    mng->status.oom = 0;
-    LOGM("Device recovered from OOM once\n");
-  }
 }

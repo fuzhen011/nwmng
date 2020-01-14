@@ -9,6 +9,7 @@
 /* #include "dev_add.h" */
 #include <glib.h>
 
+#include "projconfig.h"
 #include "cfg.h"
 #include "mng.h"
 #include "utils.h"

@@ -29,7 +29,7 @@ extern "C"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
-#define PORT      "/dev/ttyACM3"
+#define PORT      "/dev/ttyACM2"
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/nwk.json"
 #endif
@@ -66,6 +66,8 @@ extern "C"
 #define CONFIG_NO_RSP_TIMEOUT 3
 
 #define ADD_NO_RSP_TIMEOUT 90
+
+#define OOM_DELAY_TIMEOUT 5
 
 /*
  * Retry times - each config client commands may fail with reasons, retry is
