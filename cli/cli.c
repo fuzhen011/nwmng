@@ -34,7 +34,7 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-#define DECLARE_CB(name)  static err_t clicb_##name(int argc, char *argv[])
+#define STATIC_CB(name)  static err_t clicb_##name(int argc, char *argv[])
 
 #define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWK-Mng$ " RTT_CTRL_RESET
 #define RL_HISTORY  ".history"
@@ -55,10 +55,11 @@ DECLARE_VAGET_FUN(onoff_lights_addrs);
 DECLARE_VAGET_FUN(lightness_lights_addrs);
 DECLARE_VAGET_FUN(ctl_lights_addrs);
 
-DECLARE_CB(reset);
-DECLARE_CB(help);
-DECLARE_CB(quit);
-DECLARE_CB(scan);
+STATIC_CB(reset);
+STATIC_CB(help);
+STATIC_CB(quit);
+
+static char *seqset_arg_generator(const char *text, int state);
 
 const command_t commands[] = {
   /* CLI local commands */
@@ -77,19 +78,22 @@ const command_t commands[] = {
   { "info", "[addr...]", clicb_info,
     "Show the node(s) information in the database",
     NULL, NULL, vaget_addrs },
-  { "freemode", "[on/off]", clicb_scan,
+  { "freemode", "[on/off]", clicb_freemode,
     "Turn on/off unprovisioned beacon scanning" },
   { "rmall", NULL, clicb_rmall,
     "Remove all the nodes" },
   { "clrrb", NULL, clicb_rmblclr,
     "Clear the rm_bl fields of all the nodes" },
   { "seqset",
-    "[a--/r--/b--/ar-/ab-/ra-/rb-/ba-/br-/arb/abr/rab/rba/bar/bra]",
+    "[arb-]",
     clicb_seqset,
     "Set the action loading priority\n"
     "\ta - adding devices\n"
     "\tr - removing devices\n"
-    "\tb - blacklisting devices" },
+    "\tb - blacklisting devices",
+    NULL,
+    seqset_arg_generator,
+    NULL },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -267,6 +271,36 @@ static int parse_args(char *arg, wordexp_t *w, char *del, int flags)
 }
 
 static wordexp_t args;
+
+static const char *seqset_arg[] = {
+  "a--", "r--", "b--",
+  "ar-", "ab-",
+  "ra-", "rb-",
+  "ba-", "br-",
+  "arb", "abr",
+  "rab", "rba",
+  "bar", "bra"
+};
+
+static char *seqset_arg_generator(const char *text, int state)
+{
+  static unsigned int index, len;
+  const char *arg;
+
+  if (!state) {
+    index = 0;
+    len = strlen(text);
+  }
+
+  while (index < ARR_LEN(seqset_arg)) {
+    arg = seqset_arg[index];
+    index++;
+    if (!strncmp(arg, text, len)) {
+      return strdup(arg);
+    }
+  }
+  return NULL;
+}
 
 static char *arg_generator(const char *text, int state)
 {
@@ -751,7 +785,6 @@ static err_t clicb_reset(int argc, char *argv[])
   if (argc > 1) {
     r = atoi(argv[1]);
   }
-  bt_shell_printf("%s\n", __FUNCTION__);
   reset = r + 1;
   return 0;
 }
@@ -760,30 +793,13 @@ static err_t clicb_help(int argc, char *argv[])
 {
   print_text(COLOR_HIGHLIGHT, "Available commands:");
   print_text(COLOR_HIGHLIGHT, "-------------------");
-  foreach_cmds(i)
-  {
+  foreach_cmds(i){
     print_cmd_usage(&commands[i]);
   }
   return 0;
 }
 
-static err_t clicb_scan(int argc, char *argv[])
-{
-  int onoff = 1;
-  if (argc > 1) {
-    if (!strcmp(argv[1], "on")) {
-      onoff = 2;
-    } else if (!strcmp(argv[1], "off")) {
-      onoff = 0;
-    } else {
-      return err(ec_param_invalid);
-    }
-  }
-  return clm_set_scan(onoff);
-}
-
 static err_t clicb_quit(int argc, char *argv[])
 {
-  bt_shell_printf("%s\n", __FUNCTION__);
   exit(EXIT_SUCCESS);
 }

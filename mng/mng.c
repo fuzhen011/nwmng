@@ -66,6 +66,7 @@ static mng_t mng = {
 };
 
 /* Static Functions Declaractions ************************************* */
+static err_t clm_set_scan(int status);
 static void poll_cmd(void);
 static gboolean load_lists(gpointer key, gpointer value, gpointer data);
 /******************************************************************
@@ -312,7 +313,7 @@ static void poll_cmd(void)
   }
 }
 
-err_t clm_set_scan(int status)
+static err_t clm_set_scan(int status)
 {
   uint16_t ret;
   if (mng.status.free_mode == status) {
@@ -567,4 +568,19 @@ err_t clicb_status(int argc, char *argv[])
 {
   cli_status(&mng);
   return ec_success;
+}
+
+err_t clicb_freemode(int argc, char *argv[])
+{
+  int onoff = 2;
+  if (argc > 1) {
+    if (!strcmp(argv[1], "on")) {
+      onoff = 2;
+    } else if (!strcmp(argv[1], "off")) {
+      onoff = 0;
+    } else {
+      return err(ec_param_invalid);
+    }
+  }
+  return clm_set_scan(onoff);
 }

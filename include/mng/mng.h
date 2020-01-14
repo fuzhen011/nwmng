@@ -193,8 +193,6 @@ mng_t *get_mng(void);
 
 err_t ipc_get_provcfg(void *p);
 
-err_t clm_set_scan(int onoff);
-
 void cmd_enq(const char *str, int offs);
 wordexp_t *cmd_deq(int *offs);
 
@@ -204,20 +202,22 @@ int bl_hdr(const struct gecko_cmd_packet *e);
 void mng_load_lists(void);
 void on_lists_changed(void);
 
-err_t clicb_sync(int argc, char *argv[]);
-err_t clicb_list(int argc, char *argv[]);
-err_t clicb_info(int argc, char *argv[]);
-err_t clicb_rmall(int argc, char *argv[]);
-err_t clicb_rmblclr(int argc, char *argv[]);
-err_t clicb_seqset(int argc, char *argv[]);
+#define DECLARE_CB(name)  err_t clicb_##name(int argc, char *argv[])
 
-err_t clicb_onoff(int argc, char *argv[]);
-err_t clicb_lightness(int argc, char *argv[]);
-err_t clicb_ct(int argc, char *argv[]);
+DECLARE_CB(freemode);
 
-err_t clicb_status(int argc, char *argv[]);
+DECLARE_CB(sync);
+DECLARE_CB(list);
+DECLARE_CB(info);
+DECLARE_CB(rmall);
+DECLARE_CB(rmblclr);
+DECLARE_CB(seqset);
+DECLARE_CB(onoff);
+DECLARE_CB(lightness);
+DECLARE_CB(ct);
+DECLARE_CB(status);
 #ifdef DEMO_EN
-err_t clicb_demo(int argc, char *argv[]);
+DECLARE_CB(demo);
 #endif
 
 bool models_loop(mng_t *mng);
