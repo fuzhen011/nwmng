@@ -128,7 +128,7 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
 
   n = cfgdb_unprov_dev_get(evt->uuid.data);
   if (!n) {
-    if (NULL == cfgdb_backlog_get(evt->uuid.data)) {
+    if (NULL == cfgdb_backlog_get(evt->uuid.data) && mng->status.free_mode == 2) {
       err_t e = backlog_dev(evt->uuid.data);
       if (ec_success == e) {
         char uuid_str[33] = { 0 };

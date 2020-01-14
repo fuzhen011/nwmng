@@ -83,6 +83,11 @@ const command_t commands[] = {
     "Remove all the nodes" },
   { "clrrb", NULL, clicb_rmblclr,
     "Clear the rm_bl fields of all the nodes" },
+  { "seqset", "[arb/abr/rab/rba/bar/bra]", clicb_seqset,
+    "Set the action loading priority\n"
+    "\ta - adding devices\n"
+    "\tr - removing devices\n"
+    "\tb - blacklisting devices" },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,

@@ -139,6 +139,11 @@ typedef enum {
   state_reload
 }mng_state_t;
 
+typedef struct {
+  int offs;
+  char prios[3];
+}seqprio_t;
+
 enum {
   fm_idle,
   fm_scanning,
@@ -151,6 +156,7 @@ typedef struct {
   provcfg_t *cfg;
   struct {
     int free_mode;
+    seqprio_t seq;
   }status;
 
   struct {
@@ -201,6 +207,7 @@ err_t clicb_list(int argc, char *argv[]);
 err_t clicb_info(int argc, char *argv[]);
 err_t clicb_rmall(int argc, char *argv[]);
 err_t clicb_rmblclr(int argc, char *argv[]);
+err_t clicb_seqset(int argc, char *argv[]);
 
 err_t clicb_onoff(int argc, char *argv[]);
 err_t clicb_lightness(int argc, char *argv[]);

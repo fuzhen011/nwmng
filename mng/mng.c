@@ -31,16 +31,12 @@
 #include "gecko_bglib.h"
 #include "dev_config.h"
 /* Defines  *********************************************************** */
+#define DEFAULT_SEQ_PRIO  "arb"
+
 #define INVALID_CONN_HANDLE 0xff
 
 #define BL_BITMASK  0x01
 #define RM_BITMASK  0x10
-
-/* Global Variables *************************************************** */
-extern const command_t commands[];
-extern pthread_mutex_t qlock;
-
-err_t cmd_ret = ec_success;
 
 typedef struct qitem{
   int offs;
@@ -53,6 +49,15 @@ typedef struct {
   qitem_t *tail;
 }cmdq_t;
 
+typedef struct {
+  char state;
+  bool (*loader)(void);
+}seq_loader_t;
+
+/* Global Variables *************************************************** */
+extern const command_t commands[];
+extern pthread_mutex_t qlock;
+err_t cmd_ret = ec_success;
 cmdq_t cmdq = { 0 };
 
 /* Static Variables *************************************************** */
@@ -214,6 +219,35 @@ static void set_mng_state(void)
     mng.state = state_reload;
   }
 
+  if (mng.state == starting) {
+    mng.status.seq.offs = 0;
+  }
+  bool loaded = false;
+  for (; mng.status.seq.offs < 3 && !loaded; mng.status.seq.offs++) {
+    if (mng.status.seq.prios[mng.status.seq.offs] == 'a') {
+      if (g_list_length(mng.lists.add)) {
+        if (mng.status.free_mode == 0) {
+          clm_set_scan(1);
+        }
+        mng.state = adding_devices_em;
+        acc_init(true);
+        loaded = true;
+      } else if (g_list_length(mng.lists.config)) {
+        mng.state = configuring_devices_em;
+        acc_init(true);
+        loaded = true;
+      }
+    } else if (mng.status.seq.prios[mng.status.seq.offs] == 'r') {
+      mng.state = removing_devices_em;
+      acc_init(true);
+      loaded = true;
+    } else if (mng.status.seq.prios[mng.status.seq.offs] == 'b') {
+      mng.state = blacklisting_devices_em;
+    } else {
+      ASSERT(0);
+    }
+  }
+
   if (g_list_length(mng.lists.add)) {
     if (mng.status.free_mode == 0) {
       clm_set_scan(1);
@@ -330,6 +364,7 @@ err_t mng_init(void *p)
   __lists_clr();
   memset(&mng, 0, sizeof(mng_t));
   mng.conn = 0xff;
+  memcpy(mng.status.seq.prios, DEFAULT_SEQ_PRIO, 3);
   mng.cfg = get_provcfg();
   return ec_success;
 }
@@ -510,5 +545,11 @@ err_t clicb_rmblclr(int argc, char *argv[])
   }
 
   load_cfg_file(NW_NODES_CFG_FILE, 1);
+  return ec_success;
+}
+
+err_t clicb_seqset(int argc, char *argv[])
+{
+  bt_shell_printf("%s\n", __FUNCTION__);
   return ec_success;
 }
