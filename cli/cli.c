@@ -102,6 +102,10 @@ const command_t commands[] = {
   /* Debug Commands */
   { "status", NULL, clicb_status,
     "Print the device status" },
+#ifdef DEMO_EN
+  { "demo", "[on/off]", clicb_demo,
+    "Start/Stop a quick demo" },
+#endif
 };
 
 const size_t cli_cmd_num = 3;

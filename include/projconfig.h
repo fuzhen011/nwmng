@@ -14,6 +14,8 @@ extern "C"
 #define SINGLE_PROC
 #endif
 
+#define DEMO_EN
+
 #define PROJ_VERSION_MAJOR  1
 #define PROJ_VERSION_MINOR  0
 #define PROJ_VERSION_PATCH  0

@@ -6,12 +6,47 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include "projconfig.h"
 #include "host_gecko.h"
 #include "mng.h"
 #include "cli.h"
 #include "logging.h"
+#include "utils.h"
 
 /* Defines  *********************************************************** */
+#ifdef DEMO_EN
+const char *demo_cmds[] = {
+  "onoff on 0xc021",
+  "onoff on 0xc022",
+  "onoff on 0xc023",
+  "onoff on 0xc024",
+  "onoff on 0xc025",
+  "onoff on 0xc026",
+  "onoff on 0xc027",
+  "onoff on 0xc028",
+  "onoff on 0xc029",
+  "onoff on 0xc02a",
+
+  "onoff off 0xc02a",
+  "onoff off 0xc029",
+  "onoff off 0xc028",
+  "onoff off 0xc027",
+  "onoff off 0xc026",
+  "onoff off 0xc025",
+  "onoff off 0xc024",
+  "onoff off 0xc023",
+  "onoff off 0xc022",
+  "onoff off 0xc021",
+};
+static const size_t cmds_len = ARR_LEN(demo_cmds);
+
+#define DEMO_INTERVAL 1
+static struct demo{
+  bool on;
+  int pos;
+  time_t expired;
+} demo;
+#endif
 
 /* Global Variables *************************************************** */
 static uint8_t tid = 0;
@@ -20,6 +55,57 @@ static uint8_t tid = 0;
 
 /* Static Functions Declaractions ************************************* */
 static err_t clicb_perc_set(int argc, char *argv[], uint8_t type);
+
+#ifdef DEMO_EN
+err_t clicb_demo(int argc, char *argv[])
+{
+  int onoff = 1;
+  if (argc > 1) {
+    if (!strcmp(argv[1], "on")) {
+      onoff = 1;
+    } else if (!strcmp(argv[1], "off")) {
+      onoff = 0;
+    } else {
+      return err(ec_param_invalid);
+    }
+  }
+  if (onoff) {
+    demo.on = 1;
+    demo.expired = time(NULL) + DEMO_INTERVAL;
+    demo.pos = 0;
+  } else {
+    demo.on = 0;
+  }
+
+  return ec_success;
+}
+
+void check_demo(void)
+{
+  time_t now;
+  err_t e;
+  wordexp_t w;
+  if (!demo.on) {
+    return;
+  }
+  now = time(NULL);
+  if (now < demo.expired) {
+    return;
+  }
+
+  if (wordexp(demo_cmds[demo.pos++], &w, WRDE_NOCMD)) {
+    return;
+  }
+  e = clicb_onoff(w.we_wordc, w.we_wordv);
+  elog(e);
+
+  if (demo.pos == cmds_len) {
+    demo.pos = 0;
+  }
+  demo.expired = now + DEMO_INTERVAL;
+  wordfree(&w);
+}
+#endif
 
 err_t clicb_onoff(int argc, char *argv[])
 {
@@ -187,6 +273,9 @@ bool models_loop(mng_t *mng)
 {
   uint16_t ret;
 
+#ifdef DEMO_EN
+  check_demo();
+#endif
   if (!g_list_length(mng->cache.model_set.nodes)) {
     return false;
   }
