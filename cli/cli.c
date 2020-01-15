@@ -59,6 +59,16 @@ STATIC_CB(reset);
 STATIC_CB(help);
 STATIC_CB(quit);
 
+static const char *seqset_arg[] = {
+  "a--", "r--", "b--",
+  "ar-", "ab-",
+  "ra-", "rb-",
+  "ba-", "br-",
+  "arb", "abr",
+  "rab", "rba",
+  "bar", "bra"
+};
+
 static char *seqset_arg_generator(const char *text, int state);
 
 const command_t commands[] = {
@@ -112,6 +122,7 @@ const command_t commands[] = {
 #endif
 };
 
+static wordexp_t args;
 const size_t cli_cmd_num = 3;
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
@@ -269,18 +280,6 @@ static int parse_args(char *arg, wordexp_t *w, char *del, int flags)
   free(str);
   return 0;
 }
-
-static wordexp_t args;
-
-static const char *seqset_arg[] = {
-  "a--", "r--", "b--",
-  "ar-", "ab-",
-  "ra-", "rb-",
-  "ba-", "br-",
-  "arb", "abr",
-  "rab", "rba",
-  "bar", "bra"
-};
 
 static char *seqset_arg_generator(const char *text, int state)
 {
@@ -584,7 +583,7 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
   return e;
 }
 
-#if 0
+#if (READLINE_ASYNC == 1)
 static void rl_handler(char *input)
 {
   char *str;

@@ -126,8 +126,6 @@ typedef struct {
 }bl_cache_t;
 
 typedef enum {
-  nil,
-  syncup,
   initialized,
   configured,
   starting,
@@ -141,7 +139,7 @@ typedef enum {
 
 typedef struct {
   int offs;
-  char prios[3];
+  char prios[4];  /* actually 3 bytes are used, one more for print ending */
 }seqprio_t;
 
 enum {
@@ -159,6 +157,7 @@ typedef struct {
     int free_mode;
     seqprio_t seq;
     bool oom;
+    time_t oom_expired;
   }status;
 
   struct {

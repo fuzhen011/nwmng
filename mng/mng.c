@@ -173,11 +173,9 @@ err_t init_ncp(void *p)
   return ec_success;
 }
 
-/*
- * TODO: on_state_entry, on_state_exit
- */
 static void set_mng_state(void)
 {
+  bool loaded = false;
   if (mng.state < starting || mng.state > blacklisting_devices_em) {
     return;
   }
@@ -190,41 +188,33 @@ static void set_mng_state(void)
     if (mng.status.free_mode < 2) {
       clm_set_scan(0);
     }
+
     if (g_list_length(mng.lists.config) || mng.cache.config.used) {
-      /* configuring in progress, switch directly */
+      /* configuring in progress after adding devices, switch directly */
       mng.state = configuring_devices_em;
       return;
     }
-    mng.state = state_reload;
   } else if (mng.state == configuring_devices_em) {
     if (g_list_length(mng.lists.config) || mng.cache.config.used) {
       return;
     }
     /* All nodes have been configured properly */
-    /* TODO */
-    /* Need to stop the acc engine */
-    mng.state = state_reload;
   } else if (mng.state == removing_devices_em) {
     if (g_list_length(mng.lists.rm) || mng.cache.config.used) {
       return;
     }
     /* All RM set nodes have been removed properly */
-    /* TODO */
-    /* Need to stop the acc engine */
-    mng.state = state_reload;
   } else if (mng.state == blacklisting_devices_em) {
     if (g_list_length(mng.lists.rm) || mng.cache.bl.state != bl_idle) {
       return;
     }
-    /* All RM set nodes have been removed properly */
-    mng.state = state_reload;
+    /* All BL set nodes have been blacklisted properly */
   }
 
   if (mng.state == starting) {
     mng.status.seq.offs = 0;
   }
 
-  bool loaded = false;
   for (; mng.status.seq.offs < 3 && !loaded; mng.status.seq.offs++) {
     if (mng.status.seq.prios[mng.status.seq.offs] == 'a') {
       if (g_list_length(mng.lists.add)) {
@@ -232,19 +222,23 @@ static void set_mng_state(void)
           clm_set_scan(1);
         }
         mng.state = adding_devices_em;
-        acc_init(true);
         loaded = true;
       } else if (g_list_length(mng.lists.config)) {
         mng.state = configuring_devices_em;
-        acc_init(true);
         loaded = true;
       }
     } else if (mng.status.seq.prios[mng.status.seq.offs] == 'r') {
+      if (!g_list_length(mng.lists.rm)) {
+        continue;
+      }
       mng.state = removing_devices_em;
-      acc_init(true);
       loaded = true;
     } else if (mng.status.seq.prios[mng.status.seq.offs] == 'b') {
+      if (!g_list_length(mng.lists.bl)) {
+        continue;
+      }
       mng.state = blacklisting_devices_em;
+      loaded = true;
     } else if (mng.status.seq.prios[mng.status.seq.offs] == '-') {
       goto idle;
     } else {
@@ -256,8 +250,8 @@ static void set_mng_state(void)
   if (!loaded) {
     mng.status.seq.offs = 0;
     mng.state = configured;
-    LOGM("Sync Done\n");
-    bt_shell_printf("Sync Done\n");
+    LOGM("Sync[%s] Done\n", mng.status.seq.prios);
+    bt_shell_printf("Sync[%s] Done\n", mng.status.seq.prios);
   }
 }
 
@@ -303,7 +297,7 @@ static void poll_cmd(void)
   int i;
   wordexp_t *w = cmd_deq(&i);
   if (w) {
-    DUMP_PARAMS(w->we_wordc, w->we_wordv);
+    /* DUMP_PARAMS(w->we_wordc, w->we_wordv); */
     if (ec_param_invalid == errof(commands[i].fn(w->we_wordc, w->we_wordv))) {
       printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
       print_cmd_usage(&commands[i]);
@@ -352,6 +346,7 @@ err_t mng_init(void *p)
   mng.conn = 0xff;
   memcpy(mng.status.seq.prios, DEFAULT_SEQ_PRIO, 3);
   mng.cfg = get_provcfg();
+  acc_init(true);
   return ec_success;
 }
 
@@ -404,8 +399,8 @@ void list_nodes(void)
 
 err_t clicb_list(int argc, char *argv[])
 {
-  bt_shell_printf("%s\n", __FUNCTION__);
-  return err(ec_param_invalid);
+  list_nodes();
+  return ec_success;
 }
 
 static gboolean load_lists(gpointer key, gpointer value, gpointer data)

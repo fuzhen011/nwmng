@@ -10,9 +10,6 @@
 extern "C"
 {
 #endif
-#ifndef SINGLE_PROC
-#define SINGLE_PROC
-#endif
 
 #define DEMO_EN
 
@@ -53,7 +50,7 @@ extern "C"
  * NOTE: Make sure this value is NOT greater than the Max Foundation Client Cmds
  * definition on the NCP target side
  */
-#define MAX_CONCURRENT_CONFIG_NODES 4
+#define MAX_CONCURRENT_CONFIG_NODES 6
 
 /*
  * Typically, each config client bg call will have an event raised no matter
@@ -69,6 +66,10 @@ extern "C"
 
 #define ADD_NO_RSP_TIMEOUT 90
 
+/*
+ * If OOM happens in attempt to provision a device, stop scanning and react to
+ * unprovisioned beacon event for a while to let the device to recover.
+ */
 #define OOM_DELAY_TIMEOUT 5
 
 /*

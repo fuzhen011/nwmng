@@ -157,6 +157,14 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
   if (bg_err_out_of_memory == ret) {
     LOGW("provision device OOM\n");
     mng->status.oom = 1;
+    mng->status.oom_expired = time(NULL) + OOM_DELAY_TIMEOUT;
+    if (!scan_need_recover) {
+      scan_need_recover = true;
+      ret = gecko_cmd_mesh_prov_stop_scan_unprov_beacons()->result;
+      if (bg_err_success != ret) {
+        LOGBGE("stop unprov beacon scanning", ret);
+      }
+    }
     return;
   } else if (bg_err_success != ret) {
     LOGBGE("provision device", ret);
@@ -214,12 +222,6 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
   LOGE("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
   bt_shell_printf("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
-  /*
-   * TODO:
-   *
-   * 1. Remove from cache.
-   * 2. Set the error bits to cfg
-   */
   /* Remove from cache. */
   rmcached(get_mng(), evt->uuid.data);
   if (scan_need_recover) {
@@ -234,6 +236,16 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
 bool add_loop(void *p)
 {
   mng_t *mng = (mng_t *)p;
+  if (mng->status.oom && time(NULL) > mng->status.oom_expired) {
+    mng->status.oom = 0;
+    if (scan_need_recover) {
+      scan_need_recover = false;
+      uint16_t ret = gecko_cmd_mesh_prov_scan_unprov_beacons()->result;
+      if (bg_err_success != ret) {
+        LOGBGE("scan unprov beacon", ret);
+      }
+    }
+  }
   for (int i = 0; i < MAX_PROV_SESSIONS; i++) {
     if (!mng->cache.add[i].busy || time(NULL) < mng->cache.add[i].expired) {
       continue;

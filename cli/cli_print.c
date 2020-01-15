@@ -93,8 +93,6 @@ void cli_list_nodes(uint16list_t *ul)
 }
 
 const char *states[] = {
-  "nil",
-  "syncup",
   "initialized",
   "configured",
   "starting",
@@ -109,8 +107,6 @@ const char *states[] = {
 void cli_status(const mng_t *mng)
 {
   int used = 0;
-  char prios[4] = {0};
-  memcpy(prios, mng->status.seq.prios, 3);
 
   for (int i = 0; i < MAX_PROV_SESSIONS; i++) {
     if (mng->cache.add[i].busy) {
@@ -122,7 +118,7 @@ void cli_status(const mng_t *mng)
   bt_shell_printf("Used adding caches    = %d\n", used);
   bt_shell_printf("Used config/rm caches = %d\n", utils_popcount(mng->cache.config.used));
   bt_shell_printf("Blacklisting          = %s\n", mng->cache.bl.state == bl_idle ? "Idle" : "Busy");
-  bt_shell_printf("Action Sequence       = %s\n", prios);
+  bt_shell_printf("Action Sequence       = %s\n", mng->status.seq.prios);
   bt_shell_printf("Node(s) to set state  = %d\n", g_list_length(mng->cache.model_set.nodes));
   bt_shell_printf("Free mode             = %s\n", mng->status.free_mode == 2 ? "On" : "Off");
   bt_shell_printf("[%d-%d-%d-%d] to be [added-configured-removed-blacklisted]\n",

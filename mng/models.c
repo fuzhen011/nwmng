@@ -71,7 +71,11 @@ const char *demo_cmds[] = {
   "lightness 1 0xc02a",
   "lightness 50 0xc02a",
   "lightness 100 0xc02a",
-  "onoff off"
+  "onoff off 0xc030",
+  "lightness 1 0xc030",
+  "lightness 50 0xc030",
+  "lightness 100 0xc030",
+  "onoff off 0xc030",
 };
 #endif
 static const size_t cmds_len = ARR_LEN(demo_cmds);
@@ -144,7 +148,7 @@ void check_demo(void)
 
   if (demo.pos == cmds_len) {
     demo.pos = 0;
-    now += 2;
+    /* now += 2; */
   }
   demo.expired = now + DEMO_INTERVAL;
   wordfree(&w);

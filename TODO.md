@@ -7,14 +7,13 @@
 
 ## CLI
 
-- [] Go through the bluez to learn how the arguments completion works
+- [x] Go through the bluez to learn how the arguments completion works
 - [] Input prompt - when blacklisting or removing typed, prompt to user to
   confirm - refer the implementation in bluez
-- [] Tab completion
+- [x] Tab completion
   - [x] Complete command name
   - [x] Complete command parameters
 - [x] History
-- [] Synchronized command - block until the command ends normally or unexpectedly.
 - [] Trap Ctrl-C to end all operations.
 - [] Finish the command execs
 - [] Separate CLI and MNG to 2 threads
