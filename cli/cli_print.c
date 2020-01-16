@@ -134,3 +134,43 @@ void cli_status(const mng_t *mng)
                   g_list_length(mng->lists.rm),
                   g_list_length(mng->lists.bl));
 }
+
+void cli_print_stat(const stat_t *s)
+{
+  unsigned t, h, m;
+  if (s->add.time.state == rc_end) {
+    /* Add valid, output it */
+    t = s->add.time.end - s->add.time.start;
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Adding devices summary:\n"
+                    "    number  : %u\n"
+                    "    failures: %u\n"
+                    "    time    : %u:%u:%u\n",
+                    s->add.dev_cnt,
+                    s->add.fail_times,
+                    h, m, t
+                    );
+  }
+
+  if (s->config.time.state == rc_end) {
+    /* Config valid, output it */
+    t = s->config.time.end - s->config.time.start;
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Config devices summary:\n"
+                    "    number      : %u\n"
+                    "    retry times : %u\n"
+                    "    time        : %u:%u:%u\n",
+                    s->config.dev_cnt,
+                    s->config.retry_times,
+                    h, m, t
+                    );
+  }
+}

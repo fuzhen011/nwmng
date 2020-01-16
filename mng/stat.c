@@ -19,6 +19,10 @@
 static stat_t stat = { 0 };
 
 /* Static Functions Declaractions ************************************* */
+const stat_t *get_stat(void)
+{
+  return &stat;
+}
 
 void stat_reset(void)
 {
@@ -27,33 +31,31 @@ void stat_reset(void)
 
 void stat_add_start(void)
 {
-  if (stat.arb.add.time.state != rc_idle) {
-    LOGW("Adding is recording\n");
+  if (stat.add.time.state != rc_idle) {
     return;
   }
-  memset(&stat, 0, sizeof(union __arb));
-  stat.arb.add.time.state = rc_start;
-  stat.arb.add.time.start = time(NULL);
+  memset(&stat, 0, sizeof(struct __add));
+  stat.add.time.state = rc_start;
+  stat.add.time.start = time(NULL);
 }
 
 void stat_add_end(void)
 {
-  if (stat.arb.add.time.state == rc_idle) {
-    LOGW("Adding not started yet\n");
+  if (stat.add.time.state == rc_idle) {
     return;
   }
-  stat.arb.add.time.state = rc_end;
-  stat.arb.add.time.end = time(NULL);
+  stat.add.time.state = rc_end;
+  stat.add.time.end = time(NULL);
 }
 
 void stat_add_one_dev(void)
 {
-  stat.arb.add.dev_cnt++;
+  stat.add.dev_cnt++;
 }
 
 void stat_add_failed(void)
 {
-  stat.arb.add.fail_times++;
+  stat.add.fail_times++;
 }
 
 void stat_config_start(void)
@@ -69,7 +71,6 @@ void stat_config_start(void)
 void stat_config_end(void)
 {
   if (stat.config.time.state == rc_idle) {
-    LOGW("Adding not started yet\n");
     return;
   }
   stat.config.time.state = rc_end;
@@ -84,4 +85,8 @@ void stat_config_one_dev(void)
 void stat_config_retry(void)
 {
   stat.config.retry_times++;
+}
+
+void stat_print(void)
+{
 }

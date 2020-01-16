@@ -259,6 +259,8 @@ static void set_mng_state(void)
     mng.state = configured;
     LOGM("Sync[%s] Done\n", mng.status.seq.prios);
     bt_shell_printf("Sync[%s] Done\n", mng.status.seq.prios);
+    cli_print_stat(get_stat());
+    stat_reset();
   }
 }
 

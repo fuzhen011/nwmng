@@ -26,12 +26,22 @@ typedef struct {
   time_t end;
 } measure_time_t;
 
-union __arb{
-  struct {
-    unsigned dev_cnt;
-    unsigned fail_times;
-    measure_time_t time;
-  } add;
+struct __add{
+  unsigned dev_cnt;
+  unsigned fail_times;
+  measure_time_t time;
+};
+
+struct __rm{
+  unsigned dev_cnt;
+  unsigned retry_times;
+  measure_time_t time;
+};
+
+struct __bl{
+  unsigned dev_cnt;
+  unsigned retry_times;
+  measure_time_t time;
 };
 
 struct __config{
@@ -41,10 +51,13 @@ struct __config{
 };
 
 typedef struct {
-  union __arb arb;
+  struct __add add;
+  struct __rm rm;
+  struct __bl bl;
   struct __config config;
 }stat_t;
 
+const stat_t *get_stat(void);
 void stat_reset(void);
 
 void stat_add_start(void);
