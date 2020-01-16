@@ -93,6 +93,7 @@ void cli_list_nodes(uint16list_t *ul)
 }
 
 const char *states[] = {
+  "nil",
   "initialized",
   "Idle",
   "starting",
