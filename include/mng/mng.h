@@ -15,12 +15,15 @@ extern "C"
 #include <stdbool.h>
 #include "err.h"
 #include "projconfig.h"
-#include "cfgdb.h"
+#include "host_gecko.h"
+#include "cfg.h"
 
 typedef struct {
   bool busy;
+  time_t expired;
   uint8_t uuid[16];
 }add_cache_t;
+
 /*
  * TODO: Need to clear below?
  */
@@ -34,56 +37,62 @@ typedef struct {
 #define GUARD_TIMER_EXPIRED_BIT_MASK  (1 << GUARD_TIMER_EXPIRED_OFFSET)
 
 #define WAIT_RESPONSE(x)  IS_BIT_SET((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
-#define WAIT_RESPONSE_CLEAR(x)  BIT_CLEAR((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
+#define WAIT_RESPONSE_CLEAR(x)  BIT_CLR((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
 #define WAIT_RESPONSE_SET(x)  BIT_SET((x)->flags, WAITING_RESPONSE_BIT_OFFSET)
 
 #define EVER_RETRIED(x) IS_BIT_SET((x)->flags, EVER_RETRIED_BIT_OFFSET)
 #define EVER_RETRIED_SET(x) BIT_SET((x)->flags, EVER_RETRIED_BIT_OFFSET)
-#define EVER_RETRIED_CLEAR(x) BIT_CLEAR((x)->flags, EVER_RETRIED_BIT_OFFSET)
+#define EVER_RETRIED_CLEAR(x) BIT_CLR((x)->flags, EVER_RETRIED_BIT_OFFSET)
 
 #define OOM(x) IS_BIT_SET((x)->flags, OOM_BIT_OFFSET)
-#define OOM_SET(x)                       \
-  do {                                   \
-    OOM_SET_PRINT(x);                    \
-    BIT_SET((x)->flags, OOM_BIT_OFFSET); \
-  } while (0)
-#define OOM_CLEAR(x) BIT_CLEAR((x)->flags, OOM_BIT_OFFSET)
 
-#define RETRY_CLEAR(x)                              \
-  do {                                              \
-    BIT_CLEAR((x)->flags, EVER_RETRIED_BIT_OFFSET); \
-    (x)->retry = 0;                                 \
+#define OOM_CLEAR(x)                     \
+  do {                                   \
+    BIT_CLR((x)->flags, OOM_BIT_OFFSET); \
+  } while (0)
+
+#define RETRY_CLEAR(x)                            \
+  do {                                            \
+    BIT_CLR((x)->flags, EVER_RETRIED_BIT_OFFSET); \
+    (x)->remaining_retry = 0;                     \
   } while (0)
 /*
  * TODO: Need to clear above?
  */
 typedef struct {
-  uint8_t feature;
+  uint16_t vid;
+  uint16_t mid;
+}vendor_model_t;
+
+typedef struct {
+  uint8_t sigm_cnt;
+  uint8_t vm_cnt;
+  uint16_t *sig_models;
+  vendor_model_t *vm;
+}elem_t;
+
+typedef struct {
+  uint16_t feature;
   uint8_t element_cnt;
-  struct {
-    uint8_t sigm_cnt;
-    uint8_t vm_cnt;
-    uint16_t *sig_models;
-    struct {
-      uint16_t vid;
-      uint16_t mid;
-    }*vendor_model;
-  }e1;
+  elem_t *elems;
 }dcd_t;
 
 #define ITERATOR_NUM  3
 typedef struct {
   int state;
   int next_state;
-  uint16_t addr;
-  bbitmap_t flag;
+  /* NULL if not in use */
+  node_t *node;
+  /* POSIX timer is not supported by macOS, so use the less efficient way to
+   * poll it in every loop */
+  time_t expired;
+  bbitmap_t flags;
   uint8_t remaining_retry;
   struct {
     uint32_t bgcall;
     uint32_t bgevt;
     uint16_t general;
   }err_cache;
-  mesh_config_t config;
   dcd_t dcd;
   uint32_t cc_handle; /* Config Client Handle returned by bgcall */
   struct {
@@ -94,8 +103,30 @@ typedef struct {
 }config_cache_t;
 
 enum {
+  bl_idle,
+  bl_prepare,
+  bl_starting,
+  bl_busy,
+  bl_done
+};
+
+typedef struct {
+  node_t *n;
+  uint8_t phase;
+}remainig_nodes_t;
+
+typedef struct {
+  int state; /* @ref{bl_xxx} */
+  int offset;
+  int tail;
+  struct {
+    int num;
+    remainig_nodes_t *nodes;
+  }rem;
+}bl_cache_t;
+
+typedef enum {
   nil,
-  syncup,
   initialized,
   configured,
   starting,
@@ -105,7 +136,12 @@ enum {
   blacklisting_devices_em,
   stopping,
   state_reload
-};
+}mng_state_t;
+
+typedef struct {
+  int offs;
+  char prios[4];  /* actually 3 bytes are used, one more for print ending */
+}seqprio_t;
 
 enum {
   fm_idle,
@@ -114,18 +150,41 @@ enum {
 };
 
 typedef struct {
-  int state;
+  mng_state_t state;
   uint8_t conn;
-  provcfg_t cfg;
+  provcfg_t *cfg;
+
   struct {
     int free_mode;
+    seqprio_t seq;
+    bool oom;
+    time_t oom_expired;
   }status;
+
   struct {
     add_cache_t add[MAX_PROV_SESSIONS];
-    config_cache_t config[MAX_CONCURRENT_CONFIG_NODES];
+    struct {
+      lbitmap_t used;
+      config_cache_t cache[MAX_CONCURRENT_CONFIG_NODES];
+    }config;
+    bl_cache_t bl;
+    struct {
+      uint8_t type;
+      uint8_t value;
+      GList *nodes;
+    }model_set;
   }cache;
+
+  struct {
+    GList *add;
+    GList *config;
+    GList *bl;
+    GList *rm;
+    GList *fail;
+  }lists;
 }mng_t;
 
+err_t mng_init(void *p);
 err_t init_ncp(void *p);
 err_t clr_all(void *p);
 
@@ -134,10 +193,38 @@ mng_t *get_mng(void);
 
 err_t ipc_get_provcfg(void *p);
 
-err_t clm_set_scan(int onoff);
-
 void cmd_enq(const char *str, int offs);
 wordexp_t *cmd_deq(int *offs);
+
+int dev_add_hdr(const struct gecko_cmd_packet *evt);
+int bl_hdr(const struct gecko_cmd_packet *e);
+
+void mng_load_lists(void);
+void on_lists_changed(void);
+
+#define DECLARE_CB(name)  err_t clicb_##name(int argc, char *argv[])
+
+DECLARE_CB(freemode);
+
+DECLARE_CB(sync);
+DECLARE_CB(list);
+DECLARE_CB(info);
+DECLARE_CB(rmall);
+DECLARE_CB(rmblclr);
+DECLARE_CB(seqset);
+DECLARE_CB(onoff);
+DECLARE_CB(lightness);
+DECLARE_CB(ct);
+DECLARE_CB(status);
+DECLARE_CB(loglvlset);
+#ifdef DEMO_EN
+DECLARE_CB(demo);
+#endif
+
+bool models_loop(mng_t *mng);
+bool bl_loop(void *p);
+bool add_loop(void *p);
+
 #ifdef __cplusplus
 }
 #endif

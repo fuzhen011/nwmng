@@ -37,10 +37,7 @@ typedef enum {
   ec_bgrsp = 50,
   ec_bgevt = 51,
   
-  ec_sock = 60,
-  ec_sock_closed = 61,
-
-  ec_errno = 70
+  ec_errno = 0xff
 }error_code_t;
 
 /* const char *get_error_str(error_code_t e); */

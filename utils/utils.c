@@ -259,3 +259,42 @@ err_t uint2str(uint64_t input,
   }
   return ec_success;
 }
+
+int utils_ffs(uint32_t u)
+{
+  if (!u) {
+    return -1;
+  }
+  return __builtin_ffs(u);
+}
+
+int utils_clz(uint32_t u)
+{
+  if (!u) {
+    return -1;
+  }
+  return __builtin_clz(u);
+}
+
+int utils_ctz(uint32_t u)
+{
+  if (!u) {
+    return -1;
+  }
+  return __builtin_ctz(u);
+}
+
+int utils_popcount(uint32_t u)
+{
+  return __builtin_popcount(u);
+}
+
+int utils_frz(uint32_t u)
+{
+  int i = 0;
+  while (u % 2) {
+    i++;
+    u >>= 1;
+  }
+  return i;
+}

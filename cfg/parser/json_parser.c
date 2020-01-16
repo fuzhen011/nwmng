@@ -15,14 +15,21 @@
 #include <json_util.h>
 #include <glib.h>
 
-#include "cfgdb.h"
+#include <sys/stat.h>
+
+#include "cfg.h"
 #include "generic_parser.h"
 #include "json_object.h"
 #include "json_parser.h"
 #include "logging.h"
 #include "utils.h"
+#include "dev_config.h"
 
 /* Defines  *********************************************************** */
+#ifndef JSON_ECHO_DBG
+#define JSON_ECHO_DBG 2
+#endif
+
 #define JSON_ECHO(msg, obj)              \
   do {                                   \
     LOGD("%s Item --- %s\n",             \
@@ -31,10 +38,6 @@
            (obj),                        \
            JSON_C_TO_STRING_PRETTY));    \
   } while (0)
-
-#ifndef JSON_ECHO_DBG
-#define JSON_ECHO_DBG 2
-#endif
 
 #define json_array_foreach(i, n, obj)       \
   size_t n = json_object_array_length(obj); \
@@ -56,6 +59,7 @@ typedef struct {
   bool autoflush;
   char *fp;
   json_object *root;
+  time_t synctime;
 }cfg_general_t;
 
 typedef struct {
@@ -80,33 +84,73 @@ typedef struct {
 }json_cfg_t;
 
 /* Global Variables *************************************************** */
-#define DECLLOADER1(name) \
-  static err_t _load_##name(json_object * obj, int cfg_fd, void *out)
-#define DECLLOADER2(name) \
-  static err_t __load_##name(json_object * obj, int cfg_fd, void *out)
-#define DECLLOADER3(name) \
-  static err_t ___load_##name(json_object * obj, int cfg_fd, void *out)
+#define DECLLOADER(name) \
+  static err_t _load_##name(json_object * obj, int cfg_fd, void *dest)
 
 /* Static Variables *************************************************** */
 static json_cfg_t jcfg = { 0 };
 
-/* Static Functions Declaractions ************************************* */
 /*
- * out holds the pointer to value, it can be a real value or a pointer
+ * Mandatory fields for a node object to contain, if any is missing, then the
+ * node is considered invalid.
+ */
+static const char *mandatory_fields[] = {
+  WHOLE_WORD(STR_UUID),
+  WHOLE_WORD(STR_ADDR),
+  WHOLE_WORD(STR_RMORBL),
+  WHOLE_WORD(STR_DONE),
+  WHOLE_WORD(STR_ERRBITS),
+  WHOLE_WORD(STR_FUNC),
+  NULL
+};
+
+/* Static Functions Declaractions ************************************* */
+/* Used for both template and node */
+DECLLOADER(ttl);
+DECLLOADER(pub);
+DECLLOADER(snb);
+DECLLOADER(txp);
+DECLLOADER(bindings);
+DECLLOADER(sublist);
+DECLLOADER(features);
+
+/* Used only for node */
+DECLLOADER(tmpl);
+
+static inline cfg_general_t *gen_from_fd(int fd)
+{
+  return fd == PROV_CFG_FILE ? &jcfg.prov.gen
+         : fd == NW_NODES_CFG_FILE ? &jcfg.nw.gen
+         : fd == TEMPLATE_FILE ? &jcfg.tmpl.gen : NULL;
+}
+
+static inline void __set_feature_config(features_t * f, features_em w, bool on)
+{
+  if (on) {
+    BIT_SET(f->target, w);
+    BIT_CLR(f->current, w);
+  } else {
+    BIT_SET(f->current, w);
+    BIT_CLR(f->target, w);
+  }
+}
+
+/* NOTE: It's the caller's responsbility to make sure no same UUID being added
+ * for multiple times */
+static inline void __kv_replace(json_object *obj,
+                                const void *key,
+                                void *value)
+{
+  json_object_object_add(obj, key, json_object_new_string((char *)value));
+}
+
+/*
+ * Load the value(s) in {obj} to dest which holds either the node or the
+ * template
  */
 typedef err_t (*__load_func_t)(json_object *obj,
                                int cfg_fd,
-                               void *out);
-/* Used for both template and node */
-DECLLOADER1(ttl);
-DECLLOADER1(pub);
-DECLLOADER1(snb);
-DECLLOADER1(txp);
-DECLLOADER1(bindings);
-DECLLOADER1(sublist);
-
-/* Used only for node */
-DECLLOADER1(tmpl);
+                               void *dest);
 
 static const __load_func_t loaders[] = {
   /* Used for both template and node */
@@ -116,124 +160,134 @@ static const __load_func_t loaders[] = {
   _load_txp,
   _load_bindings,
   _load_sublist,
+  _load_features,
   /* Used only for node */
   _load_tmpl,
   /* Used only for provself */
 };
-
-static const int tmpl_loader_end = 6;
-static const int node_loader_end = 7;
+static const int tmpl_loader_end = 7;
+static const int node_loader_end = 8;
 
 /**
  * @defgroup single_key_load
  *
  * Below functions are used to load a single key-value pair in the json file
  * @{ */
-static inline err_t uint8_loader(const char *v, uint8_t *out)
+static inline err_t uint8_loader(const char *v, uint8_t *dest)
 {
-  ASSERT(v && out);
-  if (ec_success != str2uint(v, strlen(v), out, sizeof(uint8_t))) {
+  ASSERT(v && dest);
+  if (ec_success != str2uint(v, strlen(v), dest, sizeof(uint8_t))) {
     LOGE("STR to UINT error\n");
     return err(ec_json_format);
   }
   return ec_success;
 }
 
-static inline err_t uint16_loader(const char *v, uint16_t *out)
+static inline err_t uint16_loader(const char *v, uint16_t *dest)
 {
-  ASSERT(v && out);
-  if (ec_success != str2uint(v, strlen(v), out, sizeof(uint16_t))) {
+  ASSERT(v && dest);
+  if (ec_success != str2uint(v, strlen(v), dest, sizeof(uint16_t))) {
     LOGE("STR to UINT error\n");
     return err(ec_json_format);
   }
   return ec_success;
 }
-static inline err_t uint32_loader(const char *v, uint32_t *out)
+static inline err_t uint32_loader(const char *v, uint32_t *dest)
 {
-  ASSERT(v && out);
-  if (ec_success != str2uint(v, strlen(v), out, sizeof(uint32_t))) {
+  ASSERT(v && dest);
+  if (ec_success != str2uint(v, strlen(v), dest, sizeof(uint32_t))) {
     LOGE("STR to UINT error\n");
     return err(ec_json_format);
   }
   return ec_success;
 }
 
-static inline err_t uint16list_loader(const char *v, uint16list_t *out)
+static inline err_t uint16list_loader(const char *v, uint16list_t *dest)
 {
   return ec_success;
 }
 
-static inline uint8_t **pttl_from_fd(int cfg_fd, void *out)
+static inline uint8_t **pttl_from_fd(int cfg_fd, void *dest)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
-    return (&((node_t *)out)->config.ttl);
+    return (&((node_t *)dest)->config.ttl);
   } else if (cfg_fd == TEMPLATE_FILE) {
-    return (&((tmpl_t *)out)->ttl);
+    return (&((tmpl_t *)dest)->ttl);
   } else if (cfg_fd == PROV_CFG_FILE) {
-    return &((provcfg_t *)out)->ttl;
+    return &((provcfg_t *)dest)->ttl;
   }
   ASSERT(0);
 }
 
-static inline publication_t **ppub_from_fd(int cfg_fd, void *out)
+static inline publication_t **ppub_from_fd(int cfg_fd, void *dest)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
-    return (&((node_t *)out)->config.pub);
+    return (&((node_t *)dest)->config.pub);
   } else if (cfg_fd == TEMPLATE_FILE) {
-    return (&((tmpl_t *)out)->pub);
+    return (&((tmpl_t *)dest)->pub);
   }
   ASSERT(0);
 }
 
-static inline txparam_t **ptxp_from_fd(int cfg_fd, void *out)
+static inline txparam_t **ptxp_from_fd(int cfg_fd, void *dest)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
-    return (&((node_t *)out)->config.net_txp);
+    return (&((node_t *)dest)->config.net_txp);
   } else if (cfg_fd == TEMPLATE_FILE) {
-    return (&((tmpl_t *)out)->net_txp);
+    return (&((tmpl_t *)dest)->net_txp);
   } else if (cfg_fd == PROV_CFG_FILE) {
-    return &((provcfg_t *)out)->net_txp;
+    return &((provcfg_t *)dest)->net_txp;
   }
 
   ASSERT(0);
 }
 
-static inline uint8_t **psnb_from_fd(int cfg_fd, void *out)
+static inline features_t *features_from_fd(int cfg_fd, void *dest)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
-    return (&((node_t *)out)->config.snb);
+    return (&((node_t *)dest)->config.features);
   } else if (cfg_fd == TEMPLATE_FILE) {
-    return (&((tmpl_t *)out)->snb);
+    return (&((tmpl_t *)dest)->features);
+  }
+  return NULL;
+}
+
+static inline uint8_t **psnb_from_fd(int cfg_fd, void *dest)
+{
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    return (&((node_t *)dest)->config.snb);
+  } else if (cfg_fd == TEMPLATE_FILE) {
+    return (&((tmpl_t *)dest)->snb);
   }
   ASSERT(0);
 }
 
-static inline uint16list_t **pbindings_from_fd(int cfg_fd, void *out)
+static inline uint16list_t **pbindings_from_fd(int cfg_fd, void *dest)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
-    return (&((node_t *)out)->config.bindings);
+    return (&((node_t *)dest)->config.bindings);
   } else if (cfg_fd == TEMPLATE_FILE) {
-    return (&((tmpl_t *)out)->bindings);
+    return (&((tmpl_t *)dest)->bindings);
   }
   ASSERT(0);
 }
 
-static inline uint16list_t **psublist_from_fd(int cfg_fd, void *out)
+static inline uint16list_t **psublist_from_fd(int cfg_fd, void *dest)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
-    return (&((node_t *)out)->config.sublist);
+    return (&((node_t *)dest)->config.sublist);
   } else if (cfg_fd == TEMPLATE_FILE) {
-    return (&((tmpl_t *)out)->sublist);
+    return (&((tmpl_t *)dest)->sublist);
   }
   ASSERT(0);
 }
 
 static err_t _load_pub(json_object *obj,
                        int cfg_fd,
-                       void *out)
+                       void *dest)
 {
   err_t e = ec_success;
-  publication_t **p = ppub_from_fd(cfg_fd, out);
+  publication_t **p = ppub_from_fd(cfg_fd, dest);
   json_object *o;
 
   if (!json_object_object_get_ex(obj, STR_PUB, &o)) {
@@ -283,7 +337,24 @@ static err_t _load_pub(json_object *obj,
           goto free;
         }
       }
-      /* TODO: sanity check, if invalid, memset to 0 */
+      if ((*p)->txp.cnt > 7) {
+        LOGW("Note: Pub retransmission count cannot be greater than 7.\n");
+        (*p)->txp.cnt = 7;
+      } else if ((*p)->txp.cnt) {
+        if ((*p)->txp.intv < 50) {
+          LOGW("Note: Pub retransmission interval cannot be less than 50.\n");
+          (*p)->txp.intv = 50;
+        } else if ((*p)->txp.intv > 3200) {
+          LOGW("Note: Pub retransmission interval cannot be greater than 3200.\n");
+          (*p)->txp.intv = 3200;
+        } else if ((*p)->txp.intv % 50) {
+          LOGW("Note: Pub retransmission interval resolution is 50.\n");
+          (*p)->txp.intv = (((*p)->txp.intv + 49) / 50) * 50;
+        }
+      } else {
+        /* count is 0, interval takes no effect, load a valid value */
+        (*p)->txp.intv = 50;
+      }
     }
   }
   return ec_success;
@@ -294,13 +365,125 @@ static err_t _load_pub(json_object *obj,
   return e;
 }
 
-static err_t _load_txp(json_object *obj,
-                       int cfg_fd,
-                       void *out)
+static err_t _load_features(json_object *obj,
+                            int cfg_fd,
+                            void *dest)
 {
   err_t e = ec_success;
-  txparam_t **p = ptxp_from_fd(cfg_fd, out);
-  json_object *o;
+  features_t *p = features_from_fd(cfg_fd, dest);
+  json_object *o, *tmp;
+  const char *v;
+
+  if (!json_object_object_get_ex(obj, STR_FEATURES, &o)) {
+    goto free;
+  }
+  if (p->relay_txp) {
+    free(p->relay_txp);
+    p->relay_txp = NULL;
+  }
+  p->target &= 0xfff0;
+  p->current &= 0xfff0;
+
+#if (JSON_ECHO_DBG == 1)
+  JSON_ECHO("Features", o);
+#endif
+  if (json_object_object_get_ex(o, STR_RELAY, &tmp)) {
+    if (!p->relay_txp) {
+      p->relay_txp = calloc(1, sizeof(txparam_t));
+    }
+    json_object *tmp1;
+    if (json_object_object_get_ex(tmp, STR_ENABLE, &tmp1)) {
+      v = json_object_get_string(tmp1);
+      if (!strcmp(v, "0x01")) {
+        __set_feature_config(p, RELAY_BITOFS, true);
+      } else {
+        __set_feature_config(p, RELAY_BITOFS, false);
+      }
+    }
+    if (json_object_object_get_ex(tmp, STR_CNT, &tmp1)) {
+      v = json_object_get_string(tmp1);
+      if (ec_success != (e = uint8_loader(v, &p->relay_txp->cnt))) {
+        goto free;
+      }
+    }
+    if (json_object_object_get_ex(tmp, STR_INTV, &tmp1)) {
+      v = json_object_get_string(tmp1);
+      if (ec_success != (e = uint16_loader(v, &p->relay_txp->intv))) {
+        goto free;
+      }
+    }
+
+    if (p->relay_txp->cnt > 7) {
+      LOGW("Note: Relay transmission count cannot be greater than 7.\n");
+      p->relay_txp->cnt = 7;
+    } else if (p->relay_txp->cnt) {
+      if (p->relay_txp->intv < 10) {
+        LOGW("Note: Relay transmission interval cannot be less than 10.\n");
+        p->relay_txp->intv = 10;
+      } else if (p->relay_txp->intv > 320) {
+        LOGW("Note: Relay transmission interval cannot be greater than 320.\n");
+        p->relay_txp->intv = 320;
+      } else if (p->relay_txp->intv % 10) {
+        LOGW("Note: Relay transmission interval resolution is 10.\n");
+        p->relay_txp->intv = ((p->relay_txp->intv + 9) / 10) * 10;
+      }
+    } else {
+      /* count is 0, interval takes no effect, load a valid value */
+      p->relay_txp->intv = 50;
+    }
+  }
+
+  if (json_object_object_get_ex(o, STR_FRIEND, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (!strcmp(v, "0x01")) {
+      __set_feature_config(p, FRIEND_BITOFS, true);
+    } else {
+      __set_feature_config(p, FRIEND_BITOFS, false);
+    }
+  }
+
+  if (json_object_object_get_ex(o, STR_PROXY, &tmp)) {
+    v = json_object_get_string(tmp);
+    if (!strcmp(v, "0x01")) {
+      __set_feature_config(p, PROXY_BITOFS, true);
+    } else {
+      __set_feature_config(p, PROXY_BITOFS, false);
+    }
+  }
+
+  if (json_object_object_get_ex(o, STR_LPN, &tmp)) {
+    /* Informtive */
+    v = json_object_get_string(tmp);
+    if (!strcmp(v, "0x01")) {
+      BIT_SET(p->current, LPN_BITOFS);
+      BIT_SET(p->target, LPN_BITOFS);
+    } else {
+      BIT_CLR(p->current, LPN_BITOFS);
+      BIT_CLR(p->target, LPN_BITOFS);
+    }
+  }
+
+  return ec_success;
+
+  free:
+  if (p->relay_txp) {
+    free(p->relay_txp);
+    p->relay_txp = NULL;
+  }
+  p->target &= 0xfff0;
+  p->current &= 0xfff0;
+  return e;
+}
+
+static err_t _load_txp(json_object *obj,
+                       int cfg_fd,
+                       void *dest)
+{
+  err_t e = ec_success;
+  txparam_t **p = ptxp_from_fd(cfg_fd, dest);
+  features_t *f = features_from_fd(cfg_fd, dest);
+  json_object *o, *tmp;
+  const char *v;
 
   if (!json_object_object_get_ex(obj, STR_TXP, &o)) {
     goto free;
@@ -313,8 +496,6 @@ static err_t _load_txp(json_object *obj,
 #if (JSON_ECHO_DBG == 1)
   JSON_ECHO("TxP", o);
 #endif
-  const char *v;
-  json_object *tmp;
   if (json_object_object_get_ex(o, STR_CNT, &tmp)) {
     v = json_object_get_string(tmp);
     if (ec_success != (e = uint8_loader(v, &(*p)->cnt))) {
@@ -327,6 +508,9 @@ static err_t _load_txp(json_object *obj,
       goto free;
     }
   }
+  if (cfg_fd != PROV_CFG_FILE) {
+    __set_feature_config(f, NETTX_BITOFS, true);
+  }
   return ec_success;
 
   free:
@@ -337,11 +521,12 @@ static err_t _load_txp(json_object *obj,
 
 static err_t _load_timeout(json_object *obj,
                            int cfg_fd,
-                           void *out)
+                           void *dest)
 {
   err_t e = ec_success;
-  json_object *o;
-  provcfg_t *prov = (provcfg_t *)out;
+  json_object *o, *tmp;
+  provcfg_t *prov = (provcfg_t *)dest;
+  const char *v;
 
   if (cfg_fd != PROV_CFG_FILE) {
     e = err(ec_param_invalid);
@@ -359,8 +544,6 @@ static err_t _load_timeout(json_object *obj,
 #if (JSON_ECHO_DBG == 1)
   JSON_ECHO("Timeout", o);
 #endif
-  const char *v;
-  json_object *tmp;
   if (json_object_object_get_ex(o, STR_TIMEOUT_NORMAL, &tmp)) {
     v = json_object_get_string(tmp);
     if (ec_success != (e = uint32_loader(v, &prov->timeout->normal))) {
@@ -385,11 +568,13 @@ static err_t _load_timeout(json_object *obj,
 
 static err_t _load_ttl(json_object *obj,
                        int cfg_fd,
-                       void *out)
+                       void *dest)
 {
   err_t e = ec_success;
-  uint8_t **p = pttl_from_fd(cfg_fd, out);
+  uint8_t **p = pttl_from_fd(cfg_fd, dest);
+  features_t *f = features_from_fd(cfg_fd, dest);
   json_object *o;
+  const char *v;
 
   if (!json_object_object_get_ex(obj, STR_TTL, &o)) {
     goto free;
@@ -398,12 +583,15 @@ static err_t _load_ttl(json_object *obj,
 #if (JSON_ECHO_DBG == 1)
   JSON_ECHO("TTL", o);
 #endif
-  const char *v = json_object_get_string(o);
+  v = json_object_get_string(o);
   if (!*p) {
     *p = malloc(sizeof(uint8_t));
   }
   if (ec_success != (e = uint8_loader(v, *p))) {
     goto free;
+  }
+  if (cfg_fd != PROV_CFG_FILE) {
+    __set_feature_config(f, TTL_BITOFS, true);
   }
   return ec_success;
 
@@ -415,10 +603,11 @@ static err_t _load_ttl(json_object *obj,
 
 static err_t _load_snb(json_object *obj,
                        int cfg_fd,
-                       void *out)
+                       void *dest)
 {
   err_t e = ec_success;
-  uint8_t **p = psnb_from_fd(cfg_fd, out);
+  uint8_t **p = psnb_from_fd(cfg_fd, dest);
+  features_t *f = features_from_fd(cfg_fd, dest);
   json_object *o;
 
   if (!json_object_object_get_ex(obj, STR_SNB, &o)) {
@@ -435,6 +624,7 @@ static err_t _load_snb(json_object *obj,
   if (ec_success != (e = uint8_loader(v, *p))) {
     goto free;
   }
+  __set_feature_config(f, SNB_BITOFS, **p);
   return ec_success;
 
   free:
@@ -447,6 +637,9 @@ static err_t __load_uint16list(json_object *o,
                                uint16list_t **p)
 {
   err_t e;
+  const char *v;
+  int len;
+
   if (json_type_array != json_object_get_type(o)) {
     e =  err(ec_format);
     goto free;
@@ -455,8 +648,7 @@ static err_t __load_uint16list(json_object *o,
     *p = calloc(sizeof(uint16list_t), 1);
   }
 
-  const char *v;
-  int len = json_object_array_length(o);
+  len = json_object_array_length(o);
   if (!(*p)->data) {
     (*p)->len = len;
     (*p)->data = calloc(len, sizeof(uint16_t));
@@ -490,10 +682,10 @@ static err_t __load_uint16list(json_object *o,
 
 static err_t _load_bindings(json_object *obj,
                             int cfg_fd,
-                            void *out)
+                            void *dest)
 {
   err_t e = ec_success;
-  uint16list_t **p = pbindings_from_fd(cfg_fd, out);
+  uint16list_t **p = pbindings_from_fd(cfg_fd, dest);
   json_object *o;
 
   if (!json_object_object_get_ex(obj, STR_BIND, &o)) {
@@ -522,10 +714,10 @@ static err_t _load_bindings(json_object *obj,
 
 static err_t _load_sublist(json_object *obj,
                            int cfg_fd,
-                           void *out)
+                           void *dest)
 {
   err_t e = ec_success;
-  uint16list_t **p = psublist_from_fd(cfg_fd, out);
+  uint16list_t **p = psublist_from_fd(cfg_fd, dest);
   json_object *o;
 
   if (!json_object_object_get_ex(obj, STR_SUB, &o)) {
@@ -552,33 +744,49 @@ static err_t _load_sublist(json_object *obj,
 }
 
 /**
- * @brief copy_tmpl_to_node - copy the configuration in template to the node
+ * @brief __copy_tmpl_to_node - copy the configuration in template to the node
  * only if the field in node is not set.
  *
- * @param t - tmplate
- * @param n - node
+ * @param t - tmplate - loaded template
+ * @param n - node - node to be loaded
  */
-static void copy_tmpl_to_node(const tmpl_t *t,
-                              node_t *n)
+static void __copy_tmpl_to_node(const tmpl_t *t,
+                                node_t *n)
 {
   ASSERT(t && n);
   if (t->ttl && !n->config.ttl) {
+    __set_feature_config(&n->config.features, TTL_BITOFS, true);
     alloc_copy(&n->config.ttl, t->ttl, sizeof(uint8_t));
   }
   if (t->sublist && !n->config.sublist) {
     alloc_copy_u16list(&n->config.sublist, t->sublist);
   }
   if (t->snb && !n->config.snb) {
+    __set_feature_config(&n->config.features, SNB_BITOFS, true);
     alloc_copy(&n->config.snb, t->snb, sizeof(uint8_t));
   }
-  if (t->relay_txp && !n->config.features.relay_txp) {
-    alloc_copy((uint8_t **)&n->config.features.relay_txp, t->relay_txp, sizeof(txparam_t));
+  if (!(n->config.features.target & 0xf)
+      && !(n->config.features.current & 0xf)) {
+    /* The 4 LSB bits are all 0 */
+    n->config.features.target |= (t->features.target & 0xf);
+    n->config.features.current |= (t->features.current & 0xf);
+    if (n->config.features.relay_txp) {
+      ASSERT(0);
+    }
+    if (t->features.relay_txp) {
+      alloc_copy((uint8_t **)&n->config.features.relay_txp,
+                 t->features.relay_txp,
+                 sizeof(txparam_t));
+    }
   }
   if (t->pub && !n->config.pub) {
     alloc_copy((uint8_t **)&n->config.pub, t->pub, sizeof(publication_t));
   }
   if (t->net_txp && !n->config.net_txp) {
-    alloc_copy((uint8_t **)&n->config.net_txp, t->net_txp, sizeof(txparam_t));
+    __set_feature_config(&n->config.features, NETTX_BITOFS, true);
+    alloc_copy((uint8_t **)&n->config.net_txp,
+               t->net_txp,
+               sizeof(txparam_t));
   }
   if (t->bindings && !n->config.bindings) {
     alloc_copy_u16list(&n->config.bindings, t->bindings);
@@ -587,7 +795,7 @@ static void copy_tmpl_to_node(const tmpl_t *t,
 
 static err_t _load_tmpl(json_object *obj,
                         int cfg_fd,
-                        void *out)
+                        void *dest)
 {
   uint16_t tmplid = 0;
   json_object *tmp;
@@ -597,21 +805,41 @@ static err_t _load_tmpl(json_object *obj,
   ASSERT(cfg_fd == NW_NODES_CFG_FILE);
 
   json_object_object_get_ex(obj, STR_TMPL, &tmp);
+  if (!tmp) {
+    if (((node_t *)dest)->tmpl) {
+      free(((node_t *)dest)->tmpl);
+      ((node_t *)dest)->tmpl = NULL;
+    }
+    return ec_success;
+  }
   tmplid_str = json_object_get_string(tmp);
 
   if (ec_success != str2uint(tmplid_str, strlen(tmplid_str), &tmplid, sizeof(uint8_t))) {
     LOGE("STR to UINT error\n");
     return err(ec_json_format);
   }
+  if (NULL == ((node_t *)dest)->tmpl) {
+    ((node_t *)dest)->tmpl = malloc(1);
+  }
+  *((node_t *)dest)->tmpl = tmplid;
 
   t = cfgdb_tmpl_get(tmplid);
   if (!t) {
     return ec_success;
   }
-  copy_tmpl_to_node(t, out);
+  __copy_tmpl_to_node(t, dest);
   return ec_success;
 }
+/**  @} */
 
+/**
+ * @brief load_to_tmpl_item - Load a template json object to {tmpl_t}
+ *
+ * @param obj - json object
+ * @param tmpl - {tmpl_t} to be loaded
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_to_tmpl_item(json_object *obj,
                                tmpl_t *tmpl)
 {
@@ -629,6 +857,14 @@ static err_t load_to_tmpl_item(json_object *obj,
   return ec_success;
 }
 
+/**
+ * @brief load_to_node_item - Load a node json object to {node_t}
+ *
+ * @param obj - json object
+ * @param node - {node_t} to be loaded
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_to_node_item(json_object *obj,
                                node_t *node)
 {
@@ -646,27 +882,19 @@ static err_t load_to_node_item(json_object *obj,
   return ec_success;
 }
 
-/**  @} */
-
-static inline cfg_general_t *gen_from_fd(int fd)
-{
-  return fd == PROV_CFG_FILE ? &jcfg.prov.gen
-         : fd == NW_NODES_CFG_FILE ? &jcfg.nw.gen
-         : fd == TEMPLATE_FILE ? &jcfg.tmpl.gen : NULL;
-}
-
 /**
  * @brief open_json_file - close the current root and reload it with the file
  * content, it also fill all the json_object in the struct
  *
- * @param cfg_fd -
+ * @param cfg_fd - config file descriptor
  *
- * @return
+ * @return @ref{err_t}
  */
 static err_t open_json_file(int cfg_fd, bool autoflush)
 {
   err_t e = ec_success;;
   cfg_general_t *gen;
+  json_object *sy;
 
   gen = gen_from_fd(cfg_fd);
   json_cfg_close(cfg_fd);
@@ -675,6 +903,13 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
   }
   gen->root = json_object_from_file(gen->fp);
   gen->autoflush = autoflush;
+
+  if (json_object_object_get_ex(gen->root, STR_SYNC_TIME, &sy)) {
+    const char *syt = json_object_get_string(sy);
+    if (ec_success != str2uint(syt, strlen(syt), &gen->synctime, sizeof(uint32_t))) {
+      LOGE("STR to UINT error\n");
+    }
+  }
 
   if (cfg_fd == NW_NODES_CFG_FILE) {
     /* Load the subnets, which fills the refid and the json_object nodes */
@@ -694,7 +929,7 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
           if (!json_object_object_get_ex(n, STR_NODES, &jcfg.nw.subnets[i].nodes)) {
             LOGE("No Nodes node in the json file\n");
             e = err(ec_json_format);
-            goto out;
+            goto finally;
           }
         }
       } else if (!strcmp(STR_BACKLOG, key)) {
@@ -703,21 +938,34 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
     }
   }
 
-  out:
+  finally:
   if (ec_success != e) {
     json_cfg_close(cfg_fd);
-  } else {
-    LOGD("%s file opened\n", gen->fp);
   }
+  /* else { */
+  /* LOGD("%s file opened\n", gen->fp); */
+  /* } */
   return e;
 }
 
 static err_t new_json_file(int cfg_fd)
 {
-  /* TODO */
-  return ec_success;
+  err_t e = ec_param_invalid;
+  if (cfg_fd == PROV_CFG_FILE) {
+    /* TODO */
+    e = ec_success;
+  } else if (cfg_fd == NW_NODES_CFG_FILE) {
+    /* TODO */
+    e = ec_success;
+  }
+  return err(e);
 }
 
+/**
+ * @brief load_template - load the configurations in the template file
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_template(void)
 {
   json_object *n, *ptmpl;
@@ -752,9 +1000,9 @@ static err_t load_template(void)
     }
     e = load_to_tmpl_item(n, t);
     elog(e);
+    t->refid = refid;
     if (add) {
       if (e == ec_success) {
-        t->refid = refid;
         EC(ec_success, cfgdb_tmpl_add(t));
       } else {
         free(t);
@@ -763,15 +1011,6 @@ static err_t load_template(void)
   }
   return ec_success;
 }
-
-static const char *mandatory_fields[] = {
-  WHOLE_WORD(STR_UUID),
-  WHOLE_WORD(STR_ADDR),
-  WHOLE_WORD(STR_RMORBL),
-  WHOLE_WORD(STR_DONE),
-  WHOLE_WORD(STR_ERRBITS),
-  NULL
-};
 
 static bool _node_valid_check(json_object *obj)
 {
@@ -787,6 +1026,14 @@ static bool _node_valid_check(json_object *obj)
   return true;
 }
 
+/**
+ * @brief load_key - Load a key json object to {meshkey_t}
+ *
+ * @param obj - key json object
+ * @param key - {meshkey_t}
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_key(json_object *obj,
                       meshkey_t *key)
 {
@@ -833,6 +1080,11 @@ static err_t load_key(json_object *obj,
   return ec_success;
 }
 
+/**
+ * @brief load_provself - Load the provisioner configurations from the prov file
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_provself(void)
 {
   /* NOTE: Only first subnet will be loaded */
@@ -918,80 +1170,77 @@ static err_t load_provself(void)
   return e;
 }
 
-static err_t load_nodes(void)
+/**
+ * @brief __load_node_arr - Load a node array in the json config file
+ *
+ * @param pnode - node array json object
+ * @param backlog - is loading backlog or not
+ */
+static void __load_node_arr(json_object *pnode, bool backlog)
 {
-  /* NOTE: Only first subnet will be loaded */
-  json_object *n, *pnode;
+  bool add;
   err_t e;
-  bool add = false;
-  if (!jcfg.nw.subnets
-      || !jcfg.nw.subnets[0].nodes
-      || !jcfg.nw.gen.root) {
-    return err(ec_json_open);
-  }
-  pnode = jcfg.nw.subnets[0].nodes;
-
   json_array_foreach(i, num, pnode)
   {
+    add = false;
     json_object *tmp;
-    n = json_object_array_get_idx(pnode, i);
+    json_object *n = json_object_array_get_idx(pnode, i);
     if (!_node_valid_check(n)) {
       LOGE("Node[%d] invalid, pass.\n", i);
       continue;
     }
 
-    if (!json_object_object_get_ex(n, STR_UUID, &tmp)) {
-      /* No reference ID, ignore it */
-      continue;
-    }
     /*
      * Check if it's already provisioned to know which hash table to find the
      * node
      */
-    const char *addr_str, *uuid_str, *rmbl_str, *done_str, *err_str;
+    const char *v;
     uint8_t uuid[16] = { 0 };
     uint32_t errbits;
     uint16_t addr;
-    uint8_t rmbl, done;
+    uint8_t rmbl, done, func;
     node_t *t;
 
     json_object_object_get_ex(n, STR_ADDR, &tmp);
-    addr_str = json_object_get_string(tmp);
-
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &addr, sizeof(uint16_t))) {
+      LOGE("STR to UINT error\n");
+      continue;
+    }
     json_object_object_get_ex(n, STR_UUID, &tmp);
-    uuid_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_RMORBL, &tmp);
-    rmbl_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_DONE, &tmp);
-    done_str = json_object_get_string(tmp);
-
-    json_object_object_get_ex(n, STR_ERRBITS, &tmp);
-    err_str = json_object_get_string(tmp);
-
-    if (ec_success != str2cbuf(uuid_str, 0, (char *)uuid, 16)) {
+    v = json_object_get_string(tmp);
+    if (ec_success != str2cbuf(v, 0, (char *)uuid, 16)) {
       LOGE("STR to CBUF error\n");
       continue;
     }
-    if (ec_success != str2uint(err_str, strlen(err_str), &errbits, sizeof(uint32_t))) {
+    json_object_object_get_ex(n, STR_RMORBL, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &rmbl, sizeof(uint8_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
-    if (ec_success != str2uint(addr_str, strlen(addr_str), &addr, sizeof(uint16_t))) {
+    json_object_object_get_ex(n, STR_DONE, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &done, sizeof(uint8_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
-    if (ec_success != str2uint(rmbl_str, strlen(rmbl_str), &rmbl, sizeof(uint8_t))) {
+    json_object_object_get_ex(n, STR_ERRBITS, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &errbits, sizeof(uint32_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
-    if (ec_success != str2uint(done_str, strlen(done_str), &done, sizeof(uint8_t))) {
+    json_object_object_get_ex(n, STR_FUNC, &tmp);
+    v = json_object_get_string(tmp);
+    if (ec_success != str2uint(v, strlen(v), &func, sizeof(uint8_t))) {
       LOGE("STR to UINT error\n");
       continue;
     }
 
-    if (addr) {
+    if (backlog) {
+      t = cfgdb_backlog_get((const uint8_t *)uuid);
+    } else if (addr) {
       t = cfgdb_node_get(addr);
     } else {
       t = cfgdb_unprov_dev_get((const uint8_t *)uuid);
@@ -1005,29 +1254,56 @@ static err_t load_nodes(void)
     e = load_to_node_item(n, t);
     elog(e);
 
+    t->addr = addr;
+    memcpy(t->uuid, uuid, 16);
+    t->done = done;
+    t->rmorbl = rmbl;
+    t->err = errbits;
+    t->models.func = func;
     if (add) {
       if (e == ec_success) {
-        t->addr = addr;
-        memcpy(t->uuid, uuid, 16);
-        t->done = done;
-        t->rmorbl = rmbl;
-        t->err = errbits;
-        EC(ec_success, cfgdb_add(t));
+        if (backlog) {
+          e = cfgdb_backlog_add(t);
+        } else if (addr) {
+          e = cfgdb_nodes_add(t);
+        } else {
+          e = cfgdb_unpl_add(t);
+        }
+        elog(e);
       } else {
         free(t);
       }
     }
   }
+}
+
+/**
+ * @brief load_nodes - Load all nodes in the node configuration file.
+ *
+ * @return @ref{err_t}
+ */
+static err_t load_nodes(void)
+{
+  /* NOTE: Only first subnet will be loaded */
+  if (!jcfg.nw.subnets
+      || !jcfg.nw.subnets[0].nodes
+      || !jcfg.nw.gen.root) {
+    return err(ec_json_open);
+  }
+  __load_node_arr(jcfg.nw.subnets[0].nodes, false);
+  __load_node_arr(jcfg.nw.backlog, true);
   return ec_success;
 }
 
-static err_t load_json_file(int cfg_fd,
-                            bool clrctlfls)
+static err_t load_json_file(int cfg_fd, bool clrdb)
 {
-  /* TODO */
   if (cfg_fd == TEMPLATE_FILE) {
     return load_template();
   } else if (cfg_fd == NW_NODES_CFG_FILE) {
+    if (clrdb) {
+      cfgdb_remove_all_nodes();
+      cfgdb_remove_all_upl();
+    }
     return load_nodes();
   } else if (cfg_fd == PROV_CFG_FILE) {
     return load_provself();
@@ -1046,7 +1322,7 @@ void json_cfg_close(int cfg_fd)
     SAFE_FREE(jcfg.nw.subnets);
   }
   gen->root = NULL;
-  LOGM("%s file closed.\n", gen->fp);
+  /* LOGM("%s file closed.\n", gen->fp); */
 }
 
 err_t json_cfg_open(int cfg_fd,
@@ -1056,6 +1332,7 @@ err_t json_cfg_open(int cfg_fd,
   int tmp;
   err_t ret = ec_success;
   cfg_general_t *gen;
+  struct stat st;
 
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
     return err(ec_param_invalid);
@@ -1095,43 +1372,48 @@ err_t json_cfg_open(int cfg_fd,
     if (-1 == tmp) {
       if (!(flags & FL_CREATE)) {
         ret = err(ec_not_exist);
-        goto fail;
+        goto finally;
       }
       if (ec_success != (ret = new_json_file(cfg_fd))) {
-        goto fail;
+        goto finally;
       }
     } else {
       if (flags & FL_TRUNC) {
         if (ec_success != (ret = new_json_file(cfg_fd))) {
-          goto fail;
+          goto finally;
         }
       }
     }
   }
+  if (gen->synctime && !(flags & FL_FORCE_RELOAD)) {
+    stat(gen->fp, &st);
+#if __APPLE__ == 1
+    if (st.st_mtimespec.tv_sec <= gen->synctime) {
+#else
+    if (st.st_mtim.tv_sec <= gen->synctime) {
+#endif
+      LOGD("Already hold the latest content, no need to reload file\n");
+      return ec_success;
+    }
+  }
 
   if (ec_success != (ret = open_json_file(cfg_fd, 1))) {
-    goto fail;
+    goto finally;
   }
 
   if (ec_success != (ret = load_json_file(cfg_fd,
-                                          !!(flags & FL_CLR_CTLFS)))) {
-    goto fail;
+                                          !!(flags & FL_FORCE_RELOAD)))) {
+    goto finally;
   }
 
-  fail:
+  finally:
   if (ec_success != ret) {
-    /* TODO: Clean work need? */
-    /* jsonConfigDeinit(); */
-    LOGE("JSON[%s] Open failed\n", gen->fp);
+    json_cfg_close(cfg_fd);
+    LOGE("JSON[%s] Open falied\n", gen->fp);
     elog(ret);
   }
 
   return ret;
-#if 0
-  if (rootPtr) {
-    jsonConfigClose();
-  }
-#endif
 }
 
 err_t json_cfg_flush(int cfg_fd)
@@ -1143,6 +1425,15 @@ err_t json_cfg_flush(int cfg_fd)
   gen = gen_from_fd(cfg_fd);
   if (!gen || !gen->root || !gen->fp) {
     return err(ec_json_null);
+  }
+  if (cfg_fd != TEMPLATE_FILE) {
+    char buf[11] = { 0 };
+    time_t t = time(NULL);
+    gen->synctime = (uint32_t)t;
+    buf[0] = '0';
+    buf[1] = 'x';
+    uint32_tostr((uint32_t)t, buf + 2);
+    __kv_replace(gen->root, STR_SYNC_TIME, buf);
   }
 #if (JSON_ECHO_DBG == 1)
   LOGD("Dump %s\n", gen->fp);
@@ -1160,6 +1451,7 @@ err_t json_cfg_flush(int cfg_fd)
   }
   return ec_success;
 }
+
 /*
  * What fields can be modified?
  *
@@ -1181,50 +1473,7 @@ err_t json_cfg_flush(int cfg_fd)
  * used for both network key and application key, so it's insufficient to
  * address them without additional field.
  *
- * How to address a specific key-value pair in the json file?
- * With the pair [cfg_fd, wrtype(opcode), key, value]
- *
- * - In node scope:
- *   1> find the node by UUID
- *   2> find the key-value pair by the key
- *   3> modify the value
- *
- * - In Self config scope, since there are overlap keys used in network and
- *   application keys, additional field key(s) is needed:
- *   1> Check if field key is provided? Yes means to modify the field in
- *   subnets, no means modify the field in current level.
- *
- *   - Modify the current level
- *     - Find the key-value pair by key and modify the value
- *
- *   - Searching down still
- *     - if the additional field key IS NOT provided, then iterate all the
- *       network key by matching the RefId, then modify the value
- *     - if the additional field key IS provided, then iterate all the
- *       application key by matching the RefId, then modify the value
- *
- * So x parameters are needed to modify the target value in general.
- *
- * - field_key - used to address the field in array for searching key-value
- *   pair, e.g. UUID for searching node, refId for network key.
- * - level_indicator - used to indicate how many levels need to go into to find
- *   to match the field key, now only used for appkey
- * - key - used to address the key-value pair in above field.
- * - value - new value to set.
- *
- *
  */
-
-/* NOTE: It's the caller's responsbility to make sure no same UUID being added
- * for multiple times */
-static void __kv_replace(json_object *obj,
-                         const void *key,
-                         void *value)
-{
-  /* json_object_object_del(obj, key); */
-  json_object_object_add(obj, key, json_object_new_string((char *)value));
-}
-
 static json_object *find_node(const uint8_t *uuid,
                               bool reload)
 {
@@ -1287,20 +1536,21 @@ static err_t _backlog_node_add(const uint8_t *uuid)
   json_object_object_add(obj, STR_ERRBITS, json_object_new_string("0x00000000"));
   json_object_object_add(obj, STR_TMPL, json_object_new_string("0x00"));
   json_object_object_add(obj, STR_RMORBL, json_object_new_string("0x00"));
+  json_object_object_add(obj, STR_FUNC, json_object_new_string("0x00"));
   json_object_object_add(obj, STR_DONE, json_object_new_string("0x00"));
 
   json_object_array_add(jcfg.nw.backlog, obj);
 
   n = calloc(1, sizeof(node_t));
   memcpy(n->uuid, uuid, 16);
-  if (ec_success != (e = cfgdb_add(n))) {
+  if (ec_success != (e = cfgdb_backlog_add(n))) {
     free(n);
-    goto fail;
+    goto finally;
   }
 
-  fail:
+  finally:
   if (e != ec_success) {
-    cfgdb_remove(n, 1);
+    cfgdb_backlog_remove(n, 1);
     json_object_put(obj);
   }
   return ec_success;
@@ -1336,6 +1586,51 @@ static err_t set_node_errbits(const void *key,
   return modify_node_field(key, STR_ERRBITS, buf);
 }
 
+static err_t set_node_func(const void *key,
+                           void *data)
+{
+  /* Key is uuid and data is the done */
+  char buf[5] = { 0 };
+
+  if (!key || !data) {
+    return err(ec_param_invalid);
+  }
+  buf[0] = '0';
+  buf[1] = 'x';
+  uint8_tostr(*(uint8_t *)data, buf + 2);
+  return modify_node_field(key, STR_FUNC, buf);
+}
+
+static err_t rmall_nodes(void)
+{
+  char val[] = { '0', 'x', '1', '0', 0 };
+  json_object *node, *addr;
+  json_array_foreach(i, n, jcfg.nw.subnets[0].nodes){
+    node = json_object_array_get_idx(jcfg.nw.subnets[0].nodes, i);
+    json_object_object_get_ex(node, STR_ADDR, &addr);
+    if (!strcmp(json_object_get_string(addr), "0x0000")) {
+      continue;
+    }
+    __kv_replace(node, STR_RMORBL, val);
+  }
+  return ec_success;
+}
+
+static err_t rmbl_clr(void)
+{
+  char val[] = { '0', 'x', '0', '0', 0 };
+  json_object *node, *addr;
+  json_array_foreach(i, n, jcfg.nw.subnets[0].nodes){
+    node = json_object_array_get_idx(jcfg.nw.subnets[0].nodes, i);
+    json_object_object_get_ex(node, STR_ADDR, &addr);
+    if (strcmp(json_object_get_string(addr), "0x0000")) {
+      continue;
+    }
+    __kv_replace(node, STR_RMORBL, val);
+  }
+  return ec_success;
+}
+
 static err_t set_node_done(const void *key,
                            void *data)
 {
@@ -1353,8 +1648,24 @@ static err_t set_node_done(const void *key,
 
 static err_t nodes_clrctl(void)
 {
-  /* TODO */
-  return ec_success;
+  char uint32_zero[] = { '0', 'x', '0', '0', '0', '0', '0', '0', '0', '0', 0 };
+  char uint16_zero[] = { '0', 'x', '0', '0', '0', '0', 0 };
+  char uint8_zero[] = { '0', 'x', '0', '0', 0 };
+  json_array_foreach(i, n, jcfg.nw.subnets[0].nodes){
+    json_object *node;
+    node = json_object_array_get_idx(jcfg.nw.subnets[0].nodes, i);
+    __kv_replace(node, STR_ADDR, uint16_zero);
+    __kv_replace(node, STR_ERRBITS, uint32_zero);
+    __kv_replace(node, STR_RMORBL, uint8_zero);
+    __kv_replace(node, STR_FUNC, uint8_zero);
+    __kv_replace(node, STR_DONE, uint8_zero);
+  }
+  if (jcfg.nw.gen.autoflush) {
+    json_cfg_flush(NW_NODES_CFG_FILE);
+  }
+
+  /* Force reload the file */
+  return json_cfg_open(NW_NODES_CFG_FILE, NULL, FL_FORCE_RELOAD);
 }
 
 static err_t write_nodes(int wrtype,
@@ -1374,6 +1685,15 @@ static err_t write_nodes(int wrtype,
       break;
     case wrt_node_addr:
       e = set_node_addr(key, data);
+      break;
+    case wrt_node_func:
+      e = set_node_func(key, data);
+      break;
+    case wrt_node_rmall:
+      e = rmall_nodes();
+      break;
+    case wrt_node_rmblclr:
+      e = rmbl_clr();
       break;
     case wrt_done:
       e = set_node_done(key, data);
@@ -1470,6 +1790,16 @@ static inline void __provself_setnetkeyid(provcfg_t *pc, void *data)
   __kv_replace(jcfg.prov.keys.netkey, STR_ID, buf);
 }
 
+static inline void __provself_setnetkeyval(provcfg_t *pc, void *data)
+{
+  err_t e;
+  memcpy(pc->subnets[0].netkey.val, data, 16);
+  char buf[33] = { 0 };
+  if (ec_success != (e = cbuf2str((char *)data, 16, 0, buf, 33))) {
+    return;
+  }
+  __kv_replace(jcfg.prov.keys.netkey, STR_VALUE, buf);
+}
 static inline void __provself_setnetkeydone(provcfg_t *pc, void *data)
 {
   pc->subnets[0].netkey.done = *(uint8_t *)data;
@@ -1514,6 +1844,9 @@ static err_t write_provself(int wrtype,
       break;
     case wrt_prov_netkey_id:
       __provself_setnetkeyid(provcfg, data);
+      break;
+    case wrt_prov_netkey_val:
+      __provself_setnetkeyval(provcfg, data);
       break;
     case wrt_prov_netkey_done:
       __provself_setnetkeydone(provcfg, data);
@@ -1567,5 +1900,42 @@ err_t json_cfg_read(int cfg_fd,
                     const void *key,
                     void *data)
 {
+  struct stat st;
+  cfg_general_t *gen;
+  if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
+    return err(ec_param_invalid);
+  }
+  gen = gen_from_fd(cfg_fd);
+  switch (rdtype) {
+    case rdt_modified:
+      if (!gen->fp) {
+        *(uint8_t *)data = 1;
+        return ec_success;
+      }
+      stat(gen->fp, &st);
+#if __APPLE__ == 1
+      if (st.st_mtimespec.tv_sec > gen->synctime) {
+#else
+      if (st.st_mtim.tv_sec > gen->synctime) {
+#endif
+        *(uint8_t *)data = 1;
+        return ec_success;
+      }
+      *(uint8_t *)data = 0;
+      return ec_success;
+    case rdt_node_str:
+    {
+      json_object *obj = find_node(key, 0);
+      if (!obj) {
+        *(const char **)data = NULL;
+        return err(ec_not_exist);
+      }
+      const char *v = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY);
+      *(const char **)data = v;
+    }
+    break;
+    default:
+      return ec_param_invalid;
+  }
   return ec_success;
 }

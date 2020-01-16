@@ -15,6 +15,7 @@ extern "C"
 #include "mng.h"
 
 err_t nwk_init(void *p);
+int bgevt_dflt_hdr(const struct gecko_cmd_packet *evt);
 #ifdef __cplusplus
 }
 #endif

@@ -10,4 +10,5 @@ cppcheck.xml
 .clangd
 .history
 .gdb*
-node_modules
+tools/mesh_config
+!tools/mesh_config/templates.json

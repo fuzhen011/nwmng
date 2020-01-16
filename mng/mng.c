@@ -12,32 +12,34 @@
 #include <errno.h>
 /* #include <sys/prctl.h> */
 
-#include <sys/socket.h>
-
 #include "hal/bg_uart_cbs.h"
 #include "host_gecko.h"
 
 #include "projconfig.h"
 #include "logging.h"
 #include "utils.h"
+#include "generic_parser.h"
 #include "gecko_bglib.h"
 #include "bgevt_hdr.h"
 #include "mng.h"
-#include "mng_ipc.h"
 #include "nwk.h"
-#include "ccipc.h"
 #include "cli.h"
-#include "climng_startup.h"
+#include "cfg.h"
+#include "startup.h"
+#include "glib.h"
+#include "socket_handler.h"
+#include "gecko_bglib.h"
+#include "dev_config.h"
 /* Defines  *********************************************************** */
+/*
+ * Default priority for taking actions: Adding > Removing > Blacklisting
+ */
+#define DEFAULT_SEQ_PRIO  "arb"
+
 #define INVALID_CONN_HANDLE 0xff
 
-/* Global Variables *************************************************** */
-extern sock_status_t sock;
-extern const command_t commands[];
-extern pthread_mutex_t qlock, hdrlock;
-extern pthread_cond_t qready, hdrready;
-
-err_t cmd_ret = ec_success;
+#define BL_BITMASK  0x01
+#define RM_BITMASK  0x10
 
 typedef struct qitem{
   int offs;
@@ -50,6 +52,15 @@ typedef struct {
   qitem_t *tail;
 }cmdq_t;
 
+typedef struct {
+  char state;
+  bool (*loader)(void);
+}seq_loader_t;
+
+/* Global Variables *************************************************** */
+extern const command_t commands[];
+extern pthread_mutex_t qlock;
+err_t cmd_ret = ec_success;
 cmdq_t cmdq = { 0 };
 
 /* Static Variables *************************************************** */
@@ -58,7 +69,9 @@ static mng_t mng = {
 };
 
 /* Static Functions Declaractions ************************************* */
+static err_t clm_set_scan(int status);
 static void poll_cmd(void);
+static gboolean load_lists(gpointer key, gpointer value, gpointer data);
 /******************************************************************
  * Command queue
  * ***************************************************************/
@@ -111,66 +124,6 @@ wordexp_t *cmd_deq(int *offs)
   return w;
 }
 
-static int __provcfg_field(opc_t opc, uint8_t len, const uint8_t *buf,
-                           void *out)
-{
-  int i = 0;
-  switch (opc) {
-    case RSP_PROV_BASIC:
-      memcpy(&mng.cfg.addr, buf + i, sizeof(uint16_t));
-      i += sizeof(uint16_t);
-      memcpy(&mng.cfg.sync_time, buf + i, sizeof(time_t));
-      i += sizeof(time_t);
-      memcpy(&mng.cfg.ivi, buf + i, sizeof(uint32_t));
-      i += sizeof(uint32_t);
-      memcpy(&mng.cfg.subnet_num, buf + i, sizeof(uint8_t));
-      /* i += sizeof(uint8_t); */
-      break;
-    case RSP_PROV_SUBNETS:
-      if (mng.cfg.subnets) {
-        free(mng.cfg.subnets);
-      }
-      /* buf[0] is the appkey_num */
-      mng.cfg.subnets = malloc(sizeof(subnet_t) + sizeof(meshkey_t) * buf[0]);
-      memcpy(mng.cfg.subnets, buf + i, sizeof(subnet_t));
-      i += sizeof(subnet_t);
-      if (buf[0]) {
-        memcpy(mng.cfg.subnets[0].appkey, buf + i,
-               sizeof(meshkey_t) * buf[0]);
-        i += sizeof(meshkey_t) * buf[0];
-      }
-      break;
-    case RSP_PROV_TTL:
-      if (!mng.cfg.ttl) {
-        mng.cfg.ttl = malloc(sizeof(uint8_t));
-      }
-      *mng.cfg.ttl = buf[0];
-      break;
-    case RSP_PROV_TXP:
-      if (!mng.cfg.net_txp) {
-        mng.cfg.net_txp = malloc(sizeof(txparam_t));
-      }
-      memcpy(mng.cfg.net_txp, buf, sizeof(txparam_t));
-      break;
-    case RSP_PROV_TIMEOUT:
-      if (!mng.cfg.timeout) {
-        mng.cfg.timeout = malloc(sizeof(timeout_t));
-      }
-      memcpy(mng.cfg.timeout, buf, sizeof(timeout_t));
-      break;
-    default:
-      return 0;
-  }
-  return 1;
-}
-
-err_t ipc_get_provcfg(void *p)
-{
-  err_t e;
-  EC(ec_success, socktocfg(CPG_ALL, 0, NULL, NULL, __provcfg_field));
-  return e;
-}
-
 mng_t *get_mng(void)
 {
   return &mng;
@@ -179,16 +132,15 @@ mng_t *get_mng(void)
 void __ncp_exit(void)
 {
   gecko_cmd_system_reset(0);
-  LOGD("MNG Exit\n");
+  LOGM("MNG Exit\n");
 }
 
 err_t clr_all(void *p)
 {
   int ret;
   err_t e;
-  EC(ec_success, socktocfg(CPS_CLRCTL, 0, NULL, NULL, NULL));
 
-  /* TODO: IPC to clear all nodes */
+  EC(ec_success, cfg_clrctl());
 
   if (mng.conn != INVALID_CONN_HANDLE) {
     if (bg_err_success != (ret = gecko_cmd_le_connection_close(mng.conn)->result)) {
@@ -220,29 +172,122 @@ err_t init_ncp(void *p)
   conn_ncptarget();
   sync_host_and_ncp_target();
   atexit(__ncp_exit);
-  LOGD("ncp init done\n");
+  /* LOGD("ncp init done\n"); */
   return ec_success;
+}
+
+static void set_mng_state(void)
+{
+  bool loaded = false;
+  if (mng.state < starting || mng.state > blacklisting_devices_em) {
+    return;
+  }
+
+  if (mng.state == adding_devices_em) {
+    if (g_list_length(mng.lists.add)) {
+      return;
+    }
+    /* All unprovisioned devices have been provisioned */
+    if (mng.status.free_mode < 2) {
+      clm_set_scan(0);
+    }
+
+    if (g_list_length(mng.lists.config) || mng.cache.config.used) {
+      /* configuring in progress after adding devices, switch directly */
+      mng.state = configuring_devices_em;
+      return;
+    }
+  } else if (mng.state == configuring_devices_em) {
+    if (g_list_length(mng.lists.config) || mng.cache.config.used) {
+      return;
+    }
+    /* All nodes have been configured properly */
+  } else if (mng.state == removing_devices_em) {
+    if (g_list_length(mng.lists.rm) || mng.cache.config.used) {
+      return;
+    }
+    /* All RM set nodes have been removed properly */
+  } else if (mng.state == blacklisting_devices_em) {
+    if (g_list_length(mng.lists.rm) || mng.cache.bl.state != bl_idle) {
+      return;
+    }
+    /* All BL set nodes have been blacklisted properly */
+  }
+
+  if (mng.state == starting) {
+    mng.status.seq.offs = 0;
+  }
+
+  for (; mng.status.seq.offs < 3 && !loaded; mng.status.seq.offs++) {
+    if (mng.status.seq.prios[mng.status.seq.offs] == 'a') {
+      if (g_list_length(mng.lists.add)) {
+        if (mng.status.free_mode == 0) {
+          clm_set_scan(1);
+        }
+        mng.state = adding_devices_em;
+        loaded = true;
+      } else if (g_list_length(mng.lists.config)) {
+        mng.state = configuring_devices_em;
+        loaded = true;
+      }
+    } else if (mng.status.seq.prios[mng.status.seq.offs] == 'r') {
+      if (!g_list_length(mng.lists.rm)) {
+        continue;
+      }
+      mng.state = removing_devices_em;
+      loaded = true;
+    } else if (mng.status.seq.prios[mng.status.seq.offs] == 'b') {
+      if (!g_list_length(mng.lists.bl)) {
+        continue;
+      }
+      mng.state = blacklisting_devices_em;
+      loaded = true;
+    } else if (mng.status.seq.prios[mng.status.seq.offs] == '-') {
+      goto idle;
+    } else {
+      ASSERT(0);
+    }
+  }
+
+  idle:
+  if (!loaded) {
+    mng.status.seq.offs = 0;
+    mng.state = configured;
+    LOGM("Sync[%s] Done\n", mng.status.seq.prios);
+    bt_shell_printf("Sync[%s] Done\n", mng.status.seq.prios);
+  }
 }
 
 void *mng_mainloop(void *p)
 {
+  bool busy;
   while (1) {
-    bool busy = false;
+    busy = false;
     poll_cmd();
     bgevt_dispenser();
     switch (mng.state) {
       case starting:
-        /* TODO: Load actions */
+        if (file_modified(NW_NODES_CFG_FILE)) {
+          load_cfg_file(NW_NODES_CFG_FILE, 0);
+        } else {
+          mng_load_lists();
+        }
         break;
-      case stopping:
-        mng.state = configured;
+      case adding_devices_em:
+        /* Do adding_devices_em only jobs */
+        busy |= add_loop(&mng);
+      case configuring_devices_em:
+      case removing_devices_em:
+        busy |= acc_loop(&mng);
         break;
-      case state_reload:
-        /* TODO: Load actions */
+      case blacklisting_devices_em:
+        busy |= bl_loop(&mng);
         break;
       default:
         break;
     }
+    set_mng_state();
+    busy |= models_loop(&mng);
     if (!busy) {
       usleep(10 * 1000);
     }
@@ -255,8 +300,8 @@ static void poll_cmd(void)
   int i;
   wordexp_t *w = cmd_deq(&i);
   if (w) {
-    DUMP_PARAMS(w->we_wordc, w->we_wordv);
-    if (ec_param_invalid == commands[i].fn(w->we_wordc, w->we_wordv)) {
+    /* DUMP_PARAMS(w->we_wordc, w->we_wordv); */
+    if (ec_param_invalid == errof(commands[i].fn(w->we_wordc, w->we_wordv))) {
       printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
       print_cmd_usage(&commands[i]);
     }
@@ -265,24 +310,308 @@ static void poll_cmd(void)
   }
 }
 
-err_t clm_set_scan(int onoff)
+static err_t clm_set_scan(int status)
 {
   uint16_t ret;
-  if (!!mng.status.free_mode == onoff) {
+  if (mng.status.free_mode == status) {
     return ec_success;
   }
-  if (onoff) {
+  if (!mng.status.free_mode && status) {
     ret = gecko_cmd_mesh_prov_scan_unprov_beacons()->result;
     CHECK_BGCALL(ret, "scan unprov beacon");
-  } else {
+  } else if (mng.status.free_mode && !status) {
     ret = gecko_cmd_mesh_prov_stop_scan_unprov_beacons()->result;
     CHECK_BGCALL(ret, "stop unprov beacon scanning");
   }
-  mng.status.free_mode = onoff ? fm_freemode : fm_idle;
-  LOGD("Scanning unprovisioned beacon [%s]\n", onoff ? "ON" : "OFF");
+  mng.status.free_mode = status;
+  LOGM("Scanning unprovisioned beacon [%s]\n", status ? "ON" : "OFF");
   return ec_success;
 }
 
-/* int mng_evt_hdr(const void *ve) */
-/* { */
-/* } */
+static inline void __lists_clr(void)
+{
+  g_list_free(mng.lists.add);
+  mng.lists.add = NULL;
+  g_list_free(mng.lists.bl);
+  mng.lists.bl = NULL;
+  g_list_free(mng.lists.config);
+  mng.lists.config = NULL;
+  g_list_free(mng.lists.rm);
+  mng.lists.rm = NULL;
+  g_list_free(mng.lists.fail);
+  mng.lists.fail = NULL;
+}
+
+err_t mng_init(void *p)
+{
+  __lists_clr();
+  memset(&mng, 0, sizeof(mng_t));
+  mng.conn = 0xff;
+  memcpy(mng.status.seq.prios, DEFAULT_SEQ_PRIO, 3);
+  mng.cfg = get_provcfg();
+  acc_init(true);
+  return ec_success;
+}
+
+void mng_load_lists(void)
+{
+  if (mng.state < configured) {
+    return;
+  }
+  __lists_clr();
+  cfg_load_mnglists(load_lists);
+  LOGM("[%d-%d-%d-%d] loaded to be [added-configured-removed-blacklisted]\n",
+       g_list_length(mng.lists.add),
+       g_list_length(mng.lists.config),
+       g_list_length(mng.lists.rm),
+       g_list_length(mng.lists.bl));
+}
+
+void list_nodes(void)
+{
+  struct gecko_msg_mesh_prov_ddb_list_devices_rsp_t *rsp;
+  uint16_t cnt;
+
+  rsp = gecko_cmd_mesh_prov_ddb_list_devices();
+
+  if (rsp->result != bg_err_success) {
+    LOGBGE("ddb list devices", rsp->result);
+    return;
+  }
+
+  cnt = rsp->count;
+
+  LOGM("%d Nodes in NCP Target DDB\n", cnt);
+  while (cnt) {
+    if (get_bguart_impl()->enc) {
+      poll_update(50);
+    }
+    struct gecko_cmd_packet *evt = gecko_peek_event();
+    if (NULL == evt
+        || BGLIB_MSG_ID(evt->header) != gecko_evt_mesh_prov_ddb_list_id) {
+      usleep(500);
+      continue;
+    }
+    LOGD("dev - [%x:%x:%x]\n",
+         evt->data.evt_mesh_prov_ddb_list.uuid.data[12],
+         evt->data.evt_mesh_prov_ddb_list.uuid.data[11],
+         evt->data.evt_mesh_prov_ddb_list.uuid.data[10]);
+    cnt--;
+  }
+}
+
+err_t clicb_list(int argc, char *argv[])
+{
+  list_nodes();
+  return ec_success;
+}
+
+static gboolean load_lists(gpointer key, gpointer value, gpointer data)
+{
+  node_t *n = (node_t *)value;
+  uint16_t ret = gecko_cmd_mesh_prov_ddb_get(16, n->uuid)->result;
+  int in = (ret == bg_err_success);
+
+  if (mng.state < initialized) {
+    ASSERT_MSG(0, "Load list before ncp target is initialized\n");
+  }
+
+  if (!n->addr) {
+    if (in) {
+      gecko_cmd_mesh_prov_ddb_delete(*(uuid_128 *)n->uuid);
+    }
+    if (!n->rmorbl) {
+      mng.lists.add = g_list_append(mng.lists.add, n);
+      /* LOGM("Lists One Unprovisioned device\n"); */
+    }
+  } else {
+    /* Priority: Blacklist > remove > config */
+    if (!in) {
+      /* TODO - set a flag */
+      LOGE("CFG and DDB in NCP are Out Of Sync - **Factory Reset Required?**\n");
+      LOGE("gecko_cmd_mesh_prov_ddb_get returns %x, Node Dump:\n", ret);
+      list_nodes();
+      return TRUE;
+    }
+    if (n->rmorbl & BL_BITMASK) {
+      mng.lists.bl = g_list_append(mng.lists.bl, n);
+    } else if (n->rmorbl & RM_BITMASK) {
+      if ((n->config.features.target & LPN_BITOFS)) {
+        mng.lists.rm = g_list_prepend(mng.lists.rm, n);
+      } else {
+        mng.lists.rm = g_list_append(mng.lists.rm, n);
+      }
+    } else if (!n->done) {
+      mng.lists.config = g_list_append(mng.lists.config, n);
+    }
+  }
+  return FALSE;
+}
+
+err_t clicb_sync(int argc, char *argv[])
+{
+  int s = 1;
+
+  if (argc > 1) {
+    s = atoi(argv[1]);
+  }
+  if (s < 0 || s > 1) {
+    return err(ec_param_invalid);
+  }
+
+  if (mng.state < starting && s) {
+    mng.state = starting;
+  } else if (mng.state >= starting && !s) {
+    __lists_clr();
+    mng.status.seq.offs = 3;
+  }
+  return ec_success;
+}
+
+static void info_node(const node_t *node)
+{
+  const char *v = nodeget_cfgstr(node->addr);
+  struct gecko_msg_mesh_prov_ddb_get_rsp_t *rsp
+    = gecko_cmd_mesh_prov_ddb_get(16, node->uuid);
+
+  if (bg_err_success != rsp->result) {
+    LOGBGE("get dcd", rsp->result);
+    return;
+  }
+  cli_print_dev(node, rsp);
+  if (v) {
+    bt_shell_printf("%s\n", v);
+  }
+}
+
+err_t clicb_info(int argc, char *argv[])
+{
+  uint16_t addr;
+  node_t *n;
+  if (argc < 2) {
+    uint16list_t *addrs = get_node_addrs();
+    cli_list_nodes(addrs);
+    if (addrs) {
+      free(addrs->data);
+      free(addrs);
+    }
+  } else {
+    for (int i = 1; i < argc; i++) {
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), &addr, sizeof(uint16_t))) {
+        LOGE("str2uint failed\n");
+        continue;
+      }
+      if (NULL == (n = cfgdb_node_get(addr))) {
+        LOGW("Info CMD invalid address[%s]\n", argv[i]);
+        bt_shell_printf("Info CMD invalid address[%s]\n", argv[i]);
+        continue;
+      }
+      info_node(n);
+    }
+  }
+  return ec_success;
+}
+
+err_t clicb_rmall(int argc, char *argv[])
+{
+  err_t e;
+  if (mng.state > configured) {
+    bt_shell_printf("Device is busy. Try it later or stop it.\n");
+    return ec_success;
+  }
+
+  EC(ec_success, nodes_rmall());
+  EC(ec_success, load_cfg_file(NW_NODES_CFG_FILE, 1));
+
+  /* Kick off the sync automatically */
+  mng.state = starting;
+  return ec_success;
+}
+
+err_t clicb_rmblclr(int argc, char *argv[])
+{
+  err_t e;
+  EC(ec_success, nodes_rmblclr());
+  EC(ec_success, load_cfg_file(NW_NODES_CFG_FILE, 1));
+  return e;
+}
+
+err_t clicb_loglvlset(int argc, char *argv[])
+{
+  unsigned lvl = LVL_VER;
+
+  if (argc > 1) {
+    if (argv[1][0] == 'e') {
+      lvl = LVL_ERR;
+    } else if (argv[1][0] == 'w') {
+      lvl = LVL_WRN;
+    } else if (argv[1][0] == 'm') {
+      lvl = LVL_MSG;
+    } else if (argv[1][0] == 'd') {
+      lvl = LVL_DBG;
+    } else if (argv[1][0] == 'v') {
+      lvl = LVL_VER;
+    } else {
+      return err(ec_param_invalid);
+    }
+    set_logging_lvl_threshold(lvl);
+  }
+
+  if (argc > 2) {
+    set_logging_tostdout(atoi(argv[2]));
+  }
+
+  return ec_success;
+}
+
+static inline bool seq_valid(const char *seq)
+{
+  for (int i = 0; i < 3; i++) {
+    if (seq[i] != 'a' && seq[i] != 'r' && seq[i] != 'b' && seq[i] != '-') {
+      return false;
+    }
+  }
+  return true;
+}
+
+err_t clicb_seqset(int argc, char *argv[])
+{
+  const char *seq;
+  /* bt_shell_printf("%s\n", __FUNCTION__); */
+  if (mng.state > configured) {
+    bt_shell_printf("Device is busy. Try it later or stop it.\n");
+    return ec_success;
+  }
+  if (argc != 2) {
+    return err(ec_param_invalid);
+  }
+
+  seq = argv[1];
+  if (strlen(seq) != 3 || !seq_valid(seq)) {
+    return err(ec_param_invalid);
+  }
+
+  memcpy(mng.status.seq.prios, seq, 3);
+  return ec_success;
+}
+
+err_t clicb_status(int argc, char *argv[])
+{
+  cli_status(&mng);
+  return ec_success;
+}
+
+err_t clicb_freemode(int argc, char *argv[])
+{
+  int onoff = 2;
+  if (argc > 1) {
+    if (!strcmp(argv[1], "on")) {
+      onoff = 2;
+    } else if (!strcmp(argv[1], "off")) {
+      onoff = 0;
+    } else {
+      return err(ec_param_invalid);
+    }
+  }
+  return clm_set_scan(onoff);
+}

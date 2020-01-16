@@ -17,6 +17,10 @@
 #include "socket_handler.h"
 #include "gecko_bglib.h"
 #include "logging.h"
+#include "mng.h"
+#include "nwk.h"
+#include "dev_config.h"
+
 /* Defines  *********************************************************** */
 BGLIB_DEFINE();
 
@@ -26,6 +30,10 @@ BGLIB_DEFINE();
 static volatile int ncp_sync = false;
 
 static bgevt_hdr hdrs[] = {
+  dev_add_hdr,
+  dev_config_hdr,
+  bl_hdr,
+  bgevt_dflt_hdr,
   NULL
 };
 
@@ -43,7 +51,7 @@ void conn_ncptarget(void)
       LOGE("Connection to encrypted domain socket unsuccessful. Exiting..\n");
       exit(EXIT_FAILURE);
     }
-    LOGM("Turning on Encryption. "
+    LOGD("Turning on Encryption. "
          "All subsequent BGAPI commands and events will be encrypted..\n");
     turnEncryptionOn();
     /* } else { */
@@ -55,7 +63,7 @@ void conn_ncptarget(void)
   } else {
     uartClose();
     if (0 != uartOpen((int8_t *)u->ser_sockpath, 115200, 1, 100)) {
-      LOGW("Open %s failed. Exiting..\n", u->ser_sockpath);
+      LOGE("Open %s failed. Exiting..\n", u->ser_sockpath);
       /* exit(EXIT_FAILURE); */
     }
   }
@@ -66,7 +74,7 @@ void sync_host_and_ncp_target(void)
   struct gecko_cmd_packet *p;
 
   ncp_sync = false;
-  LOGM("Syncing up NCP Host and Target\n");
+  LOGM("Syncing NCP Host and Target\n");
   for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
     if (get_bguart_impl()->enc) {
       poll_update(50);
@@ -75,10 +83,12 @@ void sync_host_and_ncp_target(void)
     if (p) {
       switch (BGLIB_MSG_ID(p->header)) {
         case gecko_evt_system_boot_id:
-          LOGM("System Booted. NCP Target and Host Sync-ed Up\n");
+          LOGM("System Booted - Host and NCP Target Synchronized\n");
           ncp_sync = true;
           break;
         default:
+          gecko_cmd_system_reset(0);
+          LOGM("Sent reset signal to NCP target\n");
           /*
            * Delay before trying again.
            */
@@ -89,7 +99,7 @@ void sync_host_and_ncp_target(void)
       }
     } else {
       gecko_cmd_system_reset(0);
-      LOGD("Sent reset signal to NCP target\n");
+      LOGM("Sent reset signal to NCP target\n");
       /*
        * Delay before trying again.
        */
@@ -104,14 +114,14 @@ void sync_host_and_ncp_target(void)
   }
 
   if (!ncp_sync) {
-    LOGW("Sync ncp target failed.\n");
+    LOGE("Failed to Synchronize NCP Target\n");
     exit(EXIT_FAILURE);
   }
 }
 
 void bgevt_dispenser(void)
 {
-  int ret;
+  bool handled;
   struct gecko_cmd_packet *evt = NULL;
   if (!ncp_sync) {
     sync_host_and_ncp_target();
@@ -119,19 +129,19 @@ void bgevt_dispenser(void)
   }
 
   do {
-    ret = 0;
+    handled = false;
     if (get_bguart_impl()->enc) {
       poll_update(50);
     }
     evt = gecko_peek_event();
     if (evt) {
       bgevt_hdr *h = hdrs;
-      while (h && !ret) {
-        ret = (*h)(evt);
+      while (*h && !handled) {
+        handled = (*h)(evt);
         h++;
       }
-      if (!ret) {
-        LOGW("evt[0x%08x] not handled\n", BGLIB_MSG_ID(evt->header));
+      if (!handled) {
+        LOGW("NCP Target Event [0x%08x] Not Handled\n", BGLIB_MSG_ID(evt->header));
       }
     }
   } while (evt);

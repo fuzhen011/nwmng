@@ -13,6 +13,7 @@ extern "C"
 #endif
 #include "err.h"
 #include "cfg_keys.h"
+#include "utils.h"
 
 enum {
   cft_json,
@@ -25,12 +26,17 @@ enum {
   wrt_add_node,
   wrt_errbits,
   wrt_node_addr,
+  wrt_node_addr_clr,
+  wrt_node_func,
+  wrt_node_rmall,
+  wrt_node_rmblclr,
   wrt_done,
   /* For prov cfg file */
   wrt_prov_addr,
   wrt_prov_ivi,
   wrt_prov_synctime,
   wrt_prov_netkey_id,
+  wrt_prov_netkey_val,
   wrt_prov_netkey_done,
   wrt_prov_appkey_id,
   wrt_prov_appkey_done,
@@ -39,6 +45,8 @@ enum {
 /* read type */
 enum {
   rdt_node,
+  rdt_node_str,
+  rdt_modified
 };
 
 /* cfg_fd */
@@ -52,6 +60,7 @@ enum {
 #define FL_TRUNC                        (1UL << 1)
 /* Clear all control fields */
 #define FL_CLR_CTLFS                    (1UL << 2)
+#define FL_FORCE_RELOAD                 (1UL << 3)
 
 void gp_init(int cfg_filetype, void *init_data);
 
@@ -89,16 +98,30 @@ typedef err_t (*gp_free_cfg_func_t)(void **);
 /******************************************************************
  * IPC Callbacks
  * ***************************************************************/
-err_t prov_clrctl(int len, const char *arg);
+err_t cfg_clrctl(void);
 err_t prov_get(int len, const char *arg);
-err_t provset_addr(int len, const char *arg);
-err_t provset_ivi(int len, const char *arg);
+err_t provset_addr(const uint16_t *addr);
+err_t provset_ivi(const uint32_t *ivi);
 err_t provset_synctime(int len, const char *arg);
-err_t provset_netkeyid(int len, const char *arg);
-err_t provset_netkeydone(int len, const char *arg);
-err_t provset_appkeyid(int len, const char *arg);
-err_t provset_appkeydone(int len, const char *arg);
+err_t provset_netkeyid(const uint16_t *id);
+err_t provset_netkeydone(const uint8_t *done);
+err_t provset_netkeyval(const uint8_t *val);
+err_t provset_appkeyid(const uint16_t *refid, const uint16_t *id);
+err_t provset_appkeydone(const uint16_t *refid, const uint8_t *done);
 err_t _upldev_check(int len, const char *arg);
+err_t backlog_dev(const uint8_t *uuid);
+int file_modified(int cfg_fd);
+err_t load_cfg_file(int cfg_fd, bool force_reload);
+err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr);
+
+err_t nodeset_errbits(uint16_t addr, lbitmap_t err);
+err_t nodeset_done(uint16_t addr, uint8_t done);
+err_t nodeset_func(uint16_t addr, uint8_t func);
+err_t nodes_rm(uint16_t addr);
+err_t nodes_bl(uint16_t addr);
+const char *nodeget_cfgstr(uint16_t addr);
+err_t nodes_rmall(void);
+err_t nodes_rmblclr(void);
 #ifdef __cplusplus
 }
 #endif

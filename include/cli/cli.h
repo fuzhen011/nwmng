@@ -15,8 +15,10 @@ extern "C"
 #include <stdbool.h>
 #include <readline/readline.h>
 
+#include "mng.h"
 #include "err.h"
-#include "opcodes.h"
+#include "cfg.h"
+#include "gecko_bglib.h"
 
 #define __DUMP_PARAMS
 #ifdef __DUMP_PARAMS
@@ -40,7 +42,16 @@ extern "C"
          (cmd)->doc)
 
 typedef err_t (*cmd_exec_func_t)(int argc, char *argv[]);
-
+/**
+ * @brief - variable parameters get function.
+ *
+ * @param vap - buffer to store the parameters
+ * @param inbuflen - buffer length
+ * @param ulen - parameter unit length
+ * @param rlen - total parameters length
+ *
+ * @return @ref{err_t}
+ */
 typedef err_t (*va_param_get_func_t)(void *vap,
                                      int inbuflen,
                                      int *ulen,
@@ -57,10 +68,6 @@ typedef struct {
 
 err_t cli_init(void *p);
 
-void on_sock_disconn(void);
-
-int get_children(pid_t **p);
-
 err_t cli_proc_init(int child_num, const pid_t *pids);
 int cli_proc(int argc, char *argv[]);
 void *cli_mainloop(void *pIn);
@@ -73,6 +80,12 @@ void *cli_mainloop(void *pIn);
  */
 void bt_shell_printf(const char *fmt, ...);
 
+void cli_print_busy(void);
+void cli_print_dev(const node_t *node,
+                   const struct gecko_msg_mesh_prov_ddb_get_rsp_t *e);
+void cli_print_modelset_done(uint16_t addr, uint8_t type, uint8_t value);
+void cli_list_nodes(uint16list_t *ul);
+void cli_status(const mng_t *mng);
 #ifdef __cplusplus
 }
 #endif

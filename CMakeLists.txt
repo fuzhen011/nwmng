@@ -53,13 +53,24 @@ set(HAL_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/hal/bg_uart_cbs.c
     ${CMAKE_CURRENT_LIST_DIR}/hal/socket_handler.c)
 set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c
-    ${CMAKE_CURRENT_LIST_DIR}/cli/climng_startup.c)
+    ${CMAKE_CURRENT_LIST_DIR}/cli/cli_print.c)
 set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/models.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_add.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/dev_config.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/dev_bl.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/bgevt_hdr.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/nwk.c
-    ${CMAKE_CURRENT_LIST_DIR}/ipc/mng_ipc.c)
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_getdcd.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_addappkey.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_bindappkey.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_setpub.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_addsub.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_setconfig.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_rm.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_rmend.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_end.c)
 set(CFG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c
     ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
@@ -67,10 +78,9 @@ set(CFG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/json_parser.c)
 set(UTILS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/utils.c
+    ${CMAKE_CURRENT_LIST_DIR}/utils/utils_print.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/err.c
-    ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c
-    ${CMAKE_CURRENT_LIST_DIR}/utils/sock/sockcomn.c
-    ${CMAKE_CURRENT_LIST_DIR}/ipc/ccipc.c)
+    ${CMAKE_CURRENT_LIST_DIR}/utils/logging.c)
 
 set(SRC_LIST
     ${CLI_SRC_LIST}
@@ -84,11 +94,11 @@ set(SRC_LIST
 if(APPLE)
   set(
     CMAKE_C_LINK_FLAGS
-    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.3/lib ${CMAKE_C_LINK_FLAGS}"
+    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.4/lib ${CMAKE_C_LINK_FLAGS}"
     )
   set(EXTRA_INC_PATH
-      /usr/local/Cellar/glib/2.62.3/include/glib-2.0
-      /usr/local/Cellar/glib/2.62.3/lib/glib-2.0/include
+      /usr/local/Cellar/glib/2.62.4/include/glib-2.0
+      /usr/local/Cellar/glib/2.62.4/lib/glib-2.0/include
       /usr/local/Cellar/json-c/0.13.1/include/json-c)
   set(RL_LIB readline.dylib)
 else()
@@ -105,7 +115,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${CMAKE_CURRENT_LIST_DIR}/include/cli
                     ${CMAKE_CURRENT_LIST_DIR}/include/mng
                     ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-                    ${CMAKE_CURRENT_LIST_DIR}/include/ipc
                     ${CMAKE_CURRENT_LIST_DIR}/hal
                     ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/common
                     ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/host
@@ -115,26 +124,8 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}
                     ${RL_INC}
                     ${EXTRA_INC_PATH})
 
-add_executable(cli-mng
-               ${HAL_SRC_LIST}
-               ${CLI_SRC_LIST}
-               ${MNG_SRC_LIST}
-               ${UTILS_SRC_LIST}
-               ${CMAKE_CURRENT_LIST_DIR}/main.c
-               ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
-target_link_libraries(cli-mng m ${RL_LIB} pthread)
-target_compile_definitions(cli-mng PUBLIC CLI_MNG)
-
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${RL_LIB} pthread json-c)
-
-add_executable(cfg
-               ${CFG_SRC_LIST}
-               ${UTILS_SRC_LIST}
-               ${CMAKE_CURRENT_LIST_DIR}/main.c
-               ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
-target_link_libraries(cfg m json-c glib-2.0)
-target_compile_definitions(cfg PUBLIC CFG)
 
 add_custom_command(
   TARGET ${CMAKE_PROJECT_NAME} POST_BUILD

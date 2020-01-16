@@ -8,40 +8,42 @@
 /* Includes *********************************************************** */
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/wait.h>
 
-#include <unistd.h>
+#include <setjmp.h>
 #include <pthread.h>
 
-#include "bg_uart_cbs.h"
-#include "bg_uart_cbs.h"
-#include "projconfig.h"
 #include "startup.h"
-#include "mng.h"
 #include "logging.h"
+
 #include "cli.h"
+#include "mng.h"
+#include "nwk.h"
 #include "cfg.h"
-#include "utils.h"
 
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
+bool mng_started = false;
+pthread_t mng_tid;
+
+pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER;
+
+jmp_buf initjmpbuf;
 
 /* Static Variables *************************************************** */
+static proj_args_t projargs = { 0 };
+static init_func_t initfs[] = {
+  cli_init,
+  clr_all,
+  init_ncp,
+  cfg_init,
+  mng_init,
+};
+static const int inits_num = ARR_LEN(initfs);
 
 /* Static Functions Declaractions ************************************* */
-#if !defined(CLI_MNG) && !defined(CFG)
-typedef int (*proc_t)(int argc, char *argv[]);
-static proc_t procs[] = {
-  cli_proc, cfg_proc
-};
-static const int proc_num = sizeof(procs) / sizeof(proc_t);
-static pid_t pids[10] = { 0 };
-#endif
-
 void startup(int argc, char *argv[])
 {
-#if defined(CLI_MNG)
   err_t e;
   if (ec_success != (e = cli_proc_init(0, NULL))) {
     elog(e);
@@ -50,45 +52,86 @@ void startup(int argc, char *argv[])
   cli_proc(argc, argv); /* should never return */
 
   logging_deinit();
-#elif defined(CFG)
-  /* cfg_init is called inside */
-  cfg_proc(argc, argv); /* should never return */
+}
 
-  logging_deinit();
-  cfgdb_deinit();
-#else
-  /* Single exec - fork the cfg process */
-  err_t e;
-  pid_t pid;
-  int i = 0;
-  for (i = 0; i < proc_num - 1; i++) {
-    pid = fork();
-
-    if (pid == 0 || pid == -1) {
-      /* If it's child, break, so only the parent process will fork */
+int offsetof_initfunc(init_func_t fn)
+{
+  int i;
+  for (i = 0; i < inits_num; i++) {
+    if (initfs[i] == fn) {
       break;
     }
-    pids[proc_num - 1 - i] = pid;
   }
+  return i;
+}
 
-  if (i == proc_num - 1) {
-    e = cli_proc_init(proc_num - 1, pids);
-    elog(e);
-  }
+const proj_args_t *getprojargs(void)
+{
+  return &projargs;
+}
 
-  procs[proc_num - 1 - i](argc, argv);
-
-  if (i == proc_num - 1) {
-    wait(NULL);
-  }
-
-  switch (pid) {
-    case -1:
-      break;
-    case 0:
-      break;
-    default:
-      break;
-  }
+static int setprojargs(int argc, char *argv[])
+{
+#if 0
+  /* TODO: Impl pending */
+#else
+  projargs.enc = false;
+  memcpy(projargs.port, PORT, sizeof(PORT));
+  projargs.initialized = true;
+  return 0;
 #endif
+}
+
+int cli_proc(int argc, char *argv[])
+{
+  int ret, tmp;
+  err_t e;
+
+#if (__APPLE__ == 1)
+  signal(SIGTTIN, SIG_IGN);
+  signal(SIGTTOU, SIG_IGN);
+#endif
+  if (0 != setprojargs(argc, argv)) {
+    LOGE("Set project args error.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  ret = setjmp(initjmpbuf);
+  LOGM("Program <VERSION - %d.%d.%d> Started Up, Initialization Bitmap - 0x%x\n",
+       PROJ_VERSION_MAJOR,
+       PROJ_VERSION_MINOR,
+       PROJ_VERSION_PATCH,
+       ret);
+  if (mng_started && 0 != (tmp = pthread_cancel(mng_tid))) {
+    LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
+  }
+  mng_started = false;
+  if (ret == 0) {
+    ret = FULL_RESET;
+  }
+  for (int i = 0; i < sizeof(int) * 8; i++) {
+    if (!IS_BIT_SET(ret, i)) {
+      continue;
+    }
+    if (ec_success != (e = initfs[i](NULL))) {
+      elog(e);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  e = nwk_init(NULL);
+  elog(e);
+
+  if (0 != (ret = pthread_create(&mng_tid, NULL, mng_mainloop, NULL))) {
+    err_exit_en(ret, "pthread create");
+  }
+  mng_started = true;
+
+  cli_mainloop(NULL);
+
+  if (0 != (ret = pthread_join(mng_tid, NULL))) {
+    err_exit_en(ret, "pthread_join");
+  }
+
+  return 0;
 }

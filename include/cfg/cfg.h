@@ -11,17 +11,11 @@
 extern "C"
 {
 #endif
-
-#include "ccipc.h"
 #include "err.h"
+#include "cfgdb.h"
 
-err_t cfg_init(void);
-int cfg_proc(int argc, char *argv[]);
-void *cfg_mainloop(void *p);
+err_t cfg_init(void *p);
 
-int get_ng_addrs(uint16_t *addrs);
-
-err_t sendto_client(opc_t opc, uint8_t len, const void *buf);
 #ifdef __cplusplus
 }
 #endif

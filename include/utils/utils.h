@@ -46,6 +46,10 @@ enum {
 #define ASSERT_MSG(x, fmt, ...) do { if (!(x)) { LOGA(fmt, ##__VA_ARGS__); abort(); } } while (0)
 #endif
 
+#ifndef TODOASSERT
+#define TODOASSERT() do { LOGA("TODO at [%s:%lu]\n", __FILE__, __LINE__); abort(); } while (0)
+#endif
+
 #ifndef MAX
 #define MAX(a, b)                                   ((a) > (b) ? (a) : (b))
 #endif
@@ -63,13 +67,13 @@ enum {
 
 /* Expected call - if the return value is not the expected value, return the
  * current function with the returned value of the call */
-#define EC(exp_ret, func)                          \
-  do {                                             \
-    if ((exp_ret) != (e = (func))) { return (e); } \
+#define EC(exp_ret, func)                                   \
+  do {                                                      \
+    if ((exp_ret) != (e = (func))) { elog(e); return (e); } \
   } while (0)
-#define ECG(exp_ret, func, err)                  \
-  do {                                           \
-    if ((exp_ret) != (e = (func))) { goto err; } \
+#define ECG(exp_ret, func, err)                           \
+  do {                                                    \
+    if ((exp_ret) != (e = (func))) { elog(e); goto err; } \
   } while (0)
 
 #define CHECK_BGCALL(ret, msg)     \
@@ -190,20 +194,9 @@ static inline void alloc_copy_u16list(uint16list_t **p,
 
 static inline void addr_to_buf(uint16_t addr, char *buf)
 {
-#if 0
   buf[0] = '0';
   buf[1] = 'x';
-
-  buf[2] = hex_value_to_char(addr / 0x1000);
-  addr &= 0xfff;
-  buf[3] = hex_value_to_char(addr / 0x100);
-  addr &= 0xff;
-  buf[4] = hex_value_to_char(addr / 0x10);
-  addr &= 0xf;
-  buf[5] = hex_value_to_char(addr);
-#else
-  uint2str(addr, BASE_HEX, 6, buf);
-#endif
+  uint16_tostr(addr, buf + 2);
 }
 
 static inline void err_exit(const char *pMsg)
@@ -243,6 +236,43 @@ static inline void err_exit_en(int errnum, const char *pMsg)
       err_exit_en(ret, "pthread_mutex_unlock");       \
     }                                                 \
   } while (0)
+
+int utils_popcount(uint32_t u);
+int utils_ctz(uint32_t u);
+int utils_clz(uint32_t u);
+int utils_ffs(uint32_t u);
+int utils_frz(uint32_t u);
+
+static inline int fmt_uuid(char *buf, const uint8_t *uuid)
+{
+  int inline_ofs = 0;
+  for (int i = 0; i < 16; i++) {
+    if (i == 13) {
+      buf[inline_ofs++] = '-';
+    }
+    sprintf(buf + inline_ofs, "%02x", uuid[i]);
+    inline_ofs += 2;
+    if (i == 9) {
+      buf[inline_ofs++] = '-';
+    }
+  }
+  return inline_ofs;
+}
+
+static inline int fmt_key(char *buf, const uint8_t *key)
+{
+  int inline_ofs = 0;
+  for (int i = 0; i < 16; i++) {
+    sprintf(buf + inline_ofs, "%02x", key[i]);
+    inline_ofs += 2;
+  }
+  return inline_ofs;
+}
+
+/******************************************************************
+ * Utils for printing
+ * ***************************************************************/
+void uprint_tmpl(uint16_t refid);
 
 #ifdef __cplusplus
 }

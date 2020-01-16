@@ -4,25 +4,35 @@ static const char *source_files[] = {
     "cfg", /* 3 */
     "generic_parser", /* 4 */
     "json_parser", /* 5 */
-    "mng_ipc", /* 6 */
-    "ccipc", /* 7 */
-    "startup", /* 8 */
-    "src_names", /* 9 */
-    "err", /* 10 */
-    "utils", /* 11 */
-    "logging", /* 12 */
-    "sockcomn", /* 13 */
-    "dev_add", /* 14 */
-    "nwk", /* 15 */
-    "bgevt_hdr", /* 16 */
+    "startup", /* 6 */
+    "src_names", /* 7 */
+    "err", /* 8 */
+    "utils", /* 9 */
+    "logging", /* 10 */
+    "dev_add", /* 11 */
+    "dev_config", /* 12 */
+    "nwk", /* 13 */
+    "dev_bl", /* 14 */
+    "bgevt_hdr", /* 15 */
+    "models", /* 16 */
     "mng", /* 17 */
-    "bg_uart_cbs", /* 18 */
-    "socket_handler", /* 19 */
-    "gecko_bglib", /* 20 */
-    "read_char", /* 21 */
-    "uart_posix", /* 22 */
-    "uart_win", /* 23 */
-    "platform", /* 24 */
-    "climng_startup", /* 25 */
-    "cli", /* 26 */
+    "as_addappkey", /* 18 */
+    "as_bindappkey", /* 19 */
+    "as_setpub", /* 20 */
+    "as_rm", /* 21 */
+    "as_rmend", /* 22 */
+    "as_end", /* 23 */
+    "as_getdcd", /* 24 */
+    "as_setconfig", /* 25 */
+    "as_addsub", /* 26 */
+    "bg_uart_cbs", /* 27 */
+    "socket_handler", /* 28 */
+    "gecko_bglib", /* 29 */
+    "read_char", /* 30 */
+    "uart_posix", /* 31 */
+    "uart_win", /* 32 */
+    "platform", /* 33 */
+    "cli", /* 34 */
+    "cli_print", /* 35 */
+    "main", /* 36 */
 };

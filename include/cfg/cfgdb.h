@@ -13,18 +13,23 @@ extern "C"
 #endif
 #include <stdint.h>
 #include <stdbool.h>
+#include <glib.h>
+
+#include <pthread.h>
 
 #include "utils.h"
-#include "glib.h"
 
+/* Tree ID */
 enum {
-  relay_bitoffs,
-  proxy_bitoffs,
-  friend_bitoffs,
-  lowpower_bitoffs
+  tmpl_em,
+  upl_em,
+  nodes_em,
+  backlog_em,
+  max_invalid_em
 };
 
 enum {
+  unknown,
   onoff_support,
   lightness_support,
   ctl_support,
@@ -50,6 +55,23 @@ typedef struct publication{
 } publication_t;
 
 /**
+ * @brief features that need to be set
+ *
+ * when setting the features of the node, do below steps:
+ * 1. Check if the feature is enabled in dcd by {dcd_status} if for setting
+ * RELAY/PROXY/FRIEND/LPN, others pass.
+ * 2. Check target^current to get which features need to be configured
+ * 3. Configure the features until target^current=0
+ *
+ */
+typedef struct {
+  sbitmap_t dcd_status;
+  sbitmap_t target;
+  sbitmap_t current;
+  txparam_t *relay_txp;
+}features_t;
+
+/**
  * @brief - Template structure, only the reference ID is mandatory
  */
 typedef struct {
@@ -57,36 +79,17 @@ typedef struct {
   uint8_t *ttl;
   uint8_t *snb;
   txparam_t *net_txp;
-  txparam_t *relay_txp;
   publication_t *pub;
   uint16list_t *bindings;
   uint16list_t *sublist;
-  struct {
-    bbitmap_t dcd_status;
-    bbitmap_t needset;
-    bbitmap_t value;
-    txparam_t *relay_txp;
-  }*features;
+  features_t features;
 } tmpl_t;
 
 typedef struct {
   uint8_t *ttl;
   uint8_t *snb;
   txparam_t *net_txp;
-  /*
-   * when setting the features of the node, do below steps:
-   * 1. Check if the feature is enabled in dcd, goto step 2 if yes.
-   * 2. Check if the feature needs to be set explicitly, goto step 3 if yes.
-   * 3. Check the target status (1-enable/0-disable/2-keep) in value
-   * 4. Set the feature if it's not "2-keep"
-   */
-  struct {
-    bbitmap_t dcd_status;
-    bbitmap_t needset;
-    bbitmap_t value;
-    txparam_t *relay_txp;
-  }features;
-
+  features_t features;
   publication_t *pub;
   uint16list_t *bindings;
   uint16list_t *sublist;
@@ -106,11 +109,17 @@ typedef struct {
   uint8_t *tmpl;
   mesh_config_t config;
   struct {
-    uint8_t light_supt;
-    uint16_t venmod_supt;
+    /* enum value - see {ctl_support} */
+    uint8_t func;
+    lbitmap_t venmod_supt;
   }models;
 }node_t;
 
+/**
+ * @brief All the mesh keys used in this program are identified by the @{refid},
+ * the reason why not use the real id is the key could be used before it is
+ * created, so the real id is unknown at that point.
+ */
 typedef struct {
   uint16_t refid;
   uint16_t id;
@@ -141,41 +150,104 @@ typedef struct {
 }provcfg_t;
 
 typedef struct {
-  GHashTable *templates;
-  GHashTable *unprov_devs;
-  GHashTable *nodes;
-  GHashTable *backlog;
-  GQueue *lights;
-  /* TODO: Add queue to each item */
+  GTree *templates;
+  GTree *unprov_devs;
+  GTree *nodes;
+  GTree *backlog;
+  /* TODO: Below 2 lists are not used yet */
+  /* Ideas are to keep them as "set" and add node list to each group entry */
   GList *pubgroups;
   GList *subgroups;
 } cfg_devdb_t;
 
 typedef struct {
   bool initialized;
+  pthread_rwlock_t lock;
   cfg_devdb_t devdb;
   provcfg_t self;
 }cfgdb_t;
 
+/**
+ * @brief cfgdb_init - initialized the cfg database, allocate initial memory.
+ *
+ * @return @ref{err_t}
+ */
 err_t cfgdb_init(void);
+
+/**
+ * @brief cfgdb_deinit - de-initialized the cfg database, free all the
+ * allocated memory.
+ */
 void cfgdb_deinit(void);
 
-int cfgdb_devnum(bool proved);
-
+/**
+ * @brief cfgdb_get_devnum - get the node number in the specified device tree.
+ *
+ * @param which - tree ID
+ *
+ * @return - number of nodes in the tree
+ */
+int cfgdb_get_devnum(int which);
+/**
+ * @defgroup cfgdb_get
+ *
+ * CFG database get functions. Input is the key, return the node if found and
+ * NULL if not found.
+ *
+ * @{ */
 node_t *cfgdb_node_get(uint16_t addr);
 node_t *cfgdb_unprov_dev_get(const uint8_t *uuid);
 node_t *cfgdb_backlog_get(const uint8_t *uuid);
-
-err_t cfgdb_remove(node_t *n, bool destory);
-err_t cfgdb_add(node_t *n);
-/*
- * Template related functions
- */
 tmpl_t *cfgdb_tmpl_get(uint16_t refid);
-err_t cfgdb_tmpl_remove(tmpl_t *n);
+/**  @} */
+
+/**
+ * @defgroup cfgdb_add
+ *
+ * CFG database add functions. Node should be allocated outside, functions will
+ * check if it's already in the database, if yes, compare both pointers, if
+ * equal, do nothing, if not, replace the existing one which will be freed
+ * afterwards. If not in, add it.
+ *
+ * @{ */
+err_t cfgdb_backlog_add(node_t *n);
+err_t cfgdb_unpl_add(node_t *n);
+err_t cfgdb_nodes_add(node_t *n);
 err_t cfgdb_tmpl_add(tmpl_t *n);
+/**  @} */
+/**
+ * @defgroup cfgdb_remove
+ *
+ * Remove a node from the specified tree, if destory is ture, the memory will be
+ * freed, if destory is false, the memory will be kept.
+ *
+ * @{ */
+err_t cfgdb_backlog_remove(node_t *n, bool destory);
+err_t cfgdb_unpl_remove(node_t *n, bool destory);
+err_t cfgdb_nodes_remove(node_t *n, bool destory);
+void cfgdb_remove_all_upl(void);
+void cfgdb_remove_all_nodes(void);
+err_t cfgdb_tmpl_remove(tmpl_t *n);
+/**  @} */
 
 provcfg_t *get_provcfg(void);
+
+void cfg_load_mnglists(GTraverseFunc func);
+
+/**
+ * @brief get_node_addrs - get the list of nodes in the provisioned database,
+ * calling function needs to free the returned list if not NULL.
+ *
+ * @return list of nodes, or NULL if empty
+ */
+uint16list_t *get_node_addrs(void);
+/**
+ * @brief get_node_addrs - get the list of light nodes in the provisioned
+ * database, calling function needs to free the returned list if not NULL.
+ *
+ * @return list of nodes, or NULL if empty
+ */
+uint16list_t *get_lights_addrs(uint8_t func);
 #ifdef __cplusplus
 }
 #endif

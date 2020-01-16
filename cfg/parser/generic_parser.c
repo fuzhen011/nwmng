@@ -10,11 +10,11 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "projconfig.h"
 #include "json_parser.h"
 #include "generic_parser.h"
-#include "cfgdb.h"
 #include "cfg.h"
-#include "ccipc.h"
+#include "mng.h"
 
 /* Defines  *********************************************************** */
 typedef struct {
@@ -68,19 +68,32 @@ void gp_deinit(void)
   memset(&gp, 0, sizeof(gp_t));
 }
 
-err_t prov_clrctl(int len, const char *arg)
+static inline err_t prov_clrctl(void)
 {
   return gp.write(PROV_CFG_FILE, wrt_clrctl, NULL, NULL);
 }
 
-err_t provset_addr(int len, const char *arg)
+static inline err_t nodes_clrctl(void)
 {
-  return gp.write(PROV_CFG_FILE, wrt_prov_addr, NULL, (void *)arg);
+  return gp.write(NW_NODES_CFG_FILE, wrt_clrctl, NULL, NULL);
 }
 
-err_t provset_ivi(int len, const char *arg)
+err_t cfg_clrctl(void)
 {
-  return gp.write(PROV_CFG_FILE, wrt_prov_ivi, NULL, (void *)arg);
+  err_t e;
+  EC(ec_success, prov_clrctl());
+  EC(ec_success, nodes_clrctl());
+  return e;
+}
+
+err_t provset_addr(const uint16_t *addr)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_addr, NULL, (void *)addr);
+}
+
+err_t provset_ivi(const uint32_t *ivi)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_ivi, NULL, (void *)ivi);
 }
 
 err_t provset_synctime(int len, const char *arg)
@@ -88,93 +101,166 @@ err_t provset_synctime(int len, const char *arg)
   return gp.write(PROV_CFG_FILE, wrt_prov_synctime, NULL, (void *)arg);
 }
 
-err_t provset_netkeyid(int len, const char *arg)
+err_t provset_netkeyid(const uint16_t *id)
 {
-  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_id, NULL, (void *)arg);
+  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_id, NULL, (void *)id);
 }
 
-err_t provset_netkeydone(int len, const char *arg)
+err_t provset_netkeyval(const uint8_t *val)
 {
-  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_done, NULL, (void *)arg);
+  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_val, NULL, (void *)val);
 }
 
-err_t provset_appkeyid(int len, const char *arg)
+err_t provset_netkeydone(const uint8_t *done)
 {
-  return gp.write(PROV_CFG_FILE, wrt_prov_appkey_id, (void *)arg, (void *)arg + 2);
+  return gp.write(PROV_CFG_FILE, wrt_prov_netkey_done, NULL, (void *)done);
 }
 
-err_t provset_appkeydone(int len, const char *arg)
+err_t provset_appkeyid(const uint16_t *refid, const uint16_t *id)
 {
-  return gp.write(PROV_CFG_FILE, wrt_prov_appkey_done, arg, (void *)arg + 2);
+  return gp.write(PROV_CFG_FILE, wrt_prov_appkey_id, (void *)refid, (void *)id);
 }
 
-err_t prov_get(int len, const char *arg)
+err_t provset_appkeydone(const uint16_t *refid, const uint8_t *done)
+{
+  return gp.write(PROV_CFG_FILE, wrt_prov_appkey_done, refid, (void *)done);
+}
+
+err_t backlog_dev(const uint8_t *uuid)
+{
+  return gp.write(NW_NODES_CFG_FILE, wrt_add_node, NULL, (void *)uuid);
+}
+
+int file_modified(int cfg_fd)
+{
+  uint8_t r;
+  err_t e = gp.read(cfg_fd, rdt_modified, NULL, &r);
+  if (e != ec_success) {
+    elog(e);
+    return -1;
+  }
+  return r;
+}
+
+err_t load_cfg_file(int cfg_fd, bool force_reload)
 {
   err_t e;
-  provcfg_t *pc = get_provcfg();
-  uint8_t buf[0xff] = { 0 };
-  uint8_t i = 0;
-
-  /* Send the provcfg basic data */
-  memcpy(buf + i, &pc->addr, sizeof(uint16_t));
-  i += sizeof(uint16_t);
-  memcpy(buf + i, &pc->sync_time, sizeof(time_t));
-  i += sizeof(time_t);
-  memcpy(buf + i, &pc->ivi, sizeof(uint32_t));
-  i += sizeof(uint32_t);
-  memcpy(buf + i, &pc->subnet_num, sizeof(uint8_t));
-  i += sizeof(uint8_t);
-  EC(ec_success, sendto_client(RSP_PROV_BASIC, i, buf));
-  memset(buf, 0, i);
-  i = 0;
-
-  if (pc->subnet_num) {
-    memcpy(buf + i, pc->subnets, sizeof(subnet_t));
-    i += sizeof(subnet_t);
-    if (pc->subnets[0].appkey_num) {
-      memcpy(buf + i, pc->subnets[0].appkey,
-             sizeof(meshkey_t) * pc->subnets[0].appkey_num);
-      i += sizeof(meshkey_t) * pc->subnets[0].appkey_num;
-    }
-    EC(ec_success, sendto_client(RSP_PROV_SUBNETS, i, buf));
-    memset(buf, 0, i);
-    i = 0;
+  if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
+    return err(ec_param_invalid);
   }
-
-  if (pc->ttl) {
-    buf[0] = *pc->ttl;
-    i += 1;
-    EC(ec_success, sendto_client(RSP_PROV_TTL, i, buf));
-    memset(buf, 0, i);
-    i = 0;
+  const char *fp = (cfg_fd == TEMPLATE_FILE ? TMPLATE_FILE_PATH
+                    : cfg_fd == NW_NODES_CFG_FILE ? NWNODES_FILE_PATH : SELFCFG_FILE_PATH);
+  e = gp.open(cfg_fd, fp, force_reload ? FL_FORCE_RELOAD : 0);
+  if (ec_success != e) {
+    elog(e);
+    return e;
   }
-  if (pc->net_txp) {
-    memcpy(buf + i, pc->net_txp, sizeof(txparam_t));
-    i += sizeof(txparam_t);
-    EC(ec_success, sendto_client(RSP_PROV_TXP, i, buf));
-    memset(buf, 0, i);
-    i = 0;
+  if (cfg_fd == NW_NODES_CFG_FILE) {
+    mng_load_lists();
   }
-  if (pc->timeout) {
-    memcpy(buf + i, pc->timeout, sizeof(timeout_t));
-    i += sizeof(timeout_t);
-    EC(ec_success, sendto_client(RSP_PROV_TIMEOUT, i, buf));
-    memset(buf, 0, i);
-    i = 0;
-  }
+  gp.flush(cfg_fd); /* Update the synctime value */
   return ec_success;
 }
 
-err_t _upldev_check(int len, const char *arg)
+err_t upl_nodeset_addr(const uint8_t *uuid, uint16_t addr)
 {
-  uint8_t ret = 1;
   err_t e;
-  node_t *n = cfgdb_unprov_dev_get((const uint8_t *)arg);
+  node_t *n;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_addr, uuid, (void *)&addr);
+  elog(e);
 
-  if (!n || n->rmorbl) {
-    ret = 0;
-  }
-  EC(ec_success, sendto_client(RSP_UPL_CHECK, 1, &ret));
-  return ec_success;
+  n = cfgdb_unprov_dev_get(uuid);
+  cfgdb_unpl_remove(n, 0);
+  n->addr = addr;
+  cfgdb_nodes_add(n);
+  return e;
 }
 
+err_t nodes_rm(uint16_t addr)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  cfgdb_nodes_remove(n, 0);
+  n->addr = 0;
+  cfgdb_unpl_add(n);
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_addr, n->uuid, (void *)&n->addr);
+  elog(e);
+  return e;
+}
+
+err_t nodes_bl(uint16_t addr)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  cfgdb_nodes_remove(n, 0);
+  n->addr = 0;
+  n->done = 0;
+  cfgdb_unpl_add(n);
+  e = gp.write(NW_NODES_CFG_FILE, wrt_done, (void *)n->uuid, (void *)&n->done);
+  elog(e);
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_addr, n->uuid, (void *)&n->addr);
+  elog(e);
+  return e;
+}
+
+err_t nodeset_errbits(uint16_t addr, lbitmap_t err)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  n->err = err;
+
+  e = gp.write(NW_NODES_CFG_FILE, wrt_errbits, (void *)n->uuid, (void *)&err);
+  elog(e);
+  return e;
+}
+
+err_t nodeset_done(uint16_t addr, uint8_t done)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  n->done = done;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_done, (void *)n->uuid, (void *)&done);
+  elog(e);
+  return e;
+}
+
+err_t nodeset_func(uint16_t addr, uint8_t func)
+{
+  err_t e;
+  node_t *n;
+  n = cfgdb_node_get(addr);
+  n->models.func = func;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_func, (void *)n->uuid, (void *)&func);
+  elog(e);
+  return e;
+}
+
+const char *nodeget_cfgstr(uint16_t addr)
+{
+  err_t e;
+  const char *v;
+  node_t *n = cfgdb_node_get(addr);
+  e = gp.read(NW_NODES_CFG_FILE, rdt_node_str, n->uuid, (void *)&v);
+  elog(e);
+  return v;
+}
+
+err_t nodes_rmall(void)
+{
+  err_t e;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_rmall, NULL, NULL);
+  elog(e);
+  return e;
+}
+
+err_t nodes_rmblclr(void)
+{
+  err_t e;
+  e = gp.write(NW_NODES_CFG_FILE, wrt_node_rmblclr, NULL, NULL);
+  elog(e);
+  return e;
+}
