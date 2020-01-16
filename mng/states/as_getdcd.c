@@ -42,7 +42,7 @@
   } while (0)
 
 /* Global Variables *************************************************** */
-extern const char *stateNames[];
+extern const char *state_names[];
 
 /* Static Variables *************************************************** */
 static const uint32_t events[] = {
@@ -93,7 +93,7 @@ int getdcd_entry(config_cache_t *cache, func_guard guard)
   /* Alarm SHOULD be set in the main engine */
   if (guard && !guard(cache)) {
     LOGM("To Next State Since %s Guard Not Passed\n",
-         stateNames[cache->state]);
+         state_names[cache->state]);
     return asr_tonext;
   }
   return __dcd_get(cache, get_mng());
@@ -129,7 +129,7 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
               if (cache->node->err & ERROR_BIT(a)) {
                 LOGM("Node[%x]: Configure the node from <<<%s>>> state\n",
                      cache->node->addr,
-                     stateNames[a]);
+                     state_names[a]);
                 cache->next_state = a;
               }
             }
@@ -162,7 +162,7 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
     default:
       LOGE("Unexpected event [0x%08x] happend in %s state.\n",
            evtid,
-           stateNames[cache->state]);
+           state_names[cache->state]);
       return asr_unspec;
   }
 

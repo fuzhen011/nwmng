@@ -58,7 +58,7 @@
   } while (0)
 
 /* Global Variables *************************************************** */
-extern const char *stateNames[];
+extern const char *state_names[];
 
 static const uint32_t events[] = {
   gecko_evt_mesh_config_client_model_pub_status_id
@@ -149,7 +149,7 @@ int setpub_entry(config_cache_t *cache, func_guard guard)
 {
   if (guard && !guard(cache)) {
     LOGM("To Next State Since %s Guard Not Passed\n",
-         stateNames[cache->state]);
+         state_names[cache->state]);
     return asr_tonext;
   }
 
@@ -211,7 +211,7 @@ int setpub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
     default:
       LOGE("Unexpected event [0x%08x] happend in %s state.\n",
            evtid,
-           stateNames[cache->state]);
+           state_names[cache->state]);
       return asr_unspec;
   }
 

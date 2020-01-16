@@ -21,11 +21,10 @@ extern "C"
 #define SIG_VENDOR_ID 0xffff
 
 #define RETRY_MSG \
-  "Node[%x]: --- Retry %s on TIMEOUT, remaining %d times before failure\n"
+  "Node[%x]:  --- Retry %s, Remaining %d Times\n"
 #define RETRY_OUT_MSG \
-  "Node[%x]: All Retry Done BUT Still FAILED\n"
-#define RETRY_TO_END_MSG \
-  "Got continueous failure, device present?\n"
+  "Node[%x]:  --- All Retries Failed\n"
+
 #define OOM_MSG \
   "Node[%x]: Resend Last %s Command Due to Out Of Memory\n"
 #define OOM_SET_MSG \
@@ -35,13 +34,13 @@ extern "C"
 
 #define RETRY_OUT_PRINT(x) LOGE(RETRY_OUT_MSG, (x)->node->addr);
 #define RETRY_ONCE_PRINT(x) \
-  LOGW(RETRY_MSG, (x)->node->addr, stateNames[(x)->state], (x)->remaining_retry);
+  LOGW(RETRY_MSG, (x)->node->addr, state_names[(x)->state], (x)->remaining_retry);
 #define OOM_SET_PRINT(x) \
-  LOGD(OOM_SET_MSG, (x)->node->addr, stateNames[(x)->state]);
+  LOGD(OOM_SET_MSG, (x)->node->addr, state_names[(x)->state]);
 #define OOM_ONCE_PRINT(x) \
-  LOGD(OOM_MSG, (x)->node->addr, stateNames[(x)->state]);
+  LOGD(OOM_MSG, (x)->node->addr, state_names[(x)->state]);
 #define EXPIRED_ONCE_PRINT(x) \
-  LOGD(EXPIRED_MSG, (x)->node->addr, stateNames[(x)->state]);
+  LOGD(EXPIRED_MSG, (x)->node->addr, state_names[(x)->state]);
 
 #define UNASSIGNED_ADDRESS  0
 
@@ -165,11 +164,11 @@ static inline void err_set_to_rm_end(config_cache_t *cache,
 }
 
 void timer_set(config_cache_t *cache, bool enable);
-extern const char *stateNames[];
+extern const char *state_names[];
 static inline void oom_set(config_cache_t *cache)
 {
   BIT_SET(cache->flags, OOM_BIT_OFFSET);
-  LOGW(OOM_SET_MSG, cache->node->addr, stateNames[cache->state]);
+  LOGW(OOM_SET_MSG, cache->node->addr, state_names[cache->state]);
 }
 
 int dev_config_hdr(const struct gecko_cmd_packet *e);

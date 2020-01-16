@@ -122,7 +122,7 @@ static acc_state_t as_rmend = {
   NULL
 };
 
-const char *stateNames[] = {
+const char *state_names[] = {
   "Provisioning",
   "Provisioned",
   "Getting DCD",
@@ -346,7 +346,7 @@ int to_next_state(config_cache_t *cache)
 
   LOGD("Node[%x]: Exiting from %s state\n",
        cache->node->addr,
-       stateNames[cache->state]);
+       state_names[cache->state]);
   if (as && as->exit) {
     ret = as->exit(cache);
     LOGD("Node[%x]: Exiting CB called.\n", cache->node->addr);
@@ -366,7 +366,7 @@ int to_next_state(config_cache_t *cache)
   while (nas) {
     LOGD("Node[%x]: Try to enter %s state\n",
          cache->node->addr,
-         stateNames[nas->state]);
+         state_names[nas->state]);
     ret = nas->entry(cache, nas->guard);
     switch (ret) {
       case asr_suc:
@@ -376,7 +376,7 @@ int to_next_state(config_cache_t *cache)
         transitioned = 1;
         LOGD("Node[%x]: Enter %s state Success\n",
              cache->node->addr,
-             stateNames[nas->state]);
+             state_names[nas->state]);
         break;
       /* Implementation of the callback should make sure that won't return this
        * if not more states to load */

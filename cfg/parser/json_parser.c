@@ -90,6 +90,20 @@ typedef struct {
 /* Static Variables *************************************************** */
 static json_cfg_t jcfg = { 0 };
 
+/*
+ * Mandatory fields for a node object to contain, if any is missing, then the
+ * node is considered invalid.
+ */
+static const char *mandatory_fields[] = {
+  WHOLE_WORD(STR_UUID),
+  WHOLE_WORD(STR_ADDR),
+  WHOLE_WORD(STR_RMORBL),
+  WHOLE_WORD(STR_DONE),
+  WHOLE_WORD(STR_ERRBITS),
+  WHOLE_WORD(STR_FUNC),
+  NULL
+};
+
 /* Static Functions Declaractions ************************************* */
 /* Used for both template and node */
 DECLLOADER(ttl);
@@ -103,6 +117,13 @@ DECLLOADER(features);
 /* Used only for node */
 DECLLOADER(tmpl);
 
+static inline cfg_general_t *gen_from_fd(int fd)
+{
+  return fd == PROV_CFG_FILE ? &jcfg.prov.gen
+         : fd == NW_NODES_CFG_FILE ? &jcfg.nw.gen
+         : fd == TEMPLATE_FILE ? &jcfg.tmpl.gen : NULL;
+}
+
 static inline void __set_feature_config(features_t * f, features_em w, bool on)
 {
   if (on) {
@@ -114,9 +135,14 @@ static inline void __set_feature_config(features_t * f, features_em w, bool on)
   }
 }
 
-static void __kv_replace(json_object *obj,
-                         const void *key,
-                         void *value);
+/* NOTE: It's the caller's responsbility to make sure no same UUID being added
+ * for multiple times */
+static inline void __kv_replace(json_object *obj,
+                                const void *key,
+                                void *value)
+{
+  json_object_object_add(obj, key, json_object_new_string((char *)value));
+}
 
 /*
  * Load the value(s) in {obj} to dest which holds either the node or the
@@ -386,8 +412,25 @@ static err_t _load_features(json_object *obj,
         goto free;
       }
     }
-    /* TODO */
-    /* Sanity check for count and interval */
+
+    if (p->relay_txp->cnt > 7) {
+      LOGW("Note: Relay transmission count cannot be greater than 7.\n");
+      p->relay_txp->cnt = 7;
+    } else if (p->relay_txp->cnt) {
+      if (p->relay_txp->intv < 10) {
+        LOGW("Note: Relay transmission interval cannot be less than 10.\n");
+        p->relay_txp->intv = 10;
+      } else if (p->relay_txp->intv > 320) {
+        LOGW("Note: Relay transmission interval cannot be greater than 320.\n");
+        p->relay_txp->intv = 320;
+      } else if (p->relay_txp->intv % 10) {
+        LOGW("Note: Relay transmission interval resolution is 10.\n");
+        p->relay_txp->intv = ((p->relay_txp->intv + 9) / 10) * 10;
+      }
+    } else {
+      /* count is 0, interval takes no effect, load a valid value */
+      p->relay_txp->intv = 50;
+    }
   }
 
   if (json_object_object_get_ex(o, STR_FRIEND, &tmp)) {
@@ -701,14 +744,14 @@ static err_t _load_sublist(json_object *obj,
 }
 
 /**
- * @brief copy_tmpl_to_node - copy the configuration in template to the node
+ * @brief __copy_tmpl_to_node - copy the configuration in template to the node
  * only if the field in node is not set.
  *
- * @param t - tmplate
- * @param n - node
+ * @param t - tmplate - loaded template
+ * @param n - node - node to be loaded
  */
-static void copy_tmpl_to_node(const tmpl_t *t,
-                              node_t *n)
+static void __copy_tmpl_to_node(const tmpl_t *t,
+                                node_t *n)
 {
   ASSERT(t && n);
   if (t->ttl && !n->config.ttl) {
@@ -784,10 +827,19 @@ static err_t _load_tmpl(json_object *obj,
   if (!t) {
     return ec_success;
   }
-  copy_tmpl_to_node(t, dest);
+  __copy_tmpl_to_node(t, dest);
   return ec_success;
 }
+/**  @} */
 
+/**
+ * @brief load_to_tmpl_item - Load a template json object to {tmpl_t}
+ *
+ * @param obj - json object
+ * @param tmpl - {tmpl_t} to be loaded
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_to_tmpl_item(json_object *obj,
                                tmpl_t *tmpl)
 {
@@ -805,6 +857,14 @@ static err_t load_to_tmpl_item(json_object *obj,
   return ec_success;
 }
 
+/**
+ * @brief load_to_node_item - Load a node json object to {node_t}
+ *
+ * @param obj - json object
+ * @param node - {node_t} to be loaded
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_to_node_item(json_object *obj,
                                node_t *node)
 {
@@ -820,15 +880,6 @@ static err_t load_to_node_item(json_object *obj,
     }
   }
   return ec_success;
-}
-
-/**  @} */
-
-static inline cfg_general_t *gen_from_fd(int fd)
-{
-  return fd == PROV_CFG_FILE ? &jcfg.prov.gen
-         : fd == NW_NODES_CFG_FILE ? &jcfg.nw.gen
-         : fd == TEMPLATE_FILE ? &jcfg.tmpl.gen : NULL;
 }
 
 /**
@@ -903,6 +954,11 @@ static err_t new_json_file(int cfg_fd)
   return ec_success;
 }
 
+/**
+ * @brief load_template - load the configurations in the template file
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_template(void)
 {
   json_object *n, *ptmpl;
@@ -949,16 +1005,6 @@ static err_t load_template(void)
   return ec_success;
 }
 
-static const char *mandatory_fields[] = {
-  WHOLE_WORD(STR_UUID),
-  WHOLE_WORD(STR_ADDR),
-  WHOLE_WORD(STR_RMORBL),
-  WHOLE_WORD(STR_DONE),
-  WHOLE_WORD(STR_ERRBITS),
-  WHOLE_WORD(STR_FUNC),
-  NULL
-};
-
 static bool _node_valid_check(json_object *obj)
 {
   ASSERT(obj);
@@ -973,6 +1019,14 @@ static bool _node_valid_check(json_object *obj)
   return true;
 }
 
+/**
+ * @brief load_key - Load a key json object to {meshkey_t}
+ *
+ * @param obj - key json object
+ * @param key - {meshkey_t}
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_key(json_object *obj,
                       meshkey_t *key)
 {
@@ -1019,6 +1073,11 @@ static err_t load_key(json_object *obj,
   return ec_success;
 }
 
+/**
+ * @brief load_provself - Load the provisioner configurations from the prov file
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_provself(void)
 {
   /* NOTE: Only first subnet will be loaded */
@@ -1104,6 +1163,12 @@ static err_t load_provself(void)
   return e;
 }
 
+/**
+ * @brief __load_node_arr - Load a node array in the json config file
+ *
+ * @param pnode - node array json object
+ * @param backlog - is loading backlog or not
+ */
 static void __load_node_arr(json_object *pnode, bool backlog)
 {
   bool add;
@@ -1205,6 +1270,11 @@ static void __load_node_arr(json_object *pnode, bool backlog)
   }
 }
 
+/**
+ * @brief load_nodes - Load all nodes in the node configuration file.
+ *
+ * @return @ref{err_t}
+ */
 static err_t load_nodes(void)
 {
   /* NOTE: Only first subnet will be loaded */
@@ -1381,6 +1451,7 @@ err_t json_cfg_flush(int cfg_fd)
   }
   return ec_success;
 }
+
 /*
  * What fields can be modified?
  *
@@ -1402,50 +1473,7 @@ err_t json_cfg_flush(int cfg_fd)
  * used for both network key and application key, so it's insufficient to
  * address them without additional field.
  *
- * How to address a specific key-value pair in the json file?
- * With the pair [cfg_fd, wrtype(opcode), key, value]
- *
- * - In node scope:
- *   1> find the node by UUID
- *   2> find the key-value pair by the key
- *   3> modify the value
- *
- * - In Self config scope, since there are overlap keys used in network and
- *   application keys, additional field key(s) is needed:
- *   1> Check if field key is provided? Yes means to modify the field in
- *   subnets, no means modify the field in current level.
- *
- *   - Modify the current level
- *     - Find the key-value pair by key and modify the value
- *
- *   - Searching down still
- *     - if the additional field key IS NOT provided, then iterate all the
- *       network key by matching the RefId, then modify the value
- *     - if the additional field key IS provided, then iterate all the
- *       application key by matching the RefId, then modify the value
- *
- * So x parameters are needed to modify the target value in general.
- *
- * - field_key - used to address the field in array for searching key-value
- *   pair, e.g. UUID for searching node, refId for network key.
- * - level_indicator - used to indicate how many levels need to go into to find
- *   to match the field key, now only used for appkey
- * - key - used to address the key-value pair in above field.
- * - value - new value to set.
- *
- *
  */
-
-/* NOTE: It's the caller's responsbility to make sure no same UUID being added
- * for multiple times */
-static void __kv_replace(json_object *obj,
-                         const void *key,
-                         void *value)
-{
-  /* json_object_object_del(obj, key); */
-  json_object_object_add(obj, key, json_object_new_string((char *)value));
-}
-
 static json_object *find_node(const uint8_t *uuid,
                               bool reload)
 {

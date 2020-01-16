@@ -13,7 +13,7 @@
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
-extern const char *stateNames[];
+extern const char *state_names[];
 
 /* Static Variables *************************************************** */
 
