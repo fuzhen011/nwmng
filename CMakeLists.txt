@@ -62,6 +62,7 @@ set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_bl.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/bgevt_hdr.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/nwk.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/stat.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_getdcd.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_addappkey.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_bindappkey.c

@@ -102,9 +102,13 @@ int cli_proc(int argc, char *argv[])
        PROJ_VERSION_MINOR,
        PROJ_VERSION_PATCH,
        ret);
-  if (mng_started && 0 != (tmp = pthread_cancel(mng_tid))) {
-    LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
+  if (mng_started ) {
+    if (0 != (tmp = pthread_cancel(mng_tid))) {
+      LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
+    }
+    get_mng()->state = nil;
   }
+
   mng_started = false;
   if (ret == 0) {
     ret = FULL_RESET;

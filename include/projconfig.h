@@ -10,8 +10,13 @@
 extern "C"
 {
 #endif
-
+/*
+ * General project configurations.
+ */
 #define DEMO_EN
+#ifndef STAT
+#define STAT
+#endif
 
 #define PROJ_VERSION_MAJOR  1
 #define PROJ_VERSION_MINOR  0
