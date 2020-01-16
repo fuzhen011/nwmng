@@ -39,7 +39,8 @@ const char *demo_cmds[] = {
   "onoff off 0xc022",
   "onoff off 0xc021",
 };
-#else
+#endif
+#if 0
 const char *demo_cmds[] = {
   "lightness 1 0xc021",
   "lightness 50 0xc021",
@@ -78,6 +79,15 @@ const char *demo_cmds[] = {
   "onoff off 0xc030",
 };
 #endif
+
+const char *demo_cmds[] = {
+  "lightness 0 0xc030",
+  "lightness 40 0xc030",
+  "lightness 70 0xc030",
+  "lightness 100 0xc030",
+  "lightness 70 0xc030",
+  "lightness 40 0xc030",
+};
 static const size_t cmds_len = ARR_LEN(demo_cmds);
 
 #define DEMO_INTERVAL 1
