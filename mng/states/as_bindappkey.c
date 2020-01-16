@@ -18,7 +18,7 @@
 
 #define ONCE_P(cache)                                                                    \
   do {                                                                                   \
-    LOGD("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)]\n",                    \
+    LOGV("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)]\n",                    \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
@@ -28,7 +28,7 @@
 
 #define SUC_P(cache, config)                                                             \
   do {                                                                                   \
-    LOGM("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n",            \
+    LOGD("Node[%x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n",            \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
@@ -95,7 +95,6 @@ static int __bind_appkey(config_cache_t *cache, mng_t *mng)
     }
     FAIL_P(cache, pconfig, rsp->result);
     err_set_to_end(cache, rsp->result, bgapi_em);
-    LOGE("Node[%x]: To <<End>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     ONCE_P(cache);
@@ -114,8 +113,7 @@ bool bindappkey_guard(const config_cache_t *cache)
 int bindappkey_entry(config_cache_t *cache, func_guard guard)
 {
   if (guard && !guard(cache)) {
-    LOGM("To Next State Since %s Guard Not Passed\n",
-         state_names[cache->state]);
+    LOGM("State[%s] Guard Not Passed\n", state_names[cache->state]);
     return asr_tonext;
   }
   return __bind_appkey(cache, get_mng());
@@ -148,7 +146,6 @@ int bindappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
             RETRY_CLEAR(cache);
             RETRY_OUT_PRINT(cache);
             err_set_to_end(cache, bg_err_timeout, bgevent_em);
-            LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
           }
           return asr_suc;
           break;
@@ -157,7 +154,6 @@ int bindappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
                  pconfig,
                  evt->data.evt_mesh_config_client_binding_status.result);
           err_set_to_end(cache, bg_err_timeout, bgevent_em);
-          LOGW("To <<End>> State\n");
           return asr_suc;
       }
 

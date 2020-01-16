@@ -191,7 +191,7 @@ err_t clicb_onoff(int argc, char *argv[])
     for (int i = 2; i < argc; i++) {
       uint16 *addr = malloc(sizeof(uint16_t));
       if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
-        LOGD("str2uint failed\n");
+        LOGE("str2uint failed\n");
         free(addr);
         continue;
       }
@@ -251,7 +251,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
     for (int i = 2; i < argc; i++) {
       uint16 *addr = malloc(sizeof(uint16_t));
       if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
-        LOGD("str2uint failed\n");
+        LOGE("str2uint failed\n");
         free(addr);
         continue;
       }
@@ -345,7 +345,7 @@ bool models_loop(mng_t *mng)
     if (ret == bg_err_out_of_memory) {
       return true;
     }
-    LOGE("Model set[%d] error[%x].\n", ret);
+    LOGE("Model Set to Node[%x] Error[%x].\n", *(uint16_t *)item->data, ret);
   } else {
     cli_print_modelset_done(*(uint16_t *)item->data,
                             mng->cache.model_set.type,

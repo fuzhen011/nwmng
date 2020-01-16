@@ -35,7 +35,7 @@ err_t nwk_init(void *p)
 
   mng_t *mng = get_mng();
   if (bg_err_success != (ret = gecko_cmd_mesh_prov_init()->result)) {
-    LOGE("Error (0x%04x) Happened when trying initializing provisioner\n", ret);
+    LOGBGE("prov init", ret);
     return err(ec_bgrsp);
   }
 
@@ -96,7 +96,7 @@ static err_t new_appkeys(mng_t *mng)
   struct gecko_msg_mesh_prov_create_appkey_rsp_t *rsp;
 
   if (!mng->cfg->subnets[0].netkey.done) {
-    LOGE("Must create network before creating appkeys.\n");
+    LOGE("Must Create Network BEFORE Creating Appkeys.\n");
     return err(ec_state);
   }
 

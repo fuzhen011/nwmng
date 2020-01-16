@@ -31,6 +31,9 @@
 #include "gecko_bglib.h"
 #include "dev_config.h"
 /* Defines  *********************************************************** */
+/*
+ * Default priority for taking actions: Adding > Removing > Blacklisting
+ */
 #define DEFAULT_SEQ_PRIO  "arb"
 
 #define INVALID_CONN_HANDLE 0xff
@@ -129,7 +132,7 @@ mng_t *get_mng(void)
 void __ncp_exit(void)
 {
   gecko_cmd_system_reset(0);
-  LOGD("MNG Exit\n");
+  LOGM("MNG Exit\n");
 }
 
 err_t clr_all(void *p)
@@ -321,7 +324,7 @@ static err_t clm_set_scan(int status)
     CHECK_BGCALL(ret, "stop unprov beacon scanning");
   }
   mng.status.free_mode = status;
-  LOGD("Scanning unprovisioned beacon [%s]\n", status ? "ON" : "OFF");
+  LOGM("Scanning unprovisioned beacon [%s]\n", status ? "ON" : "OFF");
   return ec_success;
 }
 
@@ -378,7 +381,7 @@ void list_nodes(void)
 
   cnt = rsp->count;
 
-  LOGM("%d nodes\n", cnt);
+  LOGM("%d Nodes in NCP Target DDB\n", cnt);
   while (cnt) {
     if (get_bguart_impl()->enc) {
       poll_update(50);
@@ -409,6 +412,10 @@ static gboolean load_lists(gpointer key, gpointer value, gpointer data)
   uint16_t ret = gecko_cmd_mesh_prov_ddb_get(16, n->uuid)->result;
   int in = (ret == bg_err_success);
 
+  if (mng.state < initialized) {
+    ASSERT_MSG(0, "Load list before ncp target is initialized\n");
+  }
+
   if (!n->addr) {
     if (in) {
       gecko_cmd_mesh_prov_ddb_delete(*(uuid_128 *)n->uuid);
@@ -421,8 +428,9 @@ static gboolean load_lists(gpointer key, gpointer value, gpointer data)
     /* Priority: Blacklist > remove > config */
     if (!in) {
       /* TODO - set a flag */
-      list_nodes();
       LOGE("CFG and DDB in NCP are Out Of Sync - **Factory Reset Required?**\n");
+      LOGE("gecko_cmd_mesh_prov_ddb_get returns %x, Node Dump:\n", ret);
+      list_nodes();
       return TRUE;
     }
     if (n->rmorbl & BL_BITMASK) {
@@ -457,7 +465,7 @@ err_t clicb_sync(int argc, char *argv[])
     __lists_clr();
     mng.status.seq.offs = 3;
   }
-  return 0;
+  return ec_success;
 }
 
 static void info_node(const node_t *node)
@@ -467,7 +475,7 @@ static void info_node(const node_t *node)
     = gecko_cmd_mesh_prov_ddb_get(16, node->uuid);
 
   if (bg_err_success != rsp->result) {
-    LOGE("Error (0x%04x) Happened when trying getting dcd\n", rsp->result);
+    LOGBGE("get dcd", rsp->result);
     return;
   }
   cli_print_dev(node, rsp);
@@ -490,7 +498,7 @@ err_t clicb_info(int argc, char *argv[])
   } else {
     for (int i = 1; i < argc; i++) {
       if (ec_success != str2uint(argv[i], strlen(argv[i]), &addr, sizeof(uint16_t))) {
-        LOGD("str2uint failed\n");
+        LOGE("str2uint failed\n");
         continue;
       }
       if (NULL == (n = cfgdb_node_get(addr))) {
@@ -507,24 +515,52 @@ err_t clicb_info(int argc, char *argv[])
 err_t clicb_rmall(int argc, char *argv[])
 {
   err_t e;
-  if (ec_success != (e = nodes_rmall())) {
-    elog(e);
-    return e;
+  if (mng.state > configured) {
+    bt_shell_printf("Device is busy. Try it later or stop it.\n");
+    return ec_success;
   }
 
-  load_cfg_file(NW_NODES_CFG_FILE, 1);
+  EC(ec_success, nodes_rmall());
+  EC(ec_success, load_cfg_file(NW_NODES_CFG_FILE, 1));
+
+  /* Kick off the sync automatically */
+  mng.state = starting;
   return ec_success;
 }
 
 err_t clicb_rmblclr(int argc, char *argv[])
 {
   err_t e;
-  if (ec_success != (e = nodes_rmblclr())) {
-    elog(e);
-    return e;
+  EC(ec_success, nodes_rmblclr());
+  EC(ec_success, load_cfg_file(NW_NODES_CFG_FILE, 1));
+  return e;
+}
+
+err_t clicb_loglvlset(int argc, char *argv[])
+{
+  unsigned lvl = LVL_VER;
+
+  if (argc > 1) {
+    if (argv[1][0] == 'e') {
+      lvl = LVL_ERR;
+    } else if (argv[1][0] == 'w') {
+      lvl = LVL_WRN;
+    } else if (argv[1][0] == 'm') {
+      lvl = LVL_MSG;
+    } else if (argv[1][0] == 'd') {
+      lvl = LVL_DBG;
+    } else if (argv[1][0] == 'v') {
+      lvl = LVL_VER;
+    } else {
+      return err(ec_param_invalid);
+    }
+    set_logging_lvl_threshold(lvl);
   }
 
-  load_cfg_file(NW_NODES_CFG_FILE, 1);
+  if (argc > 2) {
+    set_logging_tostdout(atoi(argv[2]));
+  }
+
   return ec_success;
 }
 

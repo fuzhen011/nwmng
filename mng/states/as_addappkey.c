@@ -16,14 +16,14 @@
 
 #define ONCE_P(cache)                                                                     \
   do {                                                                                    \
-    LOGD("Node[%x]:  --- Add App Key[%d (Ref ID)]\n",                                     \
+    LOGV("Node[%x]:  --- Add App Key[%d (Ref ID)]\n",                                     \
          cache->node->addr,                                                               \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id); \
   } while (0)
 
 #define SUC_P(cache)                                                                      \
   do {                                                                                    \
-    LOGM("Node[%x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n",                            \
+    LOGD("Node[%x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n",                            \
          cache->node->addr,                                                               \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id); \
   } while (0)
@@ -73,7 +73,6 @@ static int __add_appkey(config_cache_t *cache, mng_t *mng)
     }
     FAIL_P(cache, rsp->result);
     err_set_to_end(cache, rsp->result, bgapi_em);
-    LOGE("Node[%x]: To <<End>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     ONCE_P(cache);
@@ -92,8 +91,7 @@ bool addappkey_guard(const config_cache_t *cache)
 int addappkey_entry(config_cache_t *cache, func_guard guard)
 {
   if (guard && !guard(cache)) {
-    LOGM("To Next State Since %s Guard Not Passed\n",
-         state_names[cache->state]);
+    LOGW("State[%s] Guard Not Passed\n", state_names[cache->state]);
     return asr_tonext;
   }
   return __add_appkey(cache, get_mng());
@@ -126,15 +124,12 @@ int addappkey_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
             RETRY_CLEAR(cache);
             RETRY_OUT_PRINT(cache);
             err_set_to_end(cache, bg_err_timeout, bgevent_em);
-            LOGD("Node[%x]: To <<st_end>> State\n", cache->node->addr);
           }
           return asr_suc;
           break;
         default:
-          FAIL_P(cache,
-                 evt->data.evt_mesh_config_client_appkey_status.result);
+          FAIL_P(cache, evt->data.evt_mesh_config_client_appkey_status.result);
           err_set_to_end(cache, bg_err_timeout, bgevent_em);
-          LOGW("To <<End>> State\n");
           return asr_suc;
       }
 

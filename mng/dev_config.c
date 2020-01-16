@@ -259,11 +259,11 @@ static void __cache_item_load(mng_t *mng,
     cache->state = provisioned_em;
     cache->next_state = get_dcd_em;
     /* TODO:parseFeatures(&cache->features, &pconfig->pNodes[nodeId]); */
-    LOGM("Node[%x]: Configuring started\n", node->addr);
+    LOGM("Node[%x]: Configuring Started\n", node->addr);
   } else if (type == type_rm) {
     cache->state = end_em;
     cache->next_state = rm_em;
-    LOGM("Node[%x]: Removing started\n", node->addr);
+    LOGM("Node[%x]: Removing Started\n", node->addr);
   }
   BIT_SET(mng->cache.config.used, ofs);
 }
@@ -307,12 +307,12 @@ bool acc_loop(void *p)
     /* TODO: Load the rm nodes */
     cnt = __caches_load(mng, type_rm);
     if (cnt) {
-      LOGM("Loaded %d nodes to remove\n", cnt);
+      LOGM("Loaded %d Nodes to Remove\n", cnt);
     }
   } else if (mng->state == adding_devices_em || mng->state == configuring_devices_em) {
     cnt = __caches_load(mng, type_config);
     if (cnt) {
-      LOGM("Loaded %d nodes to config\n", cnt);
+      LOGM("Loaded %d Nodes to Config\n", cnt);
     }
   } else {
     return false;
@@ -344,12 +344,11 @@ int to_next_state(config_cache_t *cache)
     nas = as_get(cache->next_state);
   }
 
-  LOGD("Node[%x]: Exiting from %s state\n",
+  LOGV("Node[%x]: Exiting from %s State\n",
        cache->node->addr,
        state_names[cache->state]);
   if (as && as->exit) {
     ret = as->exit(cache);
-    LOGD("Node[%x]: Exiting CB called.\n", cache->node->addr);
   }
 
   if (!nas) {
@@ -364,7 +363,7 @@ int to_next_state(config_cache_t *cache)
   }
 
   while (nas) {
-    LOGD("Node[%x]: Try to enter %s state\n",
+    LOGV("Node[%x]: Try to Enter %s State\n",
          cache->node->addr,
          state_names[nas->state]);
     ret = nas->entry(cache, nas->guard);
@@ -374,7 +373,7 @@ int to_next_state(config_cache_t *cache)
         cache->state = nas->state;
         cache->next_state = nas->state;
         transitioned = 1;
-        LOGD("Node[%x]: Enter %s state Success\n",
+        LOGV("Node[%x]: Enter %s State Success\n",
              cache->node->addr,
              state_names[nas->state]);
         break;
@@ -418,16 +417,15 @@ static int config_engine(void)
     if (cache->expired && (time(NULL) > cache->expired) && as->retry) {
       ret = as->retry(cache, on_guard_timer_expired_em);
       if (ret != asr_suc) {
-        LOGE("Expired Retry Return %d\n", ret);
+        LOGE("Retry on Expired Returns %d\n", ret);
       }
     } else if (OOM(cache) && as->retry) {
       ASSERT(!WAIT_RESPONSE(cache));
-      LOGD("OOM set, now try to recover\n");
       ret = as->retry(cache, on_oom_em);
       if (ret == asr_oom) {
-        LOGE("OOM once again, need backoff mechanism\n");
+        LOGE("OOM Once Again, **NEED BACKOFF MECHANISM**\n");
       } else if (ret != asr_suc) {
-        LOGE("OOM Retry Return %d\n", ret);
+        LOGE("Retry on OOM Returns %d\n", ret);
       } else {
         LOGD("Node[%x]: OOM Recovery Once.\n", cache->node->addr);
       }

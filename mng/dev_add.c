@@ -150,12 +150,12 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
     return;
   }
 
-  LOGM("Unprovisioned beacon match. Start provisioning it\n");
+  LOGD("Unprovisioned beacon match. Start provisioning it\n");
   ret = gecko_cmd_mesh_prov_provision_device(mng->cfg->subnets[0].netkey.id,
                                              16,
                                              evt->uuid.data)->result;
   if (bg_err_out_of_memory == ret) {
-    LOGW("provision device OOM\n");
+    LOGW("Provision Device OOM\n");
     mng->status.oom = 1;
     mng->status.oom_expired = time(NULL) + OOM_DELAY_TIMEOUT;
     if (!scan_need_recover) {
@@ -191,8 +191,8 @@ static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_
   node_t *n;
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
-  LOGM("%s Provisioned\n", uuid_str);
-  bt_shell_printf("%s Provisioned\n", uuid_str);
+  LOGM("%s **Provisioned**\n", uuid_str);
+  bt_shell_printf("%s **Provisioned**\n", uuid_str);
 
   /* inform cfg to move the device from unprovisioned list to node list,
    * meanwhile, set the address */

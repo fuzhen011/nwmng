@@ -104,6 +104,8 @@ const command_t commands[] = {
     NULL,
     seqset_arg_generator,
     NULL },
+  { "loglvlset", "[e/w/m/d/v] [1/0]", clicb_loglvlset,
+    "Set the log threshold level and if output to stdout" },
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
@@ -576,7 +578,7 @@ err_t cli_proc_init(int child_num, const pid_t *pids)
   err_t e;
   if (ec_success != (e = logging_init(CLI_LOG_FILE_PATH,
                                       0, /* Not output to stdout */
-                                      LOG_MINIMAL_LVL(LVL_VER)))) {
+                                      LVL_VER))) {
     fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
     return e;
   }

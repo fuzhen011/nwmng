@@ -14,7 +14,6 @@
 #include "cfg.h"
 
 /* Defines  *********************************************************** */
-#define KRF_MSG                                "Key Refresh Started\n"
 
 /* Global Variables *************************************************** */
 
@@ -54,7 +53,7 @@ static int __bl_till_oom(mng_t *mng)
     num++;
   } while (ret == bg_err_success && mng->cache.bl.offset != g_list_length(mng->lists.bl));
   if (num) {
-    LOGM("Sent %d node(s) to stack to blacklist.\n", num);
+    LOGD("Sent %d node(s) to stack to blacklist.\n", num);
   }
   return num;
 }
@@ -72,7 +71,7 @@ static err_t kr_start(mng_t *mng)
     LOGBGE("kr start", ret);
     return err(ec_bgrsp);
   } else {
-    LOGM(KRF_MSG);
+    LOGM("Key Refresh Started\n");
   }
   return ec_success;
 }
@@ -191,11 +190,11 @@ static void kr_node_update(const struct gecko_msg_mesh_prov_key_refresh_node_upd
   if (!bln) {
     char uuid_str[33] = { 0 };
     fmt_uuid(uuid_str, e->uuid.data);
-    LOGW("kr-node-update from uuid[%s]\n", uuid_str);
+    LOGW("Unexpected: KR-Node-Update from UUID[%s]\n", uuid_str);
     return;
   }
   bln->phase = e->phase;
-  LOGD("Node[%x] moved to [%u] phase - Netkey ID [%u]\n",
+  LOGV("Node[%x] moved to [%u] phase - Netkey ID [%u]\n",
        bln->n->addr,
        bln->phase,
        e->key);
@@ -215,7 +214,7 @@ static void kr_finish(const struct gecko_msg_mesh_prov_key_refresh_complete_evt_
 
   mng->cache.bl.state = bl_done;
 
-  LOGM("Key refresh complete <<%s>>, err[0x%04x]\nNew Network Key Id is 0x%04x\n",
+  LOGM("Key Refresh Complete <<%s>>, err[0x%04x]\nNew Network Key Id is 0x%04x\n",
        e->result == 0 ? "YES" : "NO",
        e->result,
        e->key);
@@ -236,7 +235,7 @@ static void kr_finish(const struct gecko_msg_mesh_prov_key_refresh_complete_evt_
   } else {
     memcpy(mng->cfg->subnets[0].netkey.val, rsp->key.data, 16);
     provset_netkeyval(mng->cfg->subnets[0].netkey.val);
-    LOGD("New network key recorded.\n");
+    LOGV("New Network Key Recorded.\n");
   }
 }
 
@@ -250,8 +249,8 @@ static void bl_result(void)
 
   bt_shell_printf("BL result:\n");
   bt_shell_printf("---------------------------------------------------------------\n");
-  LOGD("BL result:\n");
-  LOGD("---------------------------------------------------------------\n");
+  LOGM("BL result:\n");
+  LOGM("---------------------------------------------------------------\n");
   for (int i = 0; i < mng->cache.bl.rem.num; i++) {
     buf[ofs++] = '|';
     ofs += fmt_uuid(buf + ofs, mng->cache.bl.rem.nodes[i].n->uuid);
@@ -261,14 +260,14 @@ static void bl_result(void)
              mng->cache.bl.rem.nodes[i].phase ? err : suc);
     bt_shell_printf("%s", buf);
     if (!mng->cache.bl.rem.nodes[i].phase) {
-      LOGD("%s", buf);
+      LOGM("%s", buf);
     } else {
       LOGE("%s", buf);
     }
     ofs = 0;
     memset(buf, 0, __BL_LEN);
   }
-  LOGD("---------------------------------------------------------------\n");
+  LOGM("---------------------------------------------------------------\n");
   bt_shell_printf("---------------------------------------------------------------\n");
 }
 

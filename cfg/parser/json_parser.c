@@ -850,7 +850,7 @@ static err_t load_to_tmpl_item(json_object *obj,
   for (int i = 0; i < tmpl_loader_end; i++) {
     e = loaders[i](obj, TEMPLATE_FILE, tmpl);
     if (e != ec_success) {
-      LOGE("Load %dth object finallyed.\n", i);
+      LOGE("Load %dth object failed.\n", i);
       elog(e);
     }
   }
@@ -875,7 +875,7 @@ static err_t load_to_node_item(json_object *obj,
   for (int i = 0; i < node_loader_end; i++) {
     e = loaders[i](obj, NW_NODES_CFG_FILE, node);
     if (e != ec_success) {
-      LOGE("Load %dth object finallyed.\n", i);
+      LOGE("Load %dth object failed.\n", i);
       elog(e);
     }
   }
@@ -950,8 +950,15 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
 
 static err_t new_json_file(int cfg_fd)
 {
-  /* TODO */
-  return ec_success;
+  err_t e = ec_param_invalid;
+  if (cfg_fd == PROV_CFG_FILE) {
+    /* TODO */
+    e = ec_success;
+  } else if (cfg_fd == NW_NODES_CFG_FILE) {
+    /* TODO */
+    e = ec_success;
+  }
+  return err(e);
 }
 
 /**

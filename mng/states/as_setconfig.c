@@ -187,7 +187,6 @@ static int __setconfig(config_cache_t *cache, mng_t *mng)
     }
     set_configs_print_state(which, failed_em, cache, retval);
     err_set_to_end(cache, retval, bgapi_em);
-    LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     /* TODO: Uncomment below line to print the ONCE_P */
@@ -209,8 +208,7 @@ int setconfig_entry(config_cache_t *cache, func_guard guard)
 {
   int ret;
   if (guard && !guard(cache)) {
-    LOGM("To Next State Since %s Guard Not Passed\n",
-         state_names[cache->state]);
+    LOGM("State[%s] Guard Not Passed\n", state_names[cache->state]);
     return asr_tonext;
   }
 
@@ -299,7 +297,6 @@ int setconfig_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
         RETRY_CLEAR(cache);
         RETRY_OUT_PRINT(cache);
         err_set_to_end(cache, bg_err_timeout, bgevent_em);
-        LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
       }
       return asr_suc;
       break;
@@ -309,7 +306,6 @@ int setconfig_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
                               cache,
                               retval);
       err_set_to_end(cache, bg_err_timeout, bgevent_em);
-      LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
       return asr_suc;
   }
 
@@ -384,17 +380,17 @@ static void set_configs_print_state(int which,
     case RELAY_BITOFS:
       switch (process) {
         case once_em:
-          LOGD(SET_RELAY_MSG,
+          LOGV(SET_RELAY_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, RELAY_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGM(SET_RELAY_SUC_MSG,
+          LOGD(SET_RELAY_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, RELAY_BITOFS) ? "ON" : "OFF");
           break;
         case failed_em:
-          LOGD(SET_RELAY_FAIL_MSG,
+          LOGE(SET_RELAY_FAIL_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, RELAY_BITOFS) ? "ON" : "OFF",
                err);
@@ -406,17 +402,17 @@ static void set_configs_print_state(int which,
     case PROXY_BITOFS:
       switch (process) {
         case once_em:
-          LOGD(SET_PROXY_MSG,
+          LOGV(SET_PROXY_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, PROXY_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGM(SET_PROXY_SUC_MSG,
+          LOGD(SET_PROXY_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, PROXY_BITOFS) ? "ON" : "OFF");
           break;
         case failed_em:
-          LOGD(SET_PROXY_FAIL_MSG,
+          LOGE(SET_PROXY_FAIL_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, PROXY_BITOFS) ? "ON" : "OFF",
                err);
@@ -428,17 +424,17 @@ static void set_configs_print_state(int which,
     case FRIEND_BITOFS:
       switch (process) {
         case once_em:
-          LOGD(SET_FRIEND_MSG,
+          LOGV(SET_FRIEND_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, FRIEND_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGM(SET_FRIEND_SUC_MSG,
+          LOGD(SET_FRIEND_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, FRIEND_BITOFS) ? "ON" : "OFF");
           break;
         case failed_em:
-          LOGD(SET_FRIEND_FAIL_MSG,
+          LOGE(SET_FRIEND_FAIL_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, FRIEND_BITOFS) ? "ON" : "OFF",
                err);
@@ -450,17 +446,17 @@ static void set_configs_print_state(int which,
     case TTL_BITOFS:
       switch (process) {
         case once_em:
-          LOGD(SET_TTL_MSG,
+          LOGV(SET_TTL_MSG,
                cache->node->addr,
                *cache->node->config.ttl);
           break;
         case success_em:
-          LOGM(SET_TTL_SUC_MSG,
+          LOGD(SET_TTL_SUC_MSG,
                cache->node->addr,
                *cache->node->config.ttl);
           break;
         case failed_em:
-          LOGD(SET_TTL_FAIL_MSG,
+          LOGE(SET_TTL_FAIL_MSG,
                cache->node->addr,
                *cache->node->config.ttl,
                err);
@@ -472,19 +468,19 @@ static void set_configs_print_state(int which,
     case NETTX_BITOFS:
       switch (process) {
         case once_em:
-          LOGD(SET_NETTX_MSG,
+          LOGV(SET_NETTX_MSG,
                cache->node->addr,
                cache->node->config.net_txp->cnt,
                cache->node->config.net_txp->intv);
           break;
         case success_em:
-          LOGM(SET_NETTX_SUC_MSG,
+          LOGD(SET_NETTX_SUC_MSG,
                cache->node->addr,
                cache->node->config.net_txp->cnt,
                cache->node->config.net_txp->intv);
           break;
         case failed_em:
-          LOGD(SET_NETTX_FAIL_MSG,
+          LOGE(SET_NETTX_FAIL_MSG,
                cache->node->addr,
                cache->node->config.net_txp->cnt,
                cache->node->config.net_txp->intv,
@@ -497,17 +493,17 @@ static void set_configs_print_state(int which,
     case SNB_BITOFS:
       switch (process) {
         case once_em:
-          LOGD(SET_SNB_MSG,
+          LOGV(SET_SNB_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, SNB_BITOFS) ? "ON" : "OFF");
           break;
         case success_em:
-          LOGM(SET_SNB_SUC_MSG,
+          LOGD(SET_SNB_SUC_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, SNB_BITOFS) ? "ON" : "OFF");
           break;
         case failed_em:
-          LOGD(SET_SNB_FAIL_MSG,
+          LOGE(SET_SNB_FAIL_MSG,
                cache->node->addr,
                IS_BIT_SET(cache->node->config.features.target, SNB_BITOFS) ? "ON" : "OFF",
                err);

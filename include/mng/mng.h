@@ -126,6 +126,7 @@ typedef struct {
 }bl_cache_t;
 
 typedef enum {
+  nil,
   initialized,
   configured,
   starting,
@@ -215,6 +216,7 @@ DECLARE_CB(onoff);
 DECLARE_CB(lightness);
 DECLARE_CB(ct);
 DECLARE_CB(status);
+DECLARE_CB(loglvlset);
 #ifdef DEMO_EN
 DECLARE_CB(demo);
 #endif

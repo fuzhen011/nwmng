@@ -34,8 +34,8 @@ int end_entry(config_cache_t *cache, func_guard guard)
 
 static void __on_success(config_cache_t *cache)
 {
-  LOGM("Node[%x]: Configured\n", cache->node->addr);
-  bt_shell_printf("Node[%x] Configured\n", cache->node->addr);
+  LOGM("Node[%x]: **Configured**\n", cache->node->addr);
+  bt_shell_printf("Node[%x] **Configured**\n", cache->node->addr);
   nodeset_errbits(cache->node->addr, 0);
   nodeset_done(cache->node->addr, 0x1);
 }

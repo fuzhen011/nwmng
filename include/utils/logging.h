@@ -80,16 +80,16 @@ extern "C"
 #define VER_FLAG  "[" "VER" "]"
 
 /* LVL_AST cannot be masked */
-enum {
+typedef enum {
   LVL_AST = -1,
   LVL_ERR,
   LVL_WRN,
   LVL_MSG,
   LVL_DBG,
   LVL_VER
-};
+}log_lvl_t;
 
-#define LOG_MINIMAL_LVL(lvl) ((lvl) + 1)
+/* #define LOG_MINIMAL_LVL(lvl) ((lvl) + 1) */
 
 /**
  * @brief logging_init - initialization of logging
@@ -97,7 +97,7 @@ enum {
  * @param path - which file the log is writen to
  * @param tostdout - set to 1 also writes to stdout
  * @param lvl_threshold - set the logging level threshold, the logging with
- * level **LESS THAN** the threshold will be writen to file.
+ * level **LESS THAN OR EQUAL** the threshold will be writen to file.
  *
  * @return @ref{err_t}
  */
@@ -140,8 +140,8 @@ void log_n(void);
 
 void set_logging_tostdout(int enable);
 int get_logging_tostdout(void);
-void set_logging_lvl_threshold(unsigned int lvl);
-unsigned int get_logging_lvl_threshold(void);
+void set_logging_lvl_threshold(log_lvl_t lvl);
+int get_logging_lvl_threshold(void);
 
 #ifdef __cplusplus
 }

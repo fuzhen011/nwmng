@@ -18,7 +18,7 @@
 
 #define ONCE_P(cache)                                                                \
   do {                                                                               \
-    LOGD(                                                                            \
+    LOGV(                                                                            \
       "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",                \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
@@ -29,7 +29,7 @@
 
 #define SUC_P(cache)                                                                 \
   do {                                                                               \
-    LOGM(                                                                            \
+    LOGD(                                                                            \
       "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
@@ -115,7 +115,6 @@ static int __addsub(config_cache_t *cache, mng_t *mng)
     }
     FAIL_P(cache, retval);
     err_set_to_end(cache, retval, bgapi_em);
-    LOGD("Node[%x]: To <<st_end>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     ONCE_P(cache);
@@ -135,8 +134,7 @@ bool addsub_guard(const config_cache_t *cache)
 int addsub_entry(config_cache_t *cache, func_guard guard)
 {
   if (guard && !guard(cache)) {
-    LOGM("To Next State Since %s Guard Not Passed\n",
-         state_names[cache->state]);
+    LOGW("State[%s] Guard Not Passed\n", state_names[cache->state]);
     return asr_tonext;
   }
 
@@ -158,10 +156,10 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
       switch (evt->data.evt_mesh_config_client_model_sub_status.result) {
         case bg_err_success:
         case bg_err_mesh_no_friend_offer:
-          /* TODO - This is a bug for btmesh stack */
           if (evt->data.evt_mesh_config_client_model_sub_status.result
               == bg_err_mesh_no_friend_offer) {
-            LOGD("0x%04x Model doesn't support subscription\n", cache->vnm.md);
+            /* TODO - This is a bug for btmesh stack */
+            ASSERT_MSG(0, "0x%04x Model doesn't support subscription\n", cache->vnm.md);
           }
           RETRY_CLEAR(cache);
           SUC_P(cache);
@@ -175,20 +173,17 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
             RETRY_CLEAR(cache);
             RETRY_OUT_PRINT(cache);
             err_set_to_end(cache, bg_err_timeout, bgevent_em);
-            LOGD("Node[%x]: To <<st_end>> State\n", cache->node->addr);
           }
           return asr_suc;
           break;
         case bg_err_mesh_foundation_insufficient_resources:
-          LOGW("Node[%x]: Cannot sub more address, pass to next model\n",
-               cache->node->addr);
+          LOGW("Node[%x]: Cannot Sub More Address, Passing\n", cache->node->addr);
           cache->iterators[SUB_ADDR_ITERATOR_INDEX] = cache->node->config.sublist->len - 1;
           break;
         default:
           FAIL_P(cache,
                  evt->data.evt_mesh_config_client_model_sub_status.result);
           err_set_to_end(cache, bg_err_timeout, bgevent_em);
-          LOGW("To <<End>> State\n");
           return asr_suc;
       }
 

@@ -14,13 +14,13 @@
 /* Defines  *********************************************************** */
 #define ONCE_P(cache)           \
   do {                          \
-    LOGD("Node[%x]:  --- RM\n", \
+    LOGV("Node[%x]:  --- RM\n", \
          cache->node->addr);    \
   } while (0)
 
 #define SUC_P(cache)                 \
   do {                               \
-    LOGM("Node[%x]:  --- SUCCESS\n", \
+    LOGD("Node[%x]:  --- SUCCESS\n", \
          cache->node->addr);         \
   } while (0)
 
@@ -57,7 +57,6 @@ static int __rm(config_cache_t *cache, mng_t *mng)
     }
     FAIL_P(cache, rsp->result);
     err_set_to_rm_end(cache, rsp->result, bgapi_em);
-    LOGE("Node[%x]: To <<End>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     ONCE_P(cache);
@@ -76,8 +75,7 @@ bool rm_guard(const config_cache_t *cache)
 int rm_entry(config_cache_t *cache, func_guard guard)
 {
   if (guard && !guard(cache)) {
-    LOGM("To Next State Since %s Guard Not Passed\n",
-         state_names[cache->state]);
+    LOGW("State[%s] Guard Not Passed\n", state_names[cache->state]);
     return asr_tonext;
   }
 
@@ -111,7 +109,6 @@ int rm_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
             RETRY_CLEAR(cache);
             RETRY_OUT_PRINT(cache);
             err_set_to_rm_end(cache, bg_err_timeout, bgevent_em);
-            LOGD("Node[%d]: To <<st_end>> State\n", cache->node->addr);
 #else
             RETRY_CLEAR(cache);
             RETRY_OUT_PRINT(cache);
@@ -123,7 +120,6 @@ int rm_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
           FAIL_P(cache,
                  evt->data.evt_mesh_config_client_reset_status.result);
           err_set_to_rm_end(cache, bg_err_timeout, bgevent_em);
-          LOGW("To <<End>> State\n");
           break;
       }
       break;

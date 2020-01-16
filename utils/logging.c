@@ -31,7 +31,7 @@
 /* Static Variables *************************************************** */
 typedef struct {
   FILE *fp;
-  unsigned int level;
+  log_lvl_t level;
   int tostdout;
   size_t log_len;
   char *buf;
@@ -198,7 +198,7 @@ err_t __log(const char *file_name,
   err_t e;
   va_list valist;
 
-  if (lvl >= (int)lcfg.level) {
+  if (lvl > (int)lcfg.level) {
     return ec_success;
   }
   lcfg.buf = calloc(LOGBUF_SIZE, 1);
@@ -339,14 +339,14 @@ int get_logging_tostdout(void)
   return lcfg.fp ? lcfg.tostdout : 0;
 }
 
-void set_logging_lvl_threshold(unsigned int lvl)
+void set_logging_lvl_threshold(log_lvl_t lvl)
 {
   if (lcfg.fp) {
     lcfg.level = lvl;
   }
 }
 
-unsigned int get_logging_lvl_threshold(void)
+int get_logging_lvl_threshold(void)
 {
-  return lcfg.fp ? lcfg.level : 0;
+  return lcfg.fp ? lcfg.level : LVL_VER;
 }

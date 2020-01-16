@@ -26,12 +26,12 @@
 
 #define ONCE_P(cache)                                    \
   do {                                                   \
-    LOGD("Node[%x]:  --- Get DCD\n", cache->node->addr); \
+    LOGV("Node[%x]:  --- Get DCD\n", cache->node->addr); \
   } while (0)
 
 #define SUC_P(cache)                                             \
   do {                                                           \
-    LOGM("Node[%x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
+    LOGD("Node[%x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
   } while (0)
 
 #define FAIL_P(cache, err)                                \
@@ -71,7 +71,6 @@ static int __dcd_get(config_cache_t *cache, mng_t *mng)
     }
     FAIL_P(cache, rsp->result);
     err_set_to_end(cache, rsp->result, bgapi_em);
-    LOGE("Node[%x]: To <<End>> State\n", cache->node->addr);
     return asr_bgapi;
   } else {
     ONCE_P(cache);
@@ -92,8 +91,7 @@ int getdcd_entry(config_cache_t *cache, func_guard guard)
 {
   /* Alarm SHOULD be set in the main engine */
   if (guard && !guard(cache)) {
-    LOGM("To Next State Since %s Guard Not Passed\n",
-         state_names[cache->state]);
+    LOGW("State[%s] Guard Not Passed\n", state_names[cache->state]);
     return asr_tonext;
   }
   return __dcd_get(cache, get_mng());
@@ -109,7 +107,7 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
     case gecko_evt_mesh_config_client_dcd_data_id:
       /* Ignore pages other than 0 for now */
       if (evt->data.evt_mesh_config_client_dcd_data.page == 0) {
-        LOGD("Node[%x]: DCD Page 0 Received\n", cache->node->addr);
+        LOGV("Node[%x]: DCD Page 0 Received\n", cache->node->addr);
         __dcd_store(evt->data.evt_mesh_config_client_dcd_data.data.data,
                     evt->data.evt_mesh_config_client_dcd_data.data.len,
                     cache);
@@ -127,7 +125,7 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
               && cache->node->err < ERROR_BIT(end_em)) {
             for (int a = addappkey_em; a < end_em; a++) {
               if (cache->node->err & ERROR_BIT(a)) {
-                LOGM("Node[%x]: Configure the node from <<<%s>>> state\n",
+                LOGM("Node[%x]: Configure the Node From <<<%s>>> State\n",
                      cache->node->addr,
                      state_names[a]);
                 cache->next_state = a;
@@ -146,14 +144,12 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
             RETRY_CLEAR(cache);
             RETRY_OUT_PRINT(cache);
             err_set_to_end(cache, bg_err_timeout, bgevent_em);
-            LOGW("Node[%x]: To <<End>> State\n", cache->node->addr);
           }
           break;
         default:
           FAIL_P(cache,
                  evt->data.evt_mesh_config_client_dcd_data_end.result);
           err_set_to_end(cache, bg_err_timeout, bgevent_em);
-          LOGW("To <<End>> State\n");
           break;
       }
     }
