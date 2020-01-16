@@ -17,6 +17,7 @@
 #include "logging.h"
 #include "cli.h"
 #include "generic_parser.h"
+#include "stat.h"
 
 /* Defines  *********************************************************** */
 
@@ -205,6 +206,7 @@ static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_
   mng->lists.add = g_list_remove(mng->lists.add, n);
   mng->lists.config = g_list_append(mng->lists.config, n);
 
+  stat_add_one_dev();
   /* Remove from cache. */
   rmcached(mng, evt->uuid.data);
   if (scan_need_recover) {
@@ -222,6 +224,8 @@ static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
   LOGE("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
   bt_shell_printf("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
+
+  stat_add_failed();
   /* Remove from cache. */
   rmcached(get_mng(), evt->uuid.data);
   if (scan_need_recover) {

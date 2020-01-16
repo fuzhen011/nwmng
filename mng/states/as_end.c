@@ -10,6 +10,7 @@
 #include "logging.h"
 #include "generic_parser.h"
 #include "cli.h"
+#include "stat.h"
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -23,6 +24,7 @@ static void __on_failed(config_cache_t *cache);
 
 int end_entry(config_cache_t *cache, func_guard guard)
 {
+  stat_config_one_dev();
   if (cache->err_cache.bgcall != 0 || cache->err_cache.bgevt != 0) {
     __on_failed(cache);
   } else {

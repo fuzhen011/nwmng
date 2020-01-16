@@ -30,6 +30,7 @@
 #include "socket_handler.h"
 #include "gecko_bglib.h"
 #include "dev_config.h"
+#include "stat.h"
 /* Defines  *********************************************************** */
 /*
  * Default priority for taking actions: Adding > Removing > Blacklisting
@@ -191,6 +192,7 @@ static void set_mng_state(void)
     if (mng.status.free_mode < 2) {
       clm_set_scan(0);
     }
+    stat_add_end();
 
     if (g_list_length(mng.lists.config) || mng.cache.config.used) {
       /* configuring in progress after adding devices, switch directly */
@@ -202,6 +204,7 @@ static void set_mng_state(void)
       return;
     }
     /* All nodes have been configured properly */
+    stat_config_end();
   } else if (mng.state == removing_devices_em) {
     if (g_list_length(mng.lists.rm) || mng.cache.config.used) {
       return;
@@ -224,6 +227,7 @@ static void set_mng_state(void)
         if (mng.status.free_mode == 0) {
           clm_set_scan(1);
         }
+        stat_add_start();
         mng.state = adding_devices_em;
         loaded = true;
       } else if (g_list_length(mng.lists.config)) {

@@ -12,6 +12,7 @@
 #include "logging.h"
 #include "cli.h"
 #include "utils.h"
+#include "stat.h"
 /* Defines  *********************************************************** */
 enum {
   type_config,
@@ -405,6 +406,7 @@ static int config_engine(void)
 
   usedmap = mng->cache.config.used;
   while (usedmap) {
+    stat_config_start();
     i = utils_ctz(usedmap);
     ASSERT(i < MAX_CONCURRENT_CONFIG_NODES);
     BIT_CLR(usedmap, i);
@@ -416,12 +418,14 @@ static int config_engine(void)
      */
     if (cache->expired && (time(NULL) > cache->expired) && as->retry) {
       ret = as->retry(cache, on_guard_timer_expired_em);
+      stat_config_retry();
       if (ret != asr_suc) {
         LOGE("Retry on Expired Returns %d\n", ret);
       }
     } else if (OOM(cache) && as->retry) {
       ASSERT(!WAIT_RESPONSE(cache));
       ret = as->retry(cache, on_oom_em);
+      stat_config_retry();
       if (ret == asr_oom) {
         LOGE("OOM Once Again, **NEED BACKOFF MECHANISM**\n");
       } else if (ret != asr_suc) {
@@ -549,6 +553,7 @@ int dev_config_hdr(const struct gecko_cmd_packet *e)
   /* Drived by timeout event */
   if (!ret && !WAIT_RESPONSE(cache) && EVER_RETRIED(cache) && state->retry) {
     ret |= state->retry(cache, on_timeout_em);
+    stat_config_retry();
   } else if (ret == asr_unspec) {
     return 0;
   }
