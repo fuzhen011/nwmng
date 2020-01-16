@@ -850,7 +850,7 @@ static err_t load_to_tmpl_item(json_object *obj,
   for (int i = 0; i < tmpl_loader_end; i++) {
     e = loaders[i](obj, TEMPLATE_FILE, tmpl);
     if (e != ec_success) {
-      LOGE("Load %dth object failed.\n", i);
+      LOGE("Load %dth object finallyed.\n", i);
       elog(e);
     }
   }
@@ -875,7 +875,7 @@ static err_t load_to_node_item(json_object *obj,
   for (int i = 0; i < node_loader_end; i++) {
     e = loaders[i](obj, NW_NODES_CFG_FILE, node);
     if (e != ec_success) {
-      LOGE("Load %dth object failed.\n", i);
+      LOGE("Load %dth object finallyed.\n", i);
       elog(e);
     }
   }
@@ -1290,7 +1290,6 @@ static err_t load_nodes(void)
 
 static err_t load_json_file(int cfg_fd, bool clrdb)
 {
-  /* TODO */
   if (cfg_fd == TEMPLATE_FILE) {
     return load_template();
   } else if (cfg_fd == NW_NODES_CFG_FILE) {
@@ -1366,15 +1365,15 @@ err_t json_cfg_open(int cfg_fd,
     if (-1 == tmp) {
       if (!(flags & FL_CREATE)) {
         ret = err(ec_not_exist);
-        goto fail;
+        goto finally;
       }
       if (ec_success != (ret = new_json_file(cfg_fd))) {
-        goto fail;
+        goto finally;
       }
     } else {
       if (flags & FL_TRUNC) {
         if (ec_success != (ret = new_json_file(cfg_fd))) {
-          goto fail;
+          goto finally;
         }
       }
     }
@@ -1392,28 +1391,22 @@ err_t json_cfg_open(int cfg_fd,
   }
 
   if (ec_success != (ret = open_json_file(cfg_fd, 1))) {
-    goto fail;
+    goto finally;
   }
 
   if (ec_success != (ret = load_json_file(cfg_fd,
                                           !!(flags & FL_FORCE_RELOAD)))) {
-    goto fail;
+    goto finally;
   }
 
-  fail:
+  finally:
   if (ec_success != ret) {
-    /* TODO: Clean work need? */
-    /* jsonConfigDeinit(); */
-    LOGE("JSON[%s] Open failed\n", gen->fp);
+    json_cfg_close(cfg_fd);
+    LOGE("JSON[%s] Open falied\n", gen->fp);
     elog(ret);
   }
 
   return ret;
-#if 0
-  if (rootPtr) {
-    jsonConfigClose();
-  }
-#endif
 }
 
 err_t json_cfg_flush(int cfg_fd)
@@ -1545,10 +1538,10 @@ static err_t _backlog_node_add(const uint8_t *uuid)
   memcpy(n->uuid, uuid, 16);
   if (ec_success != (e = cfgdb_backlog_add(n))) {
     free(n);
-    goto fail;
+    goto finally;
   }
 
-  fail:
+  finally:
   if (e != ec_success) {
     cfgdb_backlog_remove(n, 1);
     json_object_put(obj);
