@@ -13,6 +13,7 @@ extern "C"
 #endif
 #include <sys/time.h>
 #include <time.h>
+#include "mng.h"
 
 enum {
   rc_idle,
@@ -46,6 +47,10 @@ struct __config{
   unsigned dev_cnt;
   unsigned retry_times;
   measure_time_t time;
+  struct {
+    time_t time;
+    measure_time_t meas;
+  } full_loading;
 };
 
 typedef struct {
@@ -67,6 +72,22 @@ void stat_config_start(void);
 void stat_config_end(void);
 void stat_config_one_dev(void);
 void stat_config_retry(void);
+
+/**
+ * @brief stat_config_loading_record - this function records the time if acc is
+ * full loading. E.g. 6 slots for configuring nodes.
+ *
+ * |--------------------------------------------------------|
+ * | More devices to config | Used slots | State            |
+ * |     Doesn't matter     |     6      | Full loading     |
+ * |          Yes           |    < 6     | Ignore           |
+ * |          No            |    < 6     | Not full loading |
+ * |          No            |     0      | Free             |
+ * |--------------------------------------------------------|
+ *
+ * @param mng -
+ */
+void stat_config_loading_record(const mng_t *mng);
 
 void stat_bl_start(void);
 void stat_bl_end(void);

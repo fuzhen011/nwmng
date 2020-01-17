@@ -261,7 +261,6 @@ static void set_mng_state(void)
     LOGM("Sync[%s] Done\n", mng.status.seq.prios);
     bt_shell_printf("Sync[%s] Done\n", mng.status.seq.prios);
     cli_print_stat(get_stat());
-    stat_reset();
   }
 }
 
@@ -274,6 +273,7 @@ void *mng_mainloop(void *p)
     bgevt_dispenser();
     switch (mng.state) {
       case starting:
+        stat_reset();
         if (file_modified(NW_NODES_CFG_FILE)) {
           load_cfg_file(NW_NODES_CFG_FILE, 0);
         } else {

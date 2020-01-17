@@ -253,19 +253,19 @@ static void __cache_item_load(mng_t *mng,
   config_cache_t * cache = &mng->cache.config.cache[ofs];
 
   /* TODO: needed? */
-  __cache_reset_idx(ofs);
+  /* __cache_reset_idx(ofs); */
 
   cache->node = node;
   if (type == type_config) {
     cache->state = provisioned_em;
     cache->next_state = get_dcd_em;
-    /* TODO:parseFeatures(&cache->features, &pconfig->pNodes[nodeId]); */
-    LOGM("Node[%x]: Configuring Started\n", node->addr);
   } else if (type == type_rm) {
     cache->state = end_em;
     cache->next_state = rm_em;
-    LOGM("Node[%x]: Removing Started\n", node->addr);
   }
+  LOGM("Node[%x]: %s Started\n",
+       node->addr,
+       type == type_config ? "Configuring" : "Removing");
   BIT_SET(mng->cache.config.used, ofs);
 }
 
@@ -305,7 +305,6 @@ bool acc_loop(void *p)
   }
   mng_t *mng = (mng_t *)p;
   if (mng->state == removing_devices_em) {
-    /* TODO: Load the rm nodes */
     cnt = __caches_load(mng, type_rm);
     stat_rm_start();
     if (cnt) {
@@ -317,6 +316,7 @@ bool acc_loop(void *p)
     if (cnt) {
       LOGM("Loaded %d Nodes to Config\n", cnt);
     }
+    stat_config_loading_record(mng);
   } else {
     return false;
   }

@@ -87,6 +87,23 @@ void stat_config_retry(void)
   stat.config.retry_times++;
 }
 
+void stat_config_loading_record(const mng_t *mng)
+{
+  if (!(mng->state == adding_devices_em || mng->state == configuring_devices_em)) {
+    return;
+  }
+  if (MAX_CONCURRENT_CONFIG_NODES == utils_popcount(mng->cache.config.used)) {
+    if (stat.config.full_loading.meas.state == rc_start) {
+      return;
+    }
+    stat.config.full_loading.meas.state = rc_start;
+    stat.config.full_loading.meas.start = time(NULL);
+  } else if (stat.config.full_loading.meas.state == rc_start) {
+    stat.config.full_loading.time += (time(NULL) - stat.config.full_loading.meas.start);
+    stat.config.full_loading.meas.state = rc_end;
+  }
+}
+
 void stat_bl_start(void)
 {
   if (stat.bl.time.state != rc_idle) {

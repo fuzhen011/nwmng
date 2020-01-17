@@ -147,9 +147,9 @@ void cli_print_stat(const stat_t *s)
     t %= 60;
 
     bt_shell_printf("  Adding devices summary:\n"
-                    "    number  : %u\n"
-                    "    failures: %u\n"
-                    "    time    : %u:%u:%u\n",
+                    "    number          : %u\n"
+                    "    failures        : %u\n"
+                    "    time            : %u:%u:%u\n",
                     s->add.dev_cnt,
                     s->add.fail_times,
                     h, m, t
@@ -167,7 +167,7 @@ void cli_print_stat(const stat_t *s)
     bt_shell_printf("  Blacklisting devices summary:\n"
                     /* "    number  : %u\n" */
                     /* "    failures: %u\n" */
-                    "    time    : %u:%u:%u\n",
+                    "    time            : %u:%u:%u\n",
                     /* s->bl.dev_cnt, */
                     /* s->bl.fail_times, */
                     h, m, t
@@ -183,9 +183,9 @@ void cli_print_stat(const stat_t *s)
     t %= 60;
 
     bt_shell_printf("  Removing devices summary:\n"
-                    "    number      : %u\n"
-                    "    retry times : %u\n"
-                    "    time        : %u:%u:%u\n",
+                    "    number          : %u\n"
+                    "    retry times     : %u\n"
+                    "    time            : %u:%u:%u\n",
                     s->rm.dev_cnt,
                     s->rm.retry_times,
                     h, m, t
@@ -194,19 +194,34 @@ void cli_print_stat(const stat_t *s)
 
   if (s->config.time.state == rc_end) {
     /* Config valid, output it */
+    int l = -1;
+    float full_loading_perc;
+
     t = s->config.time.end - s->config.time.start;
+
+    if (s->config.full_loading.meas.state == rc_end) {
+      /* Full Loading data valid */
+      l = s->config.full_loading.time;
+      full_loading_perc = (float)l * 100.0 / (float)t;
+    }
+
     h = t / 3600;
     t %= 3600;
     m = t / 60;
     t %= 60;
 
     bt_shell_printf("  Config devices summary:\n"
-                    "    number      : %u\n"
-                    "    retry times : %u\n"
-                    "    time        : %u:%u:%u\n",
+                    "    number          : %u\n"
+                    "    retry times     : %u\n"
+                    "    time            : %u:%u:%u\n",
                     s->config.dev_cnt,
                     s->config.retry_times,
                     h, m, t
                     );
+    if (l != -1) {
+      bt_shell_printf("    full loading % : %.1f%%\n",
+                      full_loading_perc
+                      );
+    }
   }
 }
