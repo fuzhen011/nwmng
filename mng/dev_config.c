@@ -138,7 +138,7 @@ const char *state_names[] = {
 };
 
 /* Static Functions Declaractions ************************************* */
-static int config_engine(void);
+static int config_engine(mng_t *mng);
 static inline void __cache_reset(config_cache_t *c)
 {
   memset(c, 0, sizeof(config_cache_t));
@@ -307,18 +307,20 @@ bool acc_loop(void *p)
   if (mng->state == removing_devices_em) {
     /* TODO: Load the rm nodes */
     cnt = __caches_load(mng, type_rm);
+    stat_rm_start();
     if (cnt) {
       LOGM("Loaded %d Nodes to Remove\n", cnt);
     }
   } else if (mng->state == adding_devices_em || mng->state == configuring_devices_em) {
     cnt = __caches_load(mng, type_config);
+    stat_config_start();
     if (cnt) {
       LOGM("Loaded %d Nodes to Config\n", cnt);
     }
   } else {
     return false;
   }
-  return config_engine();
+  return config_engine(mng);
 }
 
 static acc_state_t *as_get(int state)
@@ -395,18 +397,16 @@ int to_next_state(config_cache_t *cache)
   return transitioned;
 }
 
-static int config_engine(void)
+static int config_engine(mng_t *mng)
 {
   int i, busy = 0;
   int ret = 0;
   acc_state_t *as = NULL;
-  mng_t *mng = get_mng();
   config_cache_t *cache = NULL;
   lbitmap_t usedmap;
 
   usedmap = mng->cache.config.used;
   while (usedmap) {
-    stat_config_start();
     i = utils_ctz(usedmap);
     ASSERT(i < MAX_CONCURRENT_CONFIG_NODES);
     BIT_CLR(usedmap, i);
@@ -418,14 +418,22 @@ static int config_engine(void)
      */
     if (cache->expired && (time(NULL) > cache->expired) && as->retry) {
       ret = as->retry(cache, on_guard_timer_expired_em);
-      stat_config_retry();
+      if (mng->state == removing_devices_em) {
+        stat_rm_retry();
+      } else {
+        stat_config_retry();
+      }
       if (ret != asr_suc) {
         LOGE("Retry on Expired Returns %d\n", ret);
       }
     } else if (OOM(cache) && as->retry) {
       ASSERT(!WAIT_RESPONSE(cache));
       ret = as->retry(cache, on_oom_em);
-      stat_config_retry();
+      if (mng->state == removing_devices_em) {
+        stat_rm_retry();
+      } else {
+        stat_config_retry();
+      }
       if (ret == asr_oom) {
         LOGE("OOM Once Again, **NEED BACKOFF MECHANISM**\n");
       } else if (ret != asr_suc) {
@@ -553,7 +561,11 @@ int dev_config_hdr(const struct gecko_cmd_packet *e)
   /* Drived by timeout event */
   if (!ret && !WAIT_RESPONSE(cache) && EVER_RETRIED(cache) && state->retry) {
     ret |= state->retry(cache, on_timeout_em);
-    stat_config_retry();
+    if (get_mng()->state == removing_devices_em) {
+      stat_rm_retry();
+    } else {
+      stat_config_retry();
+    }
   } else if (ret == asr_unspec) {
     return 0;
   }

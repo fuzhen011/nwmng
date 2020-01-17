@@ -274,7 +274,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
   return e;
 }
 
-static uint16_t send_onoff(uint16_t addr, uint8_t onoff)
+uint16_t send_onoff(uint16_t addr, uint8_t onoff)
 {
   return gecko_cmd_mesh_generic_client_set(0x1001,
                                            0,
@@ -289,7 +289,7 @@ static uint16_t send_onoff(uint16_t addr, uint8_t onoff)
                                            &onoff)->result;
 }
 
-static uint16_t send_lightness(uint16_t addr, uint8_t lightness)
+uint16_t send_lightness(uint16_t addr, uint8_t lightness)
 {
   uint16_t lvl = lightness * 0xffff / 100;
   return gecko_cmd_mesh_generic_client_set(0x1302,
@@ -309,7 +309,7 @@ static uint16_t send_lightness(uint16_t addr, uint8_t lightness)
 // Maximum color temperature 20000K
 #define TEMPERATURE_MAX      0x4e20
 
-static uint16_t send_ctl(uint16_t addr, uint8_t ctl)
+uint16_t send_ctl(uint16_t addr, uint8_t ctl)
 {
   uint8_t buf[4] = { 0 };
   uint16_t lvl = TEMPERATURE_MIN + (ctl * ctl / 100) * (TEMPERATURE_MAX - TEMPERATURE_MIN) / 100;

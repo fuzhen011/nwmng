@@ -210,6 +210,7 @@ static void set_mng_state(void)
       return;
     }
     /* All RM set nodes have been removed properly */
+    stat_rm_end();
   } else if (mng.state == blacklisting_devices_em) {
     if (g_list_length(mng.lists.rm) || mng.cache.bl.state != bl_idle) {
       return;

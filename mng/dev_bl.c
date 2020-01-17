@@ -12,6 +12,7 @@
 #include "generic_parser.h"
 #include "cli.h"
 #include "cfg.h"
+#include "stat.h"
 
 /* Defines  *********************************************************** */
 
@@ -76,7 +77,7 @@ static err_t kr_start(mng_t *mng)
   return ec_success;
 }
 
-static void load_rem_nodes(void)
+static void load_remaining_nodes(void)
 {
   mng_t *mng = get_mng();
   uint16list_t *l = get_node_addrs();
@@ -109,11 +110,12 @@ bool bl_loop(void *p)
   }
 
   if (mng->cache.bl.state == bl_idle) {
+    stat_bl_start();
     int num = cfgdb_get_devnum(nodes_em) - g_list_length(mng->lists.bl);
     if (!mng->cache.bl.rem.nodes && num) {
       mng->cache.bl.rem.num = num;
       mng->cache.bl.rem.nodes = calloc(num, sizeof(remainig_nodes_t));
-      load_rem_nodes();
+      load_remaining_nodes();
     }
     __bl_till_oom(mng);
     if (mng->cache.bl.offset == g_list_length(mng->lists.bl)) {
@@ -286,5 +288,6 @@ static void on_bl_done(void)
     g_list_free(mng->lists.bl);
     mng->lists.bl = NULL;
     memset(&mng->cache.bl, 0, sizeof(bl_cache_t));
+    stat_bl_end();
   }
 }

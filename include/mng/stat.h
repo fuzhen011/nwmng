@@ -39,8 +39,6 @@ struct __rm{
 };
 
 struct __bl{
-  unsigned dev_cnt;
-  unsigned retry_times;
   measure_time_t time;
 };
 
@@ -70,6 +68,13 @@ void stat_config_end(void);
 void stat_config_one_dev(void);
 void stat_config_retry(void);
 
+void stat_bl_start(void);
+void stat_bl_end(void);
+
+void stat_rm_start(void);
+void stat_rm_end(void);
+void stat_rm_one_dev(void);
+void stat_rm_retry(void);
 #ifdef __cplusplus
 }
 #endif

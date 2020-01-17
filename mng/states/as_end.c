@@ -11,6 +11,11 @@
 #include "generic_parser.h"
 #include "cli.h"
 #include "stat.h"
+
+#define ON_END_DEBUG
+#ifdef ON_END_DEBUG
+#include "gecko_bglib.h"
+#endif
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -40,6 +45,10 @@ static void __on_success(config_cache_t *cache)
   bt_shell_printf("Node[%x] **Configured**\n", cache->node->addr);
   nodeset_errbits(cache->node->addr, 0);
   nodeset_done(cache->node->addr, 0x1);
+
+#ifdef ON_END_DEBUG
+  send_onoff(0xc030, 1);
+#endif
 }
 
 static void __on_failed(config_cache_t *cache)

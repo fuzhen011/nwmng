@@ -156,6 +156,42 @@ void cli_print_stat(const stat_t *s)
                     );
   }
 
+  if (s->bl.time.state == rc_end) {
+    /* Blacklist valid, output it */
+    t = s->bl.time.end - s->bl.time.start;
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Blacklisting devices summary:\n"
+                    /* "    number  : %u\n" */
+                    /* "    failures: %u\n" */
+                    "    time    : %u:%u:%u\n",
+                    /* s->bl.dev_cnt, */
+                    /* s->bl.fail_times, */
+                    h, m, t
+                    );
+  }
+
+  if (s->rm.time.state == rc_end) {
+    /* Removing valid, output it */
+    t = s->rm.time.end - s->rm.time.start;
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Removing devices summary:\n"
+                    "    number      : %u\n"
+                    "    retry times : %u\n"
+                    "    time        : %u:%u:%u\n",
+                    s->rm.dev_cnt,
+                    s->rm.retry_times,
+                    h, m, t
+                    );
+  }
+
   if (s->config.time.state == rc_end) {
     /* Config valid, output it */
     t = s->config.time.end - s->config.time.start;

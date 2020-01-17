@@ -87,6 +87,53 @@ void stat_config_retry(void)
   stat.config.retry_times++;
 }
 
+void stat_bl_start(void)
+{
+  if (stat.bl.time.state != rc_idle) {
+    return;
+  }
+  memset(&stat, 0, sizeof(struct __bl));
+  stat.bl.time.state = rc_start;
+  stat.bl.time.start = time(NULL);
+}
+
+void stat_bl_end(void)
+{
+  if (stat.bl.time.state == rc_idle) {
+    return;
+  }
+  stat.bl.time.state = rc_end;
+  stat.bl.time.end = time(NULL);
+}
+
+void stat_rm_start(void)
+{
+  if (stat.rm.time.state != rc_idle) {
+    return;
+  }
+  memset(&stat.rm, 0, sizeof(struct __rm));
+  stat.rm.time.state = rc_start;
+  stat.rm.time.start = time(NULL);
+}
+
+void stat_rm_end(void)
+{
+  if (stat.rm.time.state == rc_idle) {
+    return;
+  }
+  stat.rm.time.state = rc_end;
+  stat.rm.time.end = time(NULL);
+}
+
+void stat_rm_one_dev(void)
+{
+  stat.rm.dev_cnt++;
+}
+
+void stat_rm_retry(void)
+{
+  stat.rm.retry_times++;
+}
 void stat_print(void)
 {
 }

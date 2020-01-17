@@ -50,7 +50,7 @@ extern "C"
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions
  * definition on the NCP target side
  */
-#define MAX_PROV_SESSIONS 2
+#define MAX_PROV_SESSIONS 4
 /*
  * NOTE: Make sure this value is NOT greater than the Max Foundation Client Cmds
  * definition on the NCP target side
