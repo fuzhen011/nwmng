@@ -33,7 +33,7 @@ extern "C"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
-#define PORT      "/dev/ttyACM2"
+#define PORT      "/dev/ttyACM3"
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/nwk.json"
 #endif

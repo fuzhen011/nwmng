@@ -16,21 +16,21 @@
 
 #define ONCE_P(cache)                                                                     \
   do {                                                                                    \
-    LOGV("Node[%x]:  --- Add App Key[%d (Ref ID)]\n",                                     \
+    LOGV("Node[0x%04x]:  --- Add App Key[%d (Ref ID)]\n",                                     \
          cache->node->addr,                                                               \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id); \
   } while (0)
 
 #define SUC_P(cache)                                                                      \
   do {                                                                                    \
-    LOGD("Node[%x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n",                            \
+    LOGD("Node[0x%04x]:  --- Add App Key[%d (Ref ID)] SUCCESS \n",                            \
          cache->node->addr,                                                               \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id); \
   } while (0)
 
 #define FAIL_P(cache, err)                                                               \
   do {                                                                                   \
-    LOGE("Node[%x]:  --- Add App Key[%d (Ref ID)] FAILED, Err <0x%04x>\n",               \
+    LOGE("Node[0x%04x]:  --- Add App Key[%d (Ref ID)] FAILED, Err <0x%04x>\n",               \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          err);                                                                           \

@@ -196,7 +196,7 @@ static void kr_node_update(const struct gecko_msg_mesh_prov_key_refresh_node_upd
     return;
   }
   bln->phase = e->phase;
-  LOGV("Node[%x] moved to [%u] phase - Netkey ID [%u]\n",
+  LOGV("Node[0x%04x] moved to [%u] phase - Netkey ID [%u]\n",
        bln->n->addr,
        bln->phase,
        e->key);

@@ -129,14 +129,15 @@ const char *state_names[] = {
   "Getting DCD",
   "Adding App Key(s)",
   "Binding App Key(s)",
-  "Set Model Publication Address",
-  "Add Model Subscription Address",
+  "Set Model Pub Address",
+  "Add Model Sub Address",
   "Set TTL/Proxy/Friend/Relay/Nettx",
   "Configuration End",
   "Remove Node",
   "Remove Node End"
 };
 
+#define MAX_STATE_NAME_LEN  sizeof("Set TTL/Proxy/Friend/Relay/Nettx")
 /* Static Functions Declaractions ************************************* */
 static int config_engine(mng_t *mng);
 static inline void __cache_reset(config_cache_t *c)
@@ -263,7 +264,7 @@ static void __cache_item_load(mng_t *mng,
     cache->state = end_em;
     cache->next_state = rm_em;
   }
-  LOGM("Node[%x]: %s Started\n",
+  LOGM("Node[0x%04x]: %s Started\n",
        node->addr,
        type == type_config ? "Configuring" : "Removing");
   BIT_SET(mng->cache.config.used, ofs);
@@ -347,7 +348,7 @@ int to_next_state(config_cache_t *cache)
     nas = as_get(cache->next_state);
   }
 
-  LOGV("Node[%x]: Exiting from %s State\n",
+  LOGM("Node[0x%04x]: End   - [%s]\n",
        cache->node->addr,
        state_names[cache->state]);
   if (as && as->exit) {
@@ -366,7 +367,7 @@ int to_next_state(config_cache_t *cache)
   }
 
   while (nas) {
-    LOGV("Node[%x]: Try to Enter %s State\n",
+    LOGV("Node[0x%04x]: Try to Enter %s State\n",
          cache->node->addr,
          state_names[nas->state]);
     ret = nas->entry(cache, nas->guard);
@@ -376,7 +377,7 @@ int to_next_state(config_cache_t *cache)
         cache->state = nas->state;
         cache->next_state = nas->state;
         transitioned = 1;
-        LOGV("Node[%x]: Enter %s State Success\n",
+        LOGM("Node[0x%04x]: Start - [%s]\n",
              cache->node->addr,
              state_names[nas->state]);
         break;
@@ -439,7 +440,7 @@ static int config_engine(mng_t *mng)
       } else if (ret != asr_suc) {
         LOGE("Retry on OOM Returns %d\n", ret);
       } else {
-        LOGD("Node[%x]: OOM Recovery Once.\n", cache->node->addr);
+        LOGD("Node[0x%04x]: OOM Recovery Once.\n", cache->node->addr);
       }
     }
 

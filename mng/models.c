@@ -355,7 +355,7 @@ bool models_loop(mng_t *mng)
     if (ret == bg_err_out_of_memory) {
       return true;
     }
-    LOGE("Model Set to Node[%x] Error[%x].\n", *(uint16_t *)item->data, ret);
+    LOGE("Model Set to Node[0x%04x] Error[0x%04x].\n", *(uint16_t *)item->data, ret);
   } else {
     cli_print_modelset_done(*(uint16_t *)item->data,
                             mng->cache.model_set.type,

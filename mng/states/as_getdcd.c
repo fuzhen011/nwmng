@@ -26,17 +26,17 @@
 
 #define ONCE_P(cache)                                    \
   do {                                                   \
-    LOGV("Node[%x]:  --- Get DCD\n", cache->node->addr); \
+    LOGV("Node[0x%04x]:  --- Get DCD\n", cache->node->addr); \
   } while (0)
 
 #define SUC_P(cache)                                             \
   do {                                                           \
-    LOGD("Node[%x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
+    LOGD("Node[0x%04x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
   } while (0)
 
 #define FAIL_P(cache, err)                                \
   do {                                                    \
-    LOGE("Node[%x]:  --- Get DCD Failed, Err <0x%04x>\n", \
+    LOGE("Node[0x%04x]:  --- Get DCD Failed, Err <0x%04x>\n", \
          cache->node->addr,                               \
          err);                                            \
   } while (0)
@@ -107,7 +107,7 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
     case gecko_evt_mesh_config_client_dcd_data_id:
       /* Ignore pages other than 0 for now */
       if (evt->data.evt_mesh_config_client_dcd_data.page == 0) {
-        LOGV("Node[%x]: DCD Page 0 Received\n", cache->node->addr);
+        LOGV("Node[0x%04x]: DCD Page 0 Received\n", cache->node->addr);
         __dcd_store(evt->data.evt_mesh_config_client_dcd_data.data.data,
                     evt->data.evt_mesh_config_client_dcd_data.data.len,
                     cache);
@@ -125,7 +125,7 @@ int getdcd_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
               && cache->node->err < ERROR_BIT(end_em)) {
             for (int a = addappkey_em; a < end_em; a++) {
               if (cache->node->err & ERROR_BIT(a)) {
-                LOGM("Node[%x]: Configure the Node From <<<%s>>> State\n",
+                LOGM("Node[0x%04x]: Configure the Node From <<<%s>>> State\n",
                      cache->node->addr,
                      state_names[a]);
                 cache->next_state = a;
