@@ -228,6 +228,9 @@ bool models_loop(mng_t *mng);
 uint16_t send_onoff(uint16_t addr, uint8_t onoff);
 uint16_t send_lightness(uint16_t addr, uint8_t lightness);
 uint16_t send_ctl(uint16_t addr, uint8_t ctl);
+
+void demo_run(void);
+void demo_start(int en);
 #ifdef __cplusplus
 }
 #endif

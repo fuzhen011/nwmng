@@ -107,6 +107,7 @@ static uint8_t tid = 0;
 static err_t clicb_perc_set(int argc, char *argv[], uint8_t type);
 
 #ifdef DEMO_EN
+#if 0
 err_t clicb_demo(int argc, char *argv[])
 {
   int onoff = 1;
@@ -129,6 +130,22 @@ err_t clicb_demo(int argc, char *argv[])
 
   return ec_success;
 }
+#else
+err_t clicb_demo(int argc, char *argv[])
+{
+  if (argc > 1) {
+    if (!strcmp(argv[1], "on")) {
+      demo_start(1);
+    } else if (!strcmp(argv[1], "off")) {
+      demo_start(0);
+    } else {
+      return err(ec_param_invalid);
+    }
+  }
+
+  return ec_success;
+}
+#endif
 
 void check_demo(void)
 {
@@ -357,9 +374,11 @@ bool models_loop(mng_t *mng)
     }
     LOGE("Model Set to Node[0x%04x] Error[0x%04x].\n", *(uint16_t *)item->data, ret);
   } else {
+#if 0
     cli_print_modelset_done(*(uint16_t *)item->data,
                             mng->cache.model_set.type,
                             mng->cache.model_set.value);
+#endif
   }
 
   mng->cache.model_set.nodes = g_list_remove_link(mng->cache.model_set.nodes, item);
