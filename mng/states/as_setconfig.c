@@ -189,7 +189,6 @@ static int __setconfig(config_cache_t *cache, mng_t *mng)
     err_set_to_end(cache, retval, bgapi_em);
     return asr_bgapi;
   } else {
-    /* TODO: Uncomment below line to print the ONCE_P */
     /* set_configs_print_state(which, once_em, cache, pconfig, 0); */
     WAIT_RESPONSE_SET(cache);
     cache->cc_handle = handle;
