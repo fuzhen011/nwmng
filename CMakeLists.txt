@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.6)
 
 if(APPLE)
-  set(CMAKE_C_COMPILER gcc-9)
+  # set(CMAKE_C_COMPILER gcc-9)
+  set(CMAKE_C_COMPILER clang)
 else()
   set(CMAKE_C_COMPILER gcc)
 endif()
@@ -30,7 +31,7 @@ endif()
 
 set(
   CMAKE_C_FLAGS
-  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
+  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -Wno-missing-braces -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
   )
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g3 -DDEBUG=1")
 set(CMAKE_C_FLAGS_RELEASE "-Os -DDEBUG=0")

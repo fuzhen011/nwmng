@@ -145,12 +145,18 @@ int file_modified(int cfg_fd)
 err_t load_cfg_file(int cfg_fd, bool force_reload)
 {
   err_t e;
+  unsigned int flags = 0;
   if (cfg_fd > TEMPLATE_FILE || cfg_fd < PROV_CFG_FILE) {
     return err(ec_param_invalid);
   }
   const char *fp = (cfg_fd == TEMPLATE_FILE ? TMPLATE_FILE_PATH
-                    : cfg_fd == NW_NODES_CFG_FILE ? NWNODES_FILE_PATH : SELFCFG_FILE_PATH);
-  e = gp.open(cfg_fd, fp, force_reload ? FL_FORCE_RELOAD : 0);
+                    : cfg_fd == NW_NODES_CFG_FILE
+                    ? NWNODES_FILE_PATH : SELFCFG_FILE_PATH);
+  if (force_reload) {
+    flags |= FL_FORCE_RELOAD;
+  }
+  flags |= FL_CREATE; /* Always create if not exist */
+  e = gp.open(cfg_fd, fp, flags);
   if (ec_success != e) {
     elog(e);
     return e;

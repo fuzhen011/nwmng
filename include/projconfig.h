@@ -29,8 +29,11 @@ extern "C"
 #define PROJ_DIR  "/Users/zhfu/work/projs/nwmng/"
 #define PORT      "/dev/tty.usbmodem0004400502021"
 /* #define PORT      "/dev/tty.usbmodem0004400531901" */
-#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json"
-#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json"
+/* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json" */
+/* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json" */
+
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/nwk.json"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
 #define PORT      "/dev/ttyACM3"

@@ -1050,7 +1050,7 @@ static inline err_t __new_node_cfg_file(void)
   jcfg.nw.gen.root = json_object_new_object();
   ASSERT(jcfg.nw.gen.root);
 
-  json_object_object_add(jcfg.prov.gen.root,
+  json_object_object_add(jcfg.nw.gen.root,
                          STR_SYNC_TIME,
                          json_object_new_string("0x00000000"));
 
@@ -1071,6 +1071,10 @@ static inline err_t __new_node_cfg_file(void)
   json_object_object_add(jcfg.nw.gen.root,
                          STR_SUBNETS,
                          arr);
+
+  json_object_object_add(jcfg.nw.gen.root,
+                         STR_BACKLOG,
+                         json_object_new_array());
 
   return json_cfg_flush(NW_NODES_CFG_FILE);
 }
@@ -1305,6 +1309,9 @@ static void __load_node_arr(json_object *pnode, bool backlog)
 {
   bool add;
   err_t e;
+  if (!pnode) {
+    return;
+  }
   json_array_foreach(i, num, pnode)
   {
     add = false;
