@@ -23,14 +23,15 @@
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
-bool mng_started = false;
-pthread_t mng_tid;
-
 pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER;
-
 jmp_buf initjmpbuf;
 
 /* Static Variables *************************************************** */
+static struct {
+  bool started;
+  pthread_t tid;
+} mng_info;
+
 static proj_args_t projargs = { 0 };
 static init_func_t initfs[] = {
   cli_init,
@@ -102,10 +103,14 @@ int cli_proc(int argc, char *argv[])
        PROJ_VERSION_MINOR,
        PROJ_VERSION_PATCH,
        ret);
-  if (mng_started && 0 != (tmp = pthread_cancel(mng_tid))) {
-    LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
+  if (mng_info.started) {
+    if (0 != (tmp = pthread_cancel(mng_info.tid))) {
+      LOGE("Cancel pthread error[%d:%s]\n", tmp, strerror(tmp));
+    }
+    get_mng()->state = nil;
   }
-  mng_started = false;
+
+  mng_info.started = false;
   if (ret == 0) {
     ret = FULL_RESET;
   }
@@ -122,14 +127,14 @@ int cli_proc(int argc, char *argv[])
   e = nwk_init(NULL);
   elog(e);
 
-  if (0 != (ret = pthread_create(&mng_tid, NULL, mng_mainloop, NULL))) {
+  if (0 != (ret = pthread_create(&mng_info.tid, NULL, mng_mainloop, NULL))) {
     err_exit_en(ret, "pthread create");
   }
-  mng_started = true;
+  mng_info.started = true;
 
   cli_mainloop(NULL);
 
-  if (0 != (ret = pthread_join(mng_tid, NULL))) {
+  if (0 != (ret = pthread_join(mng_info.tid, NULL))) {
     err_exit_en(ret, "pthread_join");
   }
 

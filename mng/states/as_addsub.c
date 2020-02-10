@@ -19,7 +19,7 @@
 #define ONCE_P(cache)                                                                \
   do {                                                                               \
     LOGV(                                                                            \
-      "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",                \
+      "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",                \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -30,7 +30,7 @@
 #define SUC_P(cache)                                                                 \
   do {                                                                               \
     LOGD(                                                                            \
-      "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
+      "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -41,7 +41,7 @@
 #define FAIL_P(cache, err)                                                                 \
   do {                                                                                     \
     LOGE(                                                                                  \
-      "Node[%x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] FAILED, Err <0x%04x>\n", \
+      "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] FAILED, Err <0x%04x>\n", \
       cache->node->addr,                                                                   \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                            \
       cache->vnm.vd,                                                                       \
@@ -177,7 +177,7 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
           return asr_suc;
           break;
         case bg_err_mesh_foundation_insufficient_resources:
-          LOGW("Node[%x]: Cannot Sub More Address, Passing\n", cache->node->addr);
+          LOGW("Node[0x%04x]: Cannot Sub More Address, Passing\n", cache->node->addr);
           cache->iterators[SUB_ADDR_ITERATOR_INDEX] = cache->node->config.sublist->len - 1;
           break;
         default:

@@ -14,19 +14,19 @@
 /* Defines  *********************************************************** */
 #define ONCE_P(cache)           \
   do {                          \
-    LOGV("Node[%x]:  --- RM\n", \
+    LOGV("Node[0x%04x]:  --- RM\n", \
          cache->node->addr);    \
   } while (0)
 
 #define SUC_P(cache)                 \
   do {                               \
-    LOGD("Node[%x]:  --- SUCCESS\n", \
+    LOGD("Node[0x%04x]:  --- SUCCESS\n", \
          cache->node->addr);         \
   } while (0)
 
 #define FAIL_P(cache, err)                           \
   do {                                               \
-    LOGE("Node[%x]:  --- RM FAILED, Err <0x%04x>\n", \
+    LOGE("Node[0x%04x]:  --- RM FAILED, Err <0x%04x>\n", \
          cache->node->addr,                          \
          err);                                       \
   } while (0)

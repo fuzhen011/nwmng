@@ -134,3 +134,94 @@ void cli_status(const mng_t *mng)
                   g_list_length(mng->lists.rm),
                   g_list_length(mng->lists.bl));
 }
+
+void cli_print_stat(const stat_t *s)
+{
+  unsigned t, h, m;
+  if (s->add.time.state == rc_end) {
+    /* Add valid, output it */
+    t = s->add.time.end - s->add.time.start;
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Adding devices summary:\n"
+                    "    number          : %u\n"
+                    "    failures        : %u\n"
+                    "    time            : %u:%u:%u\n",
+                    s->add.dev_cnt,
+                    s->add.fail_times,
+                    h, m, t
+                    );
+  }
+
+  if (s->bl.time.state == rc_end) {
+    /* Blacklist valid, output it */
+    t = s->bl.time.end - s->bl.time.start;
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Blacklisting devices summary:\n"
+                    /* "    number  : %u\n" */
+                    /* "    failures: %u\n" */
+                    "    time            : %u:%u:%u\n",
+                    /* s->bl.dev_cnt, */
+                    /* s->bl.fail_times, */
+                    h, m, t
+                    );
+  }
+
+  if (s->rm.time.state == rc_end) {
+    /* Removing valid, output it */
+    t = s->rm.time.end - s->rm.time.start;
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Removing devices summary:\n"
+                    "    number          : %u\n"
+                    "    retry times     : %u\n"
+                    "    time            : %u:%u:%u\n",
+                    s->rm.dev_cnt,
+                    s->rm.retry_times,
+                    h, m, t
+                    );
+  }
+
+  if (s->config.time.state == rc_end) {
+    /* Config valid, output it */
+    int l = -1;
+    float full_loading_perc;
+
+    t = s->config.time.end - s->config.time.start;
+
+    if (s->config.full_loading.meas.state == rc_end) {
+      /* Full Loading data valid */
+      l = s->config.full_loading.time;
+      full_loading_perc = (float)l * 100.0 / (float)t;
+    }
+
+    h = t / 3600;
+    t %= 3600;
+    m = t / 60;
+    t %= 60;
+
+    bt_shell_printf("  Config devices summary:\n"
+                    "    number          : %u\n"
+                    "    retry times     : %u\n"
+                    "    time            : %u:%u:%u\n",
+                    s->config.dev_cnt,
+                    s->config.retry_times,
+                    h, m, t
+                    );
+    if (l != -1) {
+      bt_shell_printf("    full loading % : %.1f%%\n",
+                      full_loading_perc
+                      );
+    }
+  }
+}

@@ -9,6 +9,7 @@
 /* #include "dev_add.h" */
 #include <glib.h>
 
+#include "host_gecko.h"
 #include "projconfig.h"
 #include "cfg.h"
 #include "err.h"
@@ -17,6 +18,7 @@
 #include "logging.h"
 #include "cli.h"
 #include "generic_parser.h"
+#include "stat.h"
 
 /* Defines  *********************************************************** */
 
@@ -150,7 +152,7 @@ static void on_beacon_recv(const struct gecko_msg_mesh_prov_unprov_beacon_evt_t 
     return;
   }
 
-  LOGD("Unprovisioned beacon match. Start provisioning it\n");
+  LOGM("Unprovisioned beacon match. Start provisioning it\n");
   ret = gecko_cmd_mesh_prov_provision_device(mng->cfg->subnets[0].netkey.id,
                                              16,
                                              evt->uuid.data)->result;
@@ -205,6 +207,7 @@ static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_
   mng->lists.add = g_list_remove(mng->lists.add, n);
   mng->lists.config = g_list_append(mng->lists.config, n);
 
+  stat_add_one_dev();
   /* Remove from cache. */
   rmcached(mng, evt->uuid.data);
   if (scan_need_recover) {
@@ -216,12 +219,112 @@ static void on_prov_success(const struct gecko_msg_mesh_prov_device_provisioned_
   }
 }
 
+#if !defined(UID_458729_FIX) || (UID_458729_FIX == 0)
+/*
+ * This is caused by the bug in BT Mesh stack, it returns provision failed
+ * event, however, the device is added to the database. If just simply consider
+ * it to be provisioning successfully, the node won't be responding to the
+ * config client messages.
+ *
+ * Before the bug is fixed, the work around here is to remove it from database
+ * and inform the user to factory reset the node.
+ *
+ */
+
+#if 0
+static uint16_t addr_from_prov_failed_evt(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
+{
+  struct gecko_msg_mesh_prov_ddb_get_rsp_t *rsp;
+  rsp = gecko_cmd_mesh_prov_ddb_get(16, evt->uuid.data);
+  if (bg_err_success != rsp->result) {
+    LOGBGE("gecko_cmd_mesh_prov_ddb_get", rsp->result);
+    return 0;
+  }
+  return rsp->address;
+}
+
+/*
+ * prov_failed_wa - consider it as provisioned successfully. The test result
+ * shows it doesn't because the node doesn't respond to config client messages.
+ */
+static int prov_failed_wa(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
+{
+  /* UID: 458729 */
+  char uuid_str[33] = { 0 };
+  cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
+  uint16_t addr = addr_from_prov_failed_evt(evt);
+  if (addr != 0) {
+    struct gecko_msg_mesh_prov_device_provisioned_evt_t *dummy_evt
+      = malloc(sizeof(struct gecko_msg_mesh_prov_device_provisioned_evt_t) + 16);
+    dummy_evt->address = addr;
+    dummy_evt->uuid.len = 16;
+    memcpy(dummy_evt->uuid.data, evt->uuid.data, 16);
+    on_prov_success(dummy_evt);
+    free(dummy_evt);
+    LOGE("%s Provisioned FAIL, reason[7], workaround applied, address[0x%04x]\n",
+         uuid_str,
+         addr);
+    bt_shell_printf("%s Provisioned FAIL, reason[7], workaround applied, address[0x%04x]\n",
+                    uuid_str,
+                    addr);
+    return 0;
+  }
+  return -1;
+}
+#endif
+
+/*
+ * prov_failed_wa - remove it from database and inform user.
+ */
+static int prov_failed_wa(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
+{
+  char uuid_str[33] = { 0 };
+  uint16_t ret;
+  node_t *n;
+  mng_t *mng = get_mng();
+
+  cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
+  n = cfgdb_unprov_dev_get(evt->uuid.data);
+  mng->lists.add = g_list_remove(mng->lists.add, n);
+
+  ret  = gecko_cmd_mesh_prov_ddb_delete(*(uuid_128 *)evt->uuid.data)->result;
+  if (bg_err_success != ret) {
+    LOGBGE("gecko_cmd_mesh_prov_ddb_delete", ret);
+  }
+
+  LOGE("%s Provisioned FAIL, reason[7], workaround applied\n"
+       "   **USER Needs to Factory Reset it, Then SYNC Again.**\n",
+       uuid_str);
+  bt_shell_printf("%s Provisioned FAIL, reason[7], workaround applied\n"
+                  "   **USER Needs to Factory Reset it, Then SYNC Again.**\n",
+                  uuid_str);
+  return 0;
+}
+#endif
+
 static void on_prov_failed(const struct gecko_msg_mesh_prov_provisioning_failed_evt_t *evt)
 {
   char uuid_str[33] = { 0 };
   cbuf2str((char *)evt->uuid.data, 16, 0, uuid_str, 33);
+
+#if !defined(UID_458729_FIX) || (UID_458729_FIX == 0)
+  /* For debugging the issue that with reason set to 7, the device actually gets
+   * provisioned and added to the device database */
+  if (evt->reason == 7) {
+#if 0
+    __debug_list_nodes(evt->uuid.data);
+    exit(0);
+#endif
+    if (0 == prov_failed_wa(evt)) {
+      return;
+    }
+  }
+#endif
+
   LOGE("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
   bt_shell_printf("%s Provisioned FAIL, reason[%u]\n", uuid_str, evt->reason);
+
+  stat_add_failed();
   /* Remove from cache. */
   rmcached(get_mng(), evt->uuid.data);
   if (scan_need_recover) {

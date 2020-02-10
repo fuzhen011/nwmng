@@ -30,6 +30,7 @@
 #include "socket_handler.h"
 #include "gecko_bglib.h"
 #include "dev_config.h"
+#include "stat.h"
 /* Defines  *********************************************************** */
 /*
  * Default priority for taking actions: Adding > Removing > Blacklisting
@@ -191,6 +192,7 @@ static void set_mng_state(void)
     if (mng.status.free_mode < 2) {
       clm_set_scan(0);
     }
+    stat_add_end();
 
     if (g_list_length(mng.lists.config) || mng.cache.config.used) {
       /* configuring in progress after adding devices, switch directly */
@@ -202,11 +204,13 @@ static void set_mng_state(void)
       return;
     }
     /* All nodes have been configured properly */
+    stat_config_end();
   } else if (mng.state == removing_devices_em) {
     if (g_list_length(mng.lists.rm) || mng.cache.config.used) {
       return;
     }
     /* All RM set nodes have been removed properly */
+    stat_rm_end();
   } else if (mng.state == blacklisting_devices_em) {
     if (g_list_length(mng.lists.rm) || mng.cache.bl.state != bl_idle) {
       return;
@@ -224,6 +228,7 @@ static void set_mng_state(void)
         if (mng.status.free_mode == 0) {
           clm_set_scan(1);
         }
+        stat_add_start();
         mng.state = adding_devices_em;
         loaded = true;
       } else if (g_list_length(mng.lists.config)) {
@@ -255,6 +260,7 @@ static void set_mng_state(void)
     mng.state = configured;
     LOGM("Sync[%s] Done\n", mng.status.seq.prios);
     bt_shell_printf("Sync[%s] Done\n", mng.status.seq.prios);
+    cli_print_stat(get_stat());
   }
 }
 
@@ -267,6 +273,7 @@ void *mng_mainloop(void *p)
     bgevt_dispenser();
     switch (mng.state) {
       case starting:
+        stat_reset();
         if (file_modified(NW_NODES_CFG_FILE)) {
           load_cfg_file(NW_NODES_CFG_FILE, 0);
         } else {
@@ -288,6 +295,7 @@ void *mng_mainloop(void *p)
     }
     set_mng_state();
     busy |= models_loop(&mng);
+    demo_run();
     if (!busy) {
       usleep(10 * 1000);
     }

@@ -12,6 +12,7 @@
 #include "logging.h"
 #include "cli.h"
 #include "utils.h"
+#include "stat.h"
 /* Defines  *********************************************************** */
 enum {
   type_config,
@@ -128,16 +129,17 @@ const char *state_names[] = {
   "Getting DCD",
   "Adding App Key(s)",
   "Binding App Key(s)",
-  "Set Model Publication Address",
-  "Add Model Subscription Address",
+  "Set Model Pub Address",
+  "Add Model Sub Address",
   "Set TTL/Proxy/Friend/Relay/Nettx",
   "Configuration End",
   "Remove Node",
   "Remove Node End"
 };
 
+#define MAX_STATE_NAME_LEN  sizeof("Set TTL/Proxy/Friend/Relay/Nettx")
 /* Static Functions Declaractions ************************************* */
-static int config_engine(void);
+static int config_engine(mng_t *mng);
 static inline void __cache_reset(config_cache_t *c)
 {
   memset(c, 0, sizeof(config_cache_t));
@@ -252,19 +254,19 @@ static void __cache_item_load(mng_t *mng,
   config_cache_t * cache = &mng->cache.config.cache[ofs];
 
   /* TODO: needed? */
-  __cache_reset_idx(ofs);
+  /* __cache_reset_idx(ofs); */
 
   cache->node = node;
   if (type == type_config) {
     cache->state = provisioned_em;
     cache->next_state = get_dcd_em;
-    /* TODO:parseFeatures(&cache->features, &pconfig->pNodes[nodeId]); */
-    LOGM("Node[%x]: Configuring Started\n", node->addr);
   } else if (type == type_rm) {
     cache->state = end_em;
     cache->next_state = rm_em;
-    LOGM("Node[%x]: Removing Started\n", node->addr);
   }
+  LOGM("Node[0x%04x]: %s Started\n",
+       node->addr,
+       type == type_config ? "Configuring" : "Removing");
   BIT_SET(mng->cache.config.used, ofs);
 }
 
@@ -304,20 +306,22 @@ bool acc_loop(void *p)
   }
   mng_t *mng = (mng_t *)p;
   if (mng->state == removing_devices_em) {
-    /* TODO: Load the rm nodes */
     cnt = __caches_load(mng, type_rm);
+    stat_rm_start();
     if (cnt) {
       LOGM("Loaded %d Nodes to Remove\n", cnt);
     }
   } else if (mng->state == adding_devices_em || mng->state == configuring_devices_em) {
     cnt = __caches_load(mng, type_config);
+    stat_config_start();
     if (cnt) {
       LOGM("Loaded %d Nodes to Config\n", cnt);
     }
+    stat_config_loading_record(mng);
   } else {
     return false;
   }
-  return config_engine();
+  return config_engine(mng);
 }
 
 static acc_state_t *as_get(int state)
@@ -344,7 +348,7 @@ int to_next_state(config_cache_t *cache)
     nas = as_get(cache->next_state);
   }
 
-  LOGV("Node[%x]: Exiting from %s State\n",
+  LOGM("Node[0x%04x]: End   - [%s]\n",
        cache->node->addr,
        state_names[cache->state]);
   if (as && as->exit) {
@@ -363,7 +367,7 @@ int to_next_state(config_cache_t *cache)
   }
 
   while (nas) {
-    LOGV("Node[%x]: Try to Enter %s State\n",
+    LOGV("Node[0x%04x]: Try to Enter %s State\n",
          cache->node->addr,
          state_names[nas->state]);
     ret = nas->entry(cache, nas->guard);
@@ -373,7 +377,7 @@ int to_next_state(config_cache_t *cache)
         cache->state = nas->state;
         cache->next_state = nas->state;
         transitioned = 1;
-        LOGV("Node[%x]: Enter %s State Success\n",
+        LOGM("Node[0x%04x]: Start - [%s]\n",
              cache->node->addr,
              state_names[nas->state]);
         break;
@@ -394,12 +398,11 @@ int to_next_state(config_cache_t *cache)
   return transitioned;
 }
 
-static int config_engine(void)
+static int config_engine(mng_t *mng)
 {
   int i, busy = 0;
   int ret = 0;
   acc_state_t *as = NULL;
-  mng_t *mng = get_mng();
   config_cache_t *cache = NULL;
   lbitmap_t usedmap;
 
@@ -416,18 +419,28 @@ static int config_engine(void)
      */
     if (cache->expired && (time(NULL) > cache->expired) && as->retry) {
       ret = as->retry(cache, on_guard_timer_expired_em);
+      if (mng->state == removing_devices_em) {
+        stat_rm_retry();
+      } else {
+        stat_config_retry();
+      }
       if (ret != asr_suc) {
         LOGE("Retry on Expired Returns %d\n", ret);
       }
     } else if (OOM(cache) && as->retry) {
       ASSERT(!WAIT_RESPONSE(cache));
       ret = as->retry(cache, on_oom_em);
+      if (mng->state == removing_devices_em) {
+        stat_rm_retry();
+      } else {
+        stat_config_retry();
+      }
       if (ret == asr_oom) {
         LOGE("OOM Once Again, **NEED BACKOFF MECHANISM**\n");
       } else if (ret != asr_suc) {
         LOGE("Retry on OOM Returns %d\n", ret);
       } else {
-        LOGD("Node[%x]: OOM Recovery Once.\n", cache->node->addr);
+        LOGD("Node[0x%04x]: OOM Recovery Once.\n", cache->node->addr);
       }
     }
 
@@ -549,6 +562,11 @@ int dev_config_hdr(const struct gecko_cmd_packet *e)
   /* Drived by timeout event */
   if (!ret && !WAIT_RESPONSE(cache) && EVER_RETRIED(cache) && state->retry) {
     ret |= state->retry(cache, on_timeout_em);
+    if (get_mng()->state == removing_devices_em) {
+      stat_rm_retry();
+    } else {
+      stat_config_retry();
+    }
   } else if (ret == asr_unspec) {
     return 0;
   }

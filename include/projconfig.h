@@ -10,8 +10,13 @@
 extern "C"
 {
 #endif
-
+/*
+ * General project configurations.
+ */
 #define DEMO_EN
+#ifndef STAT
+#define STAT
+#endif
 
 #define PROJ_VERSION_MAJOR  1
 #define PROJ_VERSION_MINOR  0
@@ -24,11 +29,14 @@ extern "C"
 #define PROJ_DIR  "/Users/zhfu/work/projs/nwmng/"
 #define PORT      "/dev/tty.usbmodem0004400502021"
 /* #define PORT      "/dev/tty.usbmodem0004400531901" */
-#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json"
-#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json"
+/* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json" */
+/* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json" */
+
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/nwk.json"
 #else
 #define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
-#define PORT      "/dev/ttyACM2"
+#define PORT      "/dev/ttyACM3"
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/nwk.json"
 #endif
@@ -45,7 +53,7 @@ extern "C"
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions
  * definition on the NCP target side
  */
-#define MAX_PROV_SESSIONS 2
+#define MAX_PROV_SESSIONS 4
 /*
  * NOTE: Make sure this value is NOT greater than the Max Foundation Client Cmds
  * definition on the NCP target side

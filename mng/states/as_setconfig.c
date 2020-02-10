@@ -12,46 +12,46 @@
 #include "logging.h"
 /* Defines  *********************************************************** */
 #define SET_TTL_MSG \
-  "Node[%x]:  --- Set [TTL(%d)]\n"
+  "Node[0x%04x]:  --- Set [TTL(%d)]\n"
 #define SET_TTL_SUC_MSG \
-  "Node[%x]:  --- Set [TTL(%d)] SUCCESS\n"
+  "Node[0x%04x]:  --- Set [TTL(%d)] SUCCESS\n"
 #define SET_TTL_FAIL_MSG \
-  "Node[%x]:  --- Set [TTL(%d)] FAILED, Err <0x%04x>\n"
+  "Node[0x%04x]:  --- Set [TTL(%d)] FAILED, Err <0x%04x>\n"
 
 #define SET_FRIEND_MSG \
-  "Node[%x]:  --- Set [Friend(%s)]\n"
+  "Node[0x%04x]:  --- Set [Friend(%s)]\n"
 #define SET_FRIEND_SUC_MSG \
-  "Node[%x]:  --- Set [Friend(%s)] SUCCESS\n"
+  "Node[0x%04x]:  --- Set [Friend(%s)] SUCCESS\n"
 #define SET_FRIEND_FAIL_MSG \
-  "Node[%x]:  --- Set [Friend(%s)] FAILED, Err <0x%04x>\n"
+  "Node[0x%04x]:  --- Set [Friend(%s)] FAILED, Err <0x%04x>\n"
 
 #define SET_RELAY_MSG \
-  "Node[%x]:  --- Set [Relay(%s)]\n"
+  "Node[0x%04x]:  --- Set [Relay(%s)]\n"
 #define SET_RELAY_SUC_MSG \
-  "Node[%x]:  --- Set [Relay(%s)] SUCCESS\n"
+  "Node[0x%04x]:  --- Set [Relay(%s)] SUCCESS\n"
 #define SET_RELAY_FAIL_MSG \
-  "Node[%x]:  --- Set [Relay(%s)] FAILED, Err <0x%04x>\n"
+  "Node[0x%04x]:  --- Set [Relay(%s)] FAILED, Err <0x%04x>\n"
 
 #define SET_PROXY_MSG \
-  "Node[%x]:  --- Set [Proxy(%s)]\n"
+  "Node[0x%04x]:  --- Set [Proxy(%s)]\n"
 #define SET_PROXY_SUC_MSG \
-  "Node[%x]:  --- Set [Proxy(%s)] SUCCESS\n"
+  "Node[0x%04x]:  --- Set [Proxy(%s)] SUCCESS\n"
 #define SET_PROXY_FAIL_MSG \
-  "Node[%x]:  --- Set [Proxy(%s)] FAILED, Err <0x%04x>\n"
+  "Node[0x%04x]:  --- Set [Proxy(%s)] FAILED, Err <0x%04x>\n"
 
 #define SET_NETTX_MSG \
-  "Node[%x]:  --- Set [nettx:count-interval(%d-%dms)]\n"
+  "Node[0x%04x]:  --- Set [nettx:count-interval(%d-%dms)]\n"
 #define SET_NETTX_SUC_MSG \
-  "Node[%x]:  --- Set [nettx:count-interval(%d-%dms)] SUCCESS\n"
+  "Node[0x%04x]:  --- Set [nettx:count-interval(%d-%dms)] SUCCESS\n"
 #define SET_NETTX_FAIL_MSG \
-  "Node[%x]:  --- Set [nettx:count-interval(%d-%dms)] FAILED, Err <0x%04x>\n"
+  "Node[0x%04x]:  --- Set [nettx:count-interval(%d-%dms)] FAILED, Err <0x%04x>\n"
 
 #define SET_SNB_MSG \
-  "Node[%x]:  --- Set [SNB(%s)]\n"
+  "Node[0x%04x]:  --- Set [SNB(%s)]\n"
 #define SET_SNB_SUC_MSG \
-  "Node[%x]:  --- Set [SNB(%s)] SUCCESS\n"
+  "Node[0x%04x]:  --- Set [SNB(%s)] SUCCESS\n"
 #define SET_SNB_FAIL_MSG \
-  "Node[%x]:  --- Set [SNB(%s)] FAILED, Err <0x%04x>\n"
+  "Node[0x%04x]:  --- Set [SNB(%s)] FAILED, Err <0x%04x>\n"
 
 #define ELEMENT_ITERATOR_INDEX  0
 #define MODEL_ITERATOR_INDEX  1
@@ -189,7 +189,6 @@ static int __setconfig(config_cache_t *cache, mng_t *mng)
     err_set_to_end(cache, retval, bgapi_em);
     return asr_bgapi;
   } else {
-    /* TODO: Uncomment below line to print the ONCE_P */
     /* set_configs_print_state(which, once_em, cache, pconfig, 0); */
     WAIT_RESPONSE_SET(cache);
     cache->cc_handle = handle;

@@ -85,7 +85,7 @@ const command_t commands[] = {
     "Synchronize network configuration" },
   { "list", NULL, clicb_list,
     "List all devices in the database" },
-  { "info", "[addr...]", clicb_info,
+  { "info", "[all/addr...]", clicb_info,
     "Show the node(s) information in the database",
     NULL, NULL, vaget_addrs },
   { "freemode", "[on/off]", clicb_freemode,
@@ -125,9 +125,7 @@ const command_t commands[] = {
 };
 
 static wordexp_t args;
-const size_t cli_cmd_num = 3;
 static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
-
 static char *line = NULL;
 static int reset = 0;
 
@@ -165,7 +163,7 @@ static err_t _vaget_lights_addrs(void *vap,
   return ec_success;
 }
 
-static err_t vaget_onoff_lights_addrs(void *vap,
+static inline err_t vaget_onoff_lights_addrs(void *vap,
                                       int inbuflen,
                                       int *ulen,
                                       int *rlen)
@@ -173,7 +171,7 @@ static err_t vaget_onoff_lights_addrs(void *vap,
   return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, onoff_support);
 }
 
-static err_t vaget_lightness_lights_addrs(void *vap,
+static inline err_t vaget_lightness_lights_addrs(void *vap,
                                           int inbuflen,
                                           int *ulen,
                                           int *rlen)
@@ -181,7 +179,7 @@ static err_t vaget_lightness_lights_addrs(void *vap,
   return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, lightness_support);
 }
 
-static err_t vaget_ctl_lights_addrs(void *vap,
+static inline err_t vaget_ctl_lights_addrs(void *vap,
                                     int inbuflen,
                                     int *ulen,
                                     int *rlen)

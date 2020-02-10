@@ -39,7 +39,8 @@ const char *demo_cmds[] = {
   "onoff off 0xc022",
   "onoff off 0xc021",
 };
-#else
+#endif
+#if 0
 const char *demo_cmds[] = {
   "lightness 1 0xc021",
   "lightness 50 0xc021",
@@ -78,6 +79,15 @@ const char *demo_cmds[] = {
   "onoff off 0xc030",
 };
 #endif
+
+const char *demo_cmds[] = {
+  "lightness 0 0xc030",
+  "lightness 40 0xc030",
+  "lightness 70 0xc030",
+  "lightness 100 0xc030",
+  "lightness 70 0xc030",
+  "lightness 40 0xc030",
+};
 static const size_t cmds_len = ARR_LEN(demo_cmds);
 
 #define DEMO_INTERVAL 1
@@ -97,6 +107,7 @@ static uint8_t tid = 0;
 static err_t clicb_perc_set(int argc, char *argv[], uint8_t type);
 
 #ifdef DEMO_EN
+#if 0
 err_t clicb_demo(int argc, char *argv[])
 {
   int onoff = 1;
@@ -119,6 +130,22 @@ err_t clicb_demo(int argc, char *argv[])
 
   return ec_success;
 }
+#else
+err_t clicb_demo(int argc, char *argv[])
+{
+  if (argc > 1) {
+    if (!strcmp(argv[1], "on")) {
+      demo_start(1);
+    } else if (!strcmp(argv[1], "off")) {
+      demo_start(0);
+    } else {
+      return err(ec_param_invalid);
+    }
+  }
+
+  return ec_success;
+}
+#endif
 
 void check_demo(void)
 {
@@ -264,7 +291,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
   return e;
 }
 
-static uint16_t send_onoff(uint16_t addr, uint8_t onoff)
+uint16_t send_onoff(uint16_t addr, uint8_t onoff)
 {
   return gecko_cmd_mesh_generic_client_set(0x1001,
                                            0,
@@ -279,7 +306,7 @@ static uint16_t send_onoff(uint16_t addr, uint8_t onoff)
                                            &onoff)->result;
 }
 
-static uint16_t send_lightness(uint16_t addr, uint8_t lightness)
+uint16_t send_lightness(uint16_t addr, uint8_t lightness)
 {
   uint16_t lvl = lightness * 0xffff / 100;
   return gecko_cmd_mesh_generic_client_set(0x1302,
@@ -299,7 +326,7 @@ static uint16_t send_lightness(uint16_t addr, uint8_t lightness)
 // Maximum color temperature 20000K
 #define TEMPERATURE_MAX      0x4e20
 
-static uint16_t send_ctl(uint16_t addr, uint8_t ctl)
+uint16_t send_ctl(uint16_t addr, uint8_t ctl)
 {
   uint8_t buf[4] = { 0 };
   uint16_t lvl = TEMPERATURE_MIN + (ctl * ctl / 100) * (TEMPERATURE_MAX - TEMPERATURE_MIN) / 100;
@@ -345,11 +372,13 @@ bool models_loop(mng_t *mng)
     if (ret == bg_err_out_of_memory) {
       return true;
     }
-    LOGE("Model Set to Node[%x] Error[%x].\n", *(uint16_t *)item->data, ret);
+    LOGE("Model Set to Node[0x%04x] Error[0x%04x].\n", *(uint16_t *)item->data, ret);
   } else {
+#if 0
     cli_print_modelset_done(*(uint16_t *)item->data,
                             mng->cache.model_set.type,
                             mng->cache.model_set.value);
+#endif
   }
 
   mng->cache.model_set.nodes = g_list_remove_link(mng->cache.model_set.nodes, item);

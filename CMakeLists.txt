@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.6)
 
 if(APPLE)
-  set(CMAKE_C_COMPILER gcc-9)
+  # set(CMAKE_C_COMPILER gcc-9)
+  set(CMAKE_C_COMPILER clang)
 else()
   set(CMAKE_C_COMPILER gcc)
 endif()
@@ -30,7 +31,7 @@ endif()
 
 set(
   CMAKE_C_FLAGS
-  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
+  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -Wno-missing-braces -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
   )
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g3 -DDEBUG=1")
 set(CMAKE_C_FLAGS_RELEASE "-Os -DDEBUG=0")
@@ -57,11 +58,13 @@ set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c
 set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/models.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/demo.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_add.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_config.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/dev_bl.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/bgevt_hdr.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/nwk.c
+    ${CMAKE_CURRENT_LIST_DIR}/mng/stat.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_getdcd.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_addappkey.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_bindappkey.c

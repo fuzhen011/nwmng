@@ -948,15 +948,144 @@ static err_t open_json_file(int cfg_fd, bool autoflush)
   return e;
 }
 
+static inline err_t __new_prov_file(void)
+{
+  json_object *tmp, *arr, *ak_arr, *ak;
+  if (jcfg.prov.gen.root) {
+    json_cfg_close(PROV_CFG_FILE);
+  }
+
+  jcfg.prov.gen.root = json_object_new_object();
+  ASSERT(jcfg.prov.gen.root);
+
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_ADDR,
+                         json_object_new_string("0x0000"));
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_IVI,
+                         json_object_new_string("0x00000000"));
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_TTL,
+                         json_object_new_string("0x09"));
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_SYNC_TIME,
+                         json_object_new_string("0x00000000"));
+  /* Tx Parameters */
+  tmp = json_object_new_object();
+  json_object_object_add(tmp,
+                         STR_CNT,
+                         json_object_new_string("0x03"));
+  json_object_object_add(tmp,
+                         STR_INTV,
+                         json_object_new_string("0x001E"));
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_TXP,
+                         tmp);
+  /* Config timeout */
+  tmp = json_object_new_object();
+  json_object_object_add(tmp,
+                         STR_TIMEOUT_NORMAL,
+                         json_object_new_string("0x1388"));
+  json_object_object_add(tmp,
+                         STR_TIMEOUT_LPN,
+                         json_object_new_string("0x3A98"));
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_TIMEOUT,
+                         tmp);
+
+  /* Subnets */
+  arr = json_object_new_array();
+
+  /* Netkey and Appkey */
+  tmp = json_object_new_object();
+  json_object_object_add(tmp,
+                         STR_REFID,
+                         json_object_new_string("0x0000"));
+  json_object_object_add(tmp,
+                         STR_ID,
+                         json_object_new_string("0x0000"));
+  json_object_object_add(tmp,
+                         STR_VALUE,
+                         json_object_new_string("9ddb055fdbe5e0320b56b5c192cc5683"));
+  json_object_object_add(tmp,
+                         STR_DONE,
+                         json_object_new_string("0x00"));
+
+  ak_arr = json_object_new_array();
+  ak = json_object_new_object();
+  json_object_object_add(ak,
+                         STR_REFID,
+                         json_object_new_string("0x0000"));
+  json_object_object_add(ak,
+                         STR_ID,
+                         json_object_new_string("0x0000"));
+  json_object_object_add(ak,
+                         STR_VALUE,
+                         json_object_new_string("9ddb055fdbe5e0320b56b5c192cc5683"));
+  json_object_object_add(ak,
+                         STR_DONE,
+                         json_object_new_string("0x00"));
+  json_object_array_add(ak_arr, ak);
+
+  json_object_object_add(tmp,
+                         STR_APPKEY,
+                         ak_arr);
+
+  json_object_array_add(arr, tmp);
+
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_SUBNETS,
+                         arr);
+
+  return json_cfg_flush(PROV_CFG_FILE);
+}
+
+static inline err_t __new_node_cfg_file(void)
+{
+  json_object *tmp, *arr;
+  if (jcfg.nw.gen.root) {
+    json_cfg_close(NW_NODES_CFG_FILE);
+  }
+
+  jcfg.nw.gen.root = json_object_new_object();
+  ASSERT(jcfg.nw.gen.root);
+
+  json_object_object_add(jcfg.nw.gen.root,
+                         STR_SYNC_TIME,
+                         json_object_new_string("0x00000000"));
+
+  /* Subnets */
+  arr = json_object_new_array();
+
+  /* Primary Subnet */
+  tmp = json_object_new_object();
+  json_object_object_add(tmp,
+                         STR_REFID,
+                         json_object_new_string("0x0000"));
+  json_object_object_add(tmp,
+                         STR_NODES,
+                         json_object_new_array());
+
+  json_object_array_add(arr, tmp);
+
+  json_object_object_add(jcfg.nw.gen.root,
+                         STR_SUBNETS,
+                         arr);
+
+  json_object_object_add(jcfg.nw.gen.root,
+                         STR_BACKLOG,
+                         json_object_new_array());
+
+  return json_cfg_flush(NW_NODES_CFG_FILE);
+}
+
 static err_t new_json_file(int cfg_fd)
 {
   err_t e = ec_param_invalid;
   if (cfg_fd == PROV_CFG_FILE) {
-    /* TODO */
-    e = ec_success;
+    e = __new_prov_file();
   } else if (cfg_fd == NW_NODES_CFG_FILE) {
-    /* TODO */
-    e = ec_success;
+    e = __new_node_cfg_file();
   }
   return err(e);
 }
@@ -1180,6 +1309,9 @@ static void __load_node_arr(json_object *pnode, bool backlog)
 {
   bool add;
   err_t e;
+  if (!pnode) {
+    return;
+  }
   json_array_foreach(i, num, pnode)
   {
     add = false;
