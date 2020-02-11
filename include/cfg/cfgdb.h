@@ -28,12 +28,15 @@ enum {
   max_invalid_em
 };
 
-enum {
-  unknown,
-  onoff_support,
-  lightness_support,
-  ctl_support,
-};
+/* Lighting bits */
+#define ONOFF_SV_BIT  (1UL << 0)
+#define LIGHTNESS_SV_BIT  (1UL << 1)
+#define CTL_SV_BIT  (1UL << 2)
+/* Sensor bits */
+#define SENSOR_SV_BIT  (1UL << 3)
+
+#define KIND_LIGHTING (ONOFF_SV_BIT | LIGHTNESS_SV_BIT | CTL_SV_BIT)
+#define KIND_SENSOR (SENSOR_SV_BIT)
 
 typedef struct {
   uint8_t cnt;
@@ -109,7 +112,7 @@ typedef struct {
   uint8_t *tmpl;
   mesh_config_t config;
   struct {
-    /* enum value - see {ctl_support} */
+    /* enum value - see {CTL_SV_BIT} */
     uint8_t func;
     lbitmap_t venmod_supt;
   }models;
@@ -244,6 +247,8 @@ uint16list_t *get_node_addrs(void);
 /**
  * @brief get_node_addrs - get the list of light nodes in the provisioned
  * database, calling function needs to free the returned list if not NULL.
+ *
+ * @param func - bit mask for feature @{ONOFF_SV_BIT}
  *
  * @return list of nodes, or NULL if empty
  */

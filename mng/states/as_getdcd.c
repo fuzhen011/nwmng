@@ -18,27 +18,28 @@
 
 #define LIGHT_LIGHTNESS_SERVER_MDID     0x1300
 #define LIGHT_CTL_SERVER_MDID     0x1303
+#define SENSOR_SERVER_MDID  0x1100
 
 #define CONFIGURATION_SERVER_MDID       0x0000
 #define CONFIGURATION_CLIENT_MDID       0x0001
 #define HEALTH_SERVER_MDID              0x0002
 #define HEALTH_CLIENT_MDID              0x0003
 
-#define ONCE_P(cache)                                    \
-  do {                                                   \
+#define ONCE_P(cache)                                        \
+  do {                                                       \
     LOGV("Node[0x%04x]:  --- Get DCD\n", cache->node->addr); \
   } while (0)
 
-#define SUC_P(cache)                                             \
-  do {                                                           \
+#define SUC_P(cache)                                                 \
+  do {                                                               \
     LOGD("Node[0x%04x]:  --- Get DCD SUCCESS\n", cache->node->addr); \
   } while (0)
 
-#define FAIL_P(cache, err)                                \
-  do {                                                    \
+#define FAIL_P(cache, err)                                    \
+  do {                                                        \
     LOGE("Node[0x%04x]:  --- Get DCD Failed, Err <0x%04x>\n", \
-         cache->node->addr,                               \
-         err);                                            \
+         cache->node->addr,                                   \
+         err);                                                \
   } while (0)
 
 /* Global Variables *************************************************** */
@@ -255,14 +256,13 @@ static void __dcd_store(const uint8_t *data,
       for (uint8_t ms = 0; ms < dcd->elems[e].sigm_cnt; ms++) {
         uint16_t mdid = BUILD_UINT16(data[i], data[i + 1]);
         if (mdid == GENERIC_ONOFF_SERVER_MDID) {
-          cache->node->models.func = MAX(cache->node->models.func,
-                                         onoff_support);
+          cache->node->models.func |= ONOFF_SV_BIT;
         } else if (mdid == LIGHT_LIGHTNESS_SERVER_MDID) {
-          cache->node->models.func = MAX(cache->node->models.func,
-                                         lightness_support);
+          cache->node->models.func |= LIGHTNESS_SV_BIT;
         } else if (mdid == LIGHT_CTL_SERVER_MDID) {
-          cache->node->models.func = MAX(cache->node->models.func,
-                                         ctl_support);
+          cache->node->models.func |= CTL_SV_BIT;
+        } else if (mdid == SENSOR_SERVER_MDID) {
+          cache->node->models.func |= SENSOR_SV_BIT;
         }
 #if 0
         if (mdid == GENERIC_ONOFF_CLIENT_MDID) {

@@ -203,7 +203,7 @@ err_t clicb_onoff(int argc, char *argv[])
   }
 
   if (argc == 2) {
-    uint16list_t *addrs = get_lights_addrs(onoff_support);
+    uint16list_t *addrs = get_lights_addrs(ONOFF_SV_BIT);
     if (!addrs) {
       return e;
     }
@@ -227,19 +227,19 @@ err_t clicb_onoff(int argc, char *argv[])
   }
 
   if (mng->cache.model_set.nodes) {
-    mng->cache.model_set.type = onoff_support;
+    mng->cache.model_set.type = ONOFF_SV_BIT;
   }
   return e;
 }
 
 err_t clicb_lightness(int argc, char *argv[])
 {
-  return clicb_perc_set(argc, argv, lightness_support);
+  return clicb_perc_set(argc, argv, LIGHTNESS_SV_BIT);
 }
 
 err_t clicb_ct(int argc, char *argv[])
 {
-  return clicb_perc_set(argc, argv, ctl_support);
+  return clicb_perc_set(argc, argv, CTL_SV_BIT);
 }
 
 static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
@@ -263,7 +263,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
   }
 
   if (argc == 2) {
-    uint16list_t *addrs = get_lights_addrs(onoff_support);
+    uint16list_t *addrs = get_lights_addrs(LIGHTNESS_SV_BIT);
     if (!addrs) {
       return e;
     }
@@ -360,9 +360,9 @@ bool models_loop(mng_t *mng)
     ASSERT(0);
   }
 
-  if (mng->cache.model_set.type == onoff_support) {
+  if (mng->cache.model_set.type == ONOFF_SV_BIT) {
     ret = send_onoff(*(uint16_t *)item->data, mng->cache.model_set.value);
-  } else if (mng->cache.model_set.type == lightness_support) {
+  } else if (mng->cache.model_set.type == LIGHTNESS_SV_BIT) {
     ret = send_lightness(*(uint16_t *)item->data, mng->cache.model_set.value);
   } else {
     ret = send_ctl(*(uint16_t *)item->data, mng->cache.model_set.value);
@@ -387,7 +387,7 @@ bool models_loop(mng_t *mng)
   if (!g_list_length(mng->cache.model_set.nodes)) {
     g_list_free(mng->cache.model_set.nodes);
     mng->cache.model_set.nodes = NULL;
-    mng->cache.model_set.type = unknown;
+    mng->cache.model_set.type = 0;
   }
   return false;
 }

@@ -28,11 +28,11 @@
 void cli_print_modelset_done(uint16_t addr, uint8_t type, uint8_t value)
 {
   char buf[TMP_BUF_LEN] = { 0 };
-  if (type == onoff_support) {
+  if (type == ONOFF_SV_BIT) {
     snprintf(buf, TMP_BUF_LEN, "Set 0x%04x OnOff -> %s\n", addr, value ? "ON" : "OFF");
   } else {
     snprintf(buf, TMP_BUF_LEN, "Set 0x%04x %s -> %d%%\n", addr,
-             type == lightness_support ? "Lightness" : "CTL",
+             type == LIGHTNESS_SV_BIT ? "Lightness" : "CTL",
              value);
   }
   bt_shell_printf("%s", buf);

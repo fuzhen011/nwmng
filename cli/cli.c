@@ -168,7 +168,7 @@ static inline err_t vaget_onoff_lights_addrs(void *vap,
                                       int *ulen,
                                       int *rlen)
 {
-  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, onoff_support);
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, ONOFF_SV_BIT);
 }
 
 static inline err_t vaget_lightness_lights_addrs(void *vap,
@@ -176,7 +176,7 @@ static inline err_t vaget_lightness_lights_addrs(void *vap,
                                           int *ulen,
                                           int *rlen)
 {
-  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, lightness_support);
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, LIGHTNESS_SV_BIT);
 }
 
 static inline err_t vaget_ctl_lights_addrs(void *vap,
@@ -184,7 +184,7 @@ static inline err_t vaget_ctl_lights_addrs(void *vap,
                                     int *ulen,
                                     int *rlen)
 {
-  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, ctl_support);
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, CTL_SV_BIT);
 }
 
 static err_t vaget_addrs(void *vap,

@@ -202,11 +202,6 @@ static inline err_t uint32_loader(const char *v, uint32_t *dest)
   return ec_success;
 }
 
-static inline err_t uint16list_loader(const char *v, uint16list_t *dest)
-{
-  return ec_success;
-}
-
 static inline uint8_t **pttl_from_fd(int cfg_fd, void *dest)
 {
   if (cfg_fd == NW_NODES_CFG_FILE) {
