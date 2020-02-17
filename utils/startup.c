@@ -390,7 +390,6 @@ static inline void _setprojargs(int argc, char *argv[])
     }
   }
 
-  /* TODO */
   /* Write back to the file */
   LOGD("startup args dump\n%s\n", buf);
   fclose(fp);

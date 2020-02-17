@@ -432,7 +432,6 @@ static gboolean load_lists(gpointer key, gpointer value, gpointer data)
   } else {
     /* Priority: Blacklist > remove > config */
     if (!in) {
-      /* TODO - set a flag */
       LOGE("CFG and DDB in NCP are Out Of Sync - **Factory Reset Required?**\n");
       LOGE("gecko_cmd_mesh_prov_ddb_get returns %x, Node Dump:\n", ret);
       list_nodes();
