@@ -74,7 +74,7 @@ static init_func_t initfs[] = {
 static const int inits_num = ARR_LEN(initfs);
 
 /* Static Functions Declaractions ************************************* */
-static int setprojargs(int argc, char *argv[]);
+static void setprojargs(int argc, char *argv[]);
 
 void startup(int argc, char *argv[])
 {
@@ -108,10 +108,7 @@ int cli_proc(int argc, char *argv[])
   signal(SIGTTIN, SIG_IGN);
   signal(SIGTTOU, SIG_IGN);
 #endif
-  if (0 != setprojargs(argc, argv)) {
-    LOGE("Set project args error.\n");
-    exit(EXIT_FAILURE);
-  }
+  setprojargs(argc, argv);
 
   ret = setjmp(initjmpbuf);
   LOGM("Program <VERSION - %d.%d.%d> Started Up, Initialization Bitmap - 0x%x\n",
@@ -162,16 +159,19 @@ int cli_proc(int argc, char *argv[])
  * @{ */
 static void print_usage(const char *name)
 {
-  fprintf(stderr, "Usage: %s -m mode [-p serial_port] [-b baud_rate]"
-                  " [-s server_domain_socket_path] [-e is_domain_socket_encrypted? 0/1]"
-                  " [-f XML_file_path]\n",
+  fprintf(stderr, "Usage: %s [-m mode]"
+                  " [-p serial_port]"
+                  " [-b baud_rate]"
+                  " [-s server_domain_socket_path]"
+                  " [-c client_domain_socket_path]"
+                  " [-e 0/1 - is_domain_socket_encrypted?]\n",
           name);
-  fprintf(stderr, "     -m mode                         s - secure NCP with UNIX domain socket, i - insecure NCP, connect to UART directly\n");
-  fprintf(stderr, "     -p serial_port                  Which UART port to connect to    - [Valid when in 'u' mode]\n");
-  fprintf(stderr, "     -b baud_rate                    UART baud rate                   - [Valid when in 'u' mode]\n");
-  fprintf(stderr, "     -s server_domain_socket_path    Server UNIX domain socket path   - [Valid when in 's' mode]\n");
-  fprintf(stderr, "     -c client_domain_socket_path    Client UNIX domain socket path   - [Valid when in 's' mode]\n");
-  fprintf(stderr, "     -e is_domain_socket_encrypted   1 - encrypted, 0 - not encrypted - [Valid when in 's' mode]\n");
+  fprintf(stderr, "       -m mode                        s - secure NCP with UNIX domain socket, i - insecure NCP, connect to UART directly\n");
+  fprintf(stderr, "       -p serial_port                 Which UART port to connect to    - [Only used when in insecure mode]\n");
+  fprintf(stderr, "       -b baud_rate                   UART baud rate                   - [Only used when in insecure mode]\n");
+  fprintf(stderr, "       -s server_domain_socket_path   Server UNIX domain socket path   - [Only used when in secure mode]\n");
+  fprintf(stderr, "       -c client_domain_socket_path   Client UNIX domain socket path   - [Only used when in secure mode]\n");
+  fprintf(stderr, "       -e is_domain_socket_encrypted  1 - encrypted, 0 - not encrypted - [Only used when in secure mode]\n");
   /* fprintf(stderr, "     -f XML_file_path                XML node configuration file path\n"); */
 
   exit(EXIT_FAILURE);
@@ -192,9 +192,10 @@ static void store_args(lbitmap_t *dirty, int argc, char *argv[])
         BIT_SET(*dirty, ARG_DIRTY_ENC);
         if (optarg[0] == 's') {
           projargs.enc = true;
-        } else if (optarg[0] == 'u') {
+        } else if (optarg[0] == 'i') {
           projargs.enc = false;
         } else {
+          printf("-m arg INVALID\n");
           print_usage(argv[0]);
           exit(0);
         }
@@ -223,6 +224,9 @@ static void store_args(lbitmap_t *dirty, int argc, char *argv[])
       /* connArg.configFilePath = optarg; */
       /* break; */
       default:
+        printf("Argument Not Realized\n");
+        print_usage(argv[0]);
+        exit(1);
         break;
     }
   }
@@ -232,6 +236,12 @@ static inline void __store_cache_config(const char *str, uint8_t key)
 {
   char *val;
   val = strchr(str, '=');
+  if (!val) {
+    printf("Format error in .config file.\n"
+           "Expected - key = value\n");
+    exit(1);
+  }
+  val++;
   while (*val == ' ') {
     val++;
   }
@@ -250,22 +260,22 @@ static inline void __store_cache_config(const char *str, uint8_t key)
     if (projargs.enc) {
       return;
     }
-    projargs.serial.br = atoi(optarg);
+    projargs.serial.br = atoi(val);
   } else if (key == ARG_DIRTY_SOCK_SRV) {
     if (!projargs.enc) {
       return;
     }
-    strcpy(projargs.sock.srv, optarg);
+    strcpy(projargs.sock.srv, val);
   } else if (key == ARG_DIRTY_SOCK_CLT) {
     if (!projargs.enc) {
       return;
     }
-    strcpy(projargs.sock.clt, optarg);
+    strcpy(projargs.sock.clt, val);
   } else if (key == ARG_DIRTY_SOCK_ENC) {
     if (!projargs.enc) {
       return;
     }
-    projargs.sock.enc = (bool)atoi(optarg);
+    projargs.sock.enc = (bool)atoi(val);
   }
 }
 
@@ -278,7 +288,15 @@ static inline void __append_cfg(char *buf, const char *key, const char *val)
   strcat(buf, line);
 }
 
-static int _setprojargs(int argc, char *argv[])
+#define CONFIG_CACHE_COMMENT  "###############################################################################\n" \
+                              "# ** Startup Config File **\n"                                                     \
+                              "#   - DO NOT EDIT IT MANUALLY IF YOU ARE NOT SURE ABOUT THE RULES\n"               \
+                              "#   - The first config entry should always be if the connection between NCP \n"    \
+                              "#     host and target is encrypted or not\n"                                       \
+                              "#   - For more information, look into the source code\n"                           \
+                              "###############################################################################\n"
+
+static inline void _setprojargs(int argc, char *argv[])
 {
   size_t len;
   FILE *fp;
@@ -286,7 +304,7 @@ static int _setprojargs(int argc, char *argv[])
   char tmp[LINE_MAX_LENGTH];
   char *buf = NULL;
 
-  if (argc > 1 && !strcmp(argv[1], "--help")) {
+  if (argc > 1 && (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h"))) {
     print_usage(argv[0]);
     exit(0);
   }
@@ -309,6 +327,9 @@ static int _setprojargs(int argc, char *argv[])
   if (len) {
     rewind(fp);
     while (NULL != fgets(tmp, LINE_MAX_LENGTH, fp)) {
+      if (tmp[0] == '#') {
+        continue;
+      }
       for (int i = 0; i < arg_keys_len; i++) {
         if (!strstr(tmp, arg_keys[i].value)) {
           continue;
@@ -318,25 +339,33 @@ static int _setprojargs(int argc, char *argv[])
           if (arg_keys[i].key == ARG_DIRTY_ENC) {
             char *val;
             val = strchr(tmp, '=');
+            if (!val) {
+              printf("Format error in .config file.\n"
+                     "Expected - key = value\n");
+              exit(1);
+            }
+            val++;
             while (*val == ' ') {
               val++;
             }
             *val = projargs.enc ? '1' : '0';
             strcat(buf, tmp);
+            BIT_CLR(dirty, ARG_DIRTY_ENC);
           }
-          BIT_CLR(dirty, ARG_DIRTY_ENC);
           break;
         }
         /* Not dirty, load it */
         strcat(buf, tmp);
         __store_cache_config(tmp, arg_keys[i].key);
       }
+      memset(tmp, 0, LINE_MAX_LENGTH);
     }
   }
 
   /* Sanity check */
   if ((projargs.enc && (!projargs.sock.srv[0] || !projargs.sock.clt[0]))
       || (!projargs.enc && (!projargs.serial.port[0] || !projargs.serial.br))) {
+    printf("**Arguments ERROR** - check the arguments and the .config file\n");
     print_usage(argv[0]);
     exit(1);
   }
@@ -346,7 +375,9 @@ static int _setprojargs(int argc, char *argv[])
       if (!IS_BIT_SET(dirty, arg_keys[i].key)) {
         continue;
       }
-      if (arg_keys[i].key == ARG_DIRTY_PORT) {
+      if (arg_keys[i].key == ARG_DIRTY_ENC) {
+        __append_cfg(buf, arg_keys[i].value, projargs.enc ? "1" : "0");
+      } else if (arg_keys[i].key == ARG_DIRTY_PORT) {
         __append_cfg(buf, arg_keys[i].value, projargs.serial.port);
       } else if (arg_keys[i].key == ARG_DIRTY_BR) {
         char v[20] = { 0 };
@@ -369,19 +400,39 @@ static int _setprojargs(int argc, char *argv[])
 
   /* TODO */
   /* Write back to the file */
-  return 0;
+  LOGD("startup args dump\n%s\n", buf);
+  fclose(fp);
+  fp = fopen(CONFIG_CACHE_FILE_PATH, "w");
+  fwrite(CONFIG_CACHE_COMMENT, strlen(CONFIG_CACHE_COMMENT), 1, fp);
+  fwrite(buf, strlen(buf), 1, fp);
+  fclose(fp);
+  char *r;
+  r = strrchr(projargs.serial.port, '\n');
+  if (r) {
+    *r = '\0';
+  }
+  r = strrchr(projargs.sock.clt, '\n');
+  if (r) {
+    *r = '\0';
+  }
+  r = strrchr(projargs.sock.srv, '\n');
+  if (r) {
+    *r = '\0';
+  }
+
+  projargs.initialized = true;
+  /* exit(0); */
 }
 
-static int setprojargs(int argc, char *argv[])
+static void setprojargs(int argc, char *argv[])
 {
-#if 0
-  /* TODO: Impl pending */
+#if 1
+  _setprojargs(argc, argv);
 #else
   projargs.enc = false;
   memcpy(projargs.serial.port, PORT, sizeof(PORT));
   projargs.serial.br = 115200;
   projargs.initialized = true;
-  return 0;
 #endif
 }
 

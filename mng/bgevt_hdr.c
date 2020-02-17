@@ -66,7 +66,7 @@ void conn_ncptarget(void)
   } else {
     uartClose();
     if (0 != uartOpen((int8_t *)arg->serial.port, arg->serial.br, 1, 100)) {
-      LOGE("Open %s failed. Exiting..\n", arg->serial.port);
+      LOGE("Open [%s] failed. Exiting..\n", arg->serial.port);
       exit(EXIT_FAILURE);
     }
   }
