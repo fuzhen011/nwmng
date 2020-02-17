@@ -115,6 +115,10 @@ const command_t commands[] = {
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
     "Set the color temperature of a light", NULL, NULL, vaget_ctl_lights_addrs },
 
+  /* Sensor Control Commands */
+  /* {"sensor_set", "[cadence/setting]"}, */
+  /* {"sensor_get", "[descriptor/cadence/setting/column/series]"}, */
+
   /* Debug Commands */
   { "status", NULL, clicb_status,
     "Print the device status" },
