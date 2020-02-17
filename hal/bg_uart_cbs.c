@@ -14,13 +14,14 @@
 #include "utils.h"
 #include "uart.h"
 #include "socket_handler.h"
+#include "startup.h"
 
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
-static bguart_t bguart = { -1, NULL, NULL, NULL };
+static bguart_t bguart = { NULL, NULL, NULL };
 
 /* Static Functions Declaractions ************************************* */
 static void on_message_send(uint32_t msg_len, uint8_t* msg_data)
@@ -35,31 +36,25 @@ static void on_message_send(uint32_t msg_len, uint8_t* msg_data)
   }
 }
 
-void bguart_init(bool enc,
-                 char *ser_sockpath,
-                 char *client_sockpath)
+void bguart_init(void)
 {
-  if (bguart.enc == -1 || (enc ^ (bool)bguart.enc)) {
-    bguart.enc = enc;
-    if (enc) {
-      ASSERT(ser_sockpath && client_sockpath);
-      bguart.bglib_input = onMessageReceive;
-      bguart.bglib_output = onMessageSend;
-      bguart.bglib_peek = messagePeek;
-      bguart.ser_sockpath = ser_sockpath;
-      bguart.client_sockpath = client_sockpath;
-    } else {
-      ASSERT(ser_sockpath);
-      bguart.bglib_input = uartRx;
-      bguart.bglib_output = on_message_send;
-      bguart.bglib_peek = uartRxPeek;
-      bguart.ser_sockpath = ser_sockpath;
-      bguart.client_sockpath = client_sockpath;
-    }
+  const proj_args_t *arg = getprojargs();
+  if (!arg->initialized) {
+    return;
+  }
+
+  if (arg->enc) {
+    bguart.bglib_input = onMessageReceive;
+    bguart.bglib_output = onMessageSend;
+    bguart.bglib_peek = messagePeek;
+  } else {
+    bguart.bglib_input = uartRx;
+    bguart.bglib_output = on_message_send;
+    bguart.bglib_peek = uartRxPeek;
   }
 }
 
 const bguart_t *get_bguart_impl(void)
 {
-  return bguart.enc == -1 ? NULL : &bguart;
+  return getprojargs()->initialized ? &bguart : NULL;
 }

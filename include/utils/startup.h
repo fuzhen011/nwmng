@@ -45,8 +45,12 @@ typedef struct {
   bool initialized;
   bool enc;
   union {
-    char port[FILE_PATH_MAX];
     struct {
+      uint32_t br;
+      char port[FILE_PATH_MAX];
+    }serial;
+    struct {
+      bool enc;
       char srv[FILE_PATH_MAX];
       char clt[FILE_PATH_MAX];
     }sock;

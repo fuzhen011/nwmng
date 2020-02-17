@@ -11,6 +11,7 @@
 extern "C"
 {
 #endif
+#include <stdbool.h>
 #include "err.h"
 
 #define COLOR_OFF "\x1B[0m"

@@ -15,17 +15,15 @@ extern "C"
 #include <stdbool.h>
 
 typedef struct {
-  int enc;
+  /* int enc; */
   void (*bglib_output)(uint32_t len1, uint8_t * data1);
   int32_t (*bglib_input)(uint32_t len1, uint8_t* data1);
   int32_t (*bglib_peek)(void);
-  char *ser_sockpath;
-  char *client_sockpath;
+  /* char *ser_sockpath; */
+  /* char *client_sockpath; */
 }bguart_t;
 
-void bguart_init(bool enc,
-                 char *ser_sockpath,
-                 char *client_sockpath);
+void bguart_init(void);
 const bguart_t *get_bguart_impl(void);
 
 #ifdef __cplusplus

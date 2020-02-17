@@ -166,10 +166,7 @@ err_t init_ncp(void *p)
     return err(ec_state);
   }
 
-  bguart_init(pg->enc,
-              pg->enc ? (char *)pg->sock.srv : (char *)pg->port,
-              pg->enc ? (char *)pg->sock.clt : NULL);
-
+  bguart_init();
   conn_ncptarget();
   sync_host_and_ncp_target();
   atexit(__ncp_exit);
@@ -391,7 +388,7 @@ void list_nodes(void)
 
   LOGM("%d Nodes in NCP Target DDB\n", cnt);
   while (cnt) {
-    if (get_bguart_impl()->enc) {
+    if (getprojargs()->enc) {
       poll_update(50);
     }
     struct gecko_cmd_packet *evt = gecko_peek_event();

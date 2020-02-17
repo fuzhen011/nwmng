@@ -41,6 +41,9 @@ extern "C"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/nwk.json"
 #endif
 
+#define CONFIG_CACHE_FILE_PATH  PROJ_DIR ".config"
+#define CONFIG_WCACHE_FILE_PATH  PROJ_DIR ".__config"
+
 #define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"
 #define CLI_LOG_FILE_PATH PROJ_DIR "logs/cli.log"
 

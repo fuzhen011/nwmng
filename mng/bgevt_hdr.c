@@ -20,6 +20,7 @@
 #include "mng.h"
 #include "nwk.h"
 #include "dev_config.h"
+#include "startup.h"
 
 /* Defines  *********************************************************** */
 BGLIB_DEFINE();
@@ -44,10 +45,12 @@ void conn_ncptarget(void)
    * Initialize BGLIB with our output function for sending messages.
    */
   const bguart_t *u = get_bguart_impl();
+  proj_args_t *arg = (proj_args_t *)getprojargs();
+
   BGLIB_INITIALIZE_NONBLOCK(u->bglib_output, u->bglib_input, u->bglib_peek);
-  if (u->enc) {
+  if (arg->enc) {
     /* if (interface_args_ptr->encrypted) { */
-    if (connect_domain_socket_server(u->ser_sockpath, u->client_sockpath, 1)) {
+    if (connect_domain_socket_server(arg->sock.srv, arg->sock.clt, 1)) {
       LOGE("Connection to encrypted domain socket unsuccessful. Exiting..\n");
       exit(EXIT_FAILURE);
     }
@@ -62,9 +65,9 @@ void conn_ncptarget(void)
     /* } */
   } else {
     uartClose();
-    if (0 != uartOpen((int8_t *)u->ser_sockpath, 115200, 1, 100)) {
-      LOGE("Open %s failed. Exiting..\n", u->ser_sockpath);
-      /* exit(EXIT_FAILURE); */
+    if (0 != uartOpen((int8_t *)arg->serial.port, arg->serial.br, 1, 100)) {
+      LOGE("Open %s failed. Exiting..\n", arg->serial.port);
+      exit(EXIT_FAILURE);
     }
   }
 }
@@ -76,7 +79,7 @@ void sync_host_and_ncp_target(void)
   ncp_sync = false;
   LOGM("Syncing NCP Host and Target\n");
   for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
-    if (get_bguart_impl()->enc) {
+    if (getprojargs()->enc) {
       poll_update(50);
     }
     p = gecko_peek_event();
@@ -130,7 +133,7 @@ void bgevt_dispenser(void)
 
   do {
     handled = false;
-    if (get_bguart_impl()->enc) {
+    if (getprojargs()->enc) {
       poll_update(50);
     }
     evt = gecko_peek_event();
