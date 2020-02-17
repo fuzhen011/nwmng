@@ -294,11 +294,7 @@ err_t logging_init(const char *path,
     return ec_success;
   }
   ret = access(path, R_OK | W_OK | F_OK);
-  if (-1 == ret) {
-    if (errno == ENOENT) {
-      fprintf(stderr, "%s not exists\n", path);
-      return err(ec_not_exist);
-    }
+  if (-1 == ret && errno != ENOENT) {
     fprintf(stderr, "The current user don 't have the RW permit? Error[%u]\n", errno);
     return err(ec_file_ope);
   }
