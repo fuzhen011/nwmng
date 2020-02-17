@@ -21,6 +21,15 @@
 #include "cfg.h"
 
 /* Defines  *********************************************************** */
+#define CONFIG_CACHE_COMMENT                                                   \
+  "########################################################################\n" \
+  "# ** Startup Config File **\n"                                              \
+  "#   - DO NOT EDIT IT MANUALLY IF YOU ARE NOT SURE ABOUT THE RULES\n"        \
+  "#   - The first config entry should always be if the connection between\n"  \
+  "#     NCP host and target is encrypted or not\n"                            \
+  "#   - For more information, look into the source code\n"                    \
+  "########################################################################\n"
+
 enum {
   ARG_DIRTY_ENC,
   ARG_DIRTY_PORT,
@@ -28,6 +37,7 @@ enum {
   ARG_DIRTY_SOCK_SRV,
   ARG_DIRTY_SOCK_CLT,
   ARG_DIRTY_SOCK_ENC,
+  ARG_MAX_INVALID
 };
 
 #define ARG_KEY_ISENC "Encryption"
@@ -38,25 +48,18 @@ enum {
 #define ARG_KEY_SOCK_ENC "Socket Encription"
 
 /* Global Variables *************************************************** */
-typedef struct {
-  uint8_t key;
-  const char *value;
-}arg_key_t;
-
 pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER;
 jmp_buf initjmpbuf;
 
 /* Static Variables *************************************************** */
-static const arg_key_t arg_keys[] = {
-  { ARG_DIRTY_ENC, ARG_KEY_ISENC },
-  { ARG_DIRTY_PORT, ARG_KEY_PORT },
-  { ARG_DIRTY_BR, ARG_KEY_BAUDRATE },
-  { ARG_DIRTY_SOCK_SRV, ARG_KEY_SOCK_SRV },
-  { ARG_DIRTY_SOCK_CLT, ARG_KEY_SOCK_CLT },
-  { ARG_DIRTY_SOCK_ENC, ARG_KEY_SOCK_ENC },
+static const char *arg_keys[] = {
+  ARG_KEY_ISENC,
+  ARG_KEY_PORT,
+  ARG_KEY_BAUDRATE,
+  ARG_KEY_SOCK_SRV,
+  ARG_KEY_SOCK_CLT,
+  ARG_KEY_SOCK_ENC,
 };
-
-static const int arg_keys_len = sizeof(arg_keys) / sizeof(arg_key_t);
 
 static struct {
   bool started;
@@ -220,9 +223,6 @@ static void store_args(lbitmap_t *dirty, int argc, char *argv[])
         BIT_SET(*dirty, ARG_DIRTY_SOCK_ENC);
         projargs.sock.enc = (bool)atoi(optarg);
         break;
-      /* case 'f': */
-      /* connArg.configFilePath = optarg; */
-      /* break; */
       default:
         printf("Argument Not Realized\n");
         print_usage(argv[0]);
@@ -288,14 +288,6 @@ static inline void __append_cfg(char *buf, const char *key, const char *val)
   strcat(buf, line);
 }
 
-#define CONFIG_CACHE_COMMENT  "###############################################################################\n" \
-                              "# ** Startup Config File **\n"                                                     \
-                              "#   - DO NOT EDIT IT MANUALLY IF YOU ARE NOT SURE ABOUT THE RULES\n"               \
-                              "#   - The first config entry should always be if the connection between NCP \n"    \
-                              "#     host and target is encrypted or not\n"                                       \
-                              "#   - For more information, look into the source code\n"                           \
-                              "###############################################################################\n"
-
 static inline void _setprojargs(int argc, char *argv[])
 {
   size_t len;
@@ -322,7 +314,7 @@ static inline void _setprojargs(int argc, char *argv[])
   fp = fopen(CONFIG_CACHE_FILE_PATH, "r");
   fseek(fp, 0, SEEK_END);
   len = ftell(fp);
-  buf = calloc(1, len + arg_keys_len * LINE_MAX_LENGTH);
+  buf = calloc(1, len + ARG_MAX_INVALID * LINE_MAX_LENGTH);
 
   if (len) {
     rewind(fp);
@@ -330,13 +322,13 @@ static inline void _setprojargs(int argc, char *argv[])
       if (tmp[0] == '#') {
         continue;
       }
-      for (int i = 0; i < arg_keys_len; i++) {
-        if (!strstr(tmp, arg_keys[i].value)) {
+      for (int i = 0; i < ARG_MAX_INVALID; i++) {
+        if (!strstr(tmp, arg_keys[i])) {
           continue;
         }
-        if (IS_BIT_SET(dirty, arg_keys[i].key)) {
+        if (IS_BIT_SET(dirty, i)) {
           /* Handle the encription or not here */
-          if (arg_keys[i].key == ARG_DIRTY_ENC) {
+          if (i == ARG_DIRTY_ENC) {
             char *val;
             val = strchr(tmp, '=');
             if (!val) {
@@ -356,7 +348,7 @@ static inline void _setprojargs(int argc, char *argv[])
         }
         /* Not dirty, load it */
         strcat(buf, tmp);
-        __store_cache_config(tmp, arg_keys[i].key);
+        __store_cache_config(tmp, i);
       }
       memset(tmp, 0, LINE_MAX_LENGTH);
     }
@@ -371,30 +363,30 @@ static inline void _setprojargs(int argc, char *argv[])
   }
 
   if (dirty) {
-    for (int i = 0; i < arg_keys_len && dirty; i++) {
-      if (!IS_BIT_SET(dirty, arg_keys[i].key)) {
+    for (int i = 0; i < ARG_MAX_INVALID && dirty; i++) {
+      if (!IS_BIT_SET(dirty, i)) {
         continue;
       }
-      if (arg_keys[i].key == ARG_DIRTY_ENC) {
-        __append_cfg(buf, arg_keys[i].value, projargs.enc ? "1" : "0");
-      } else if (arg_keys[i].key == ARG_DIRTY_PORT) {
-        __append_cfg(buf, arg_keys[i].value, projargs.serial.port);
-      } else if (arg_keys[i].key == ARG_DIRTY_BR) {
+      if (i == ARG_DIRTY_ENC) {
+        __append_cfg(buf, arg_keys[i], projargs.enc ? "1" : "0");
+      } else if (i == ARG_DIRTY_PORT) {
+        __append_cfg(buf, arg_keys[i], projargs.serial.port);
+      } else if (i == ARG_DIRTY_BR) {
         char v[20] = { 0 };
         sprintf(v, "%u", projargs.serial.br);
-        __append_cfg(buf, arg_keys[i].value, v);
-      } else if (arg_keys[i].key == ARG_DIRTY_SOCK_SRV) {
-        __append_cfg(buf, arg_keys[i].value, projargs.sock.srv);
-      } else if (arg_keys[i].key == ARG_DIRTY_SOCK_CLT) {
-        __append_cfg(buf, arg_keys[i].value, projargs.sock.clt);
-      } else if (arg_keys[i].key == ARG_DIRTY_SOCK_ENC) {
+        __append_cfg(buf, arg_keys[i], v);
+      } else if (i == ARG_DIRTY_SOCK_SRV) {
+        __append_cfg(buf, arg_keys[i], projargs.sock.srv);
+      } else if (i == ARG_DIRTY_SOCK_CLT) {
+        __append_cfg(buf, arg_keys[i], projargs.sock.clt);
+      } else if (i== ARG_DIRTY_SOCK_ENC) {
         char v[20] = { 0 };
         sprintf(v, "%d", projargs.sock.enc);
-        __append_cfg(buf, arg_keys[i].value, v);
+        __append_cfg(buf, arg_keys[i], v);
       } else {
         ASSERT(0);
       }
-      BIT_CLR(dirty, arg_keys[i].key);
+      BIT_CLR(dirty, i);
     }
   }
 
