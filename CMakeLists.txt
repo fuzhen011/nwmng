@@ -13,7 +13,6 @@ if(NOT CWD)
   set(CWD "${CMAKE_SOURCE_DIR}/")
 endif()
 
-# TODO: Use find_package
 set(RL_INC "/usr/local/Cellar/readline/8.0.1/include")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

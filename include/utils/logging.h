@@ -13,7 +13,6 @@ extern "C"
 #endif
 #include "err.h"
 
-/* TODO: clear below */
 #define COLOR_OFF "\x1B[0m"
 #define COLOR_BLACK "\x1B[0;30m"
 #define COLOR_RED "\x1B[0;31m"
@@ -89,8 +88,6 @@ typedef enum {
   LVL_VER
 }log_lvl_t;
 
-/* #define LOG_MINIMAL_LVL(lvl) ((lvl) + 1) */
-
 /**
  * @brief logging_init - initialization of logging
  *
@@ -102,7 +99,7 @@ typedef enum {
  * @return @ref{err_t}
  */
 err_t logging_init(const char *path,
-                   int tostdout,
+                   bool tostdout,
                    unsigned int lvl_threshold);
 
 /**

@@ -24,9 +24,6 @@ typedef struct {
   uint8_t uuid[16];
 }add_cache_t;
 
-/*
- * TODO: Need to clear below?
- */
 #define EVER_RETRIED_BIT_OFFSET 7
 #define WAITING_RESPONSE_BIT_OFFSET 6
 #define OOM_BIT_OFFSET  5
@@ -56,9 +53,7 @@ typedef struct {
     BIT_CLR((x)->flags, EVER_RETRIED_BIT_OFFSET); \
     (x)->remaining_retry = 0;                     \
   } while (0)
-/*
- * TODO: Need to clear above?
- */
+
 typedef struct {
   uint16_t vid;
   uint16_t mid;

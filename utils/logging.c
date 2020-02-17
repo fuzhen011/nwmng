@@ -8,6 +8,7 @@
 /* Includes *********************************************************** */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <time.h>
 #include <string.h>
@@ -17,7 +18,11 @@
 #include "logging.h"
 #include "utils.h"
 /* Defines  *********************************************************** */
-#define LOGBUF_SIZE 512
+#define LOGBUF_SIZE 1024
+
+#define FILE_NAME_LENGTH  10
+#define LINE_NAME_LENGTH  5
+#define FILE_LINE_LENGTH  (FILE_NAME_LENGTH + LINE_NAME_LENGTH + 3)
 
 #define LOGGING_DBG
 #ifdef LOGGING_DBG
@@ -32,7 +37,7 @@
 typedef struct {
   FILE *fp;
   log_lvl_t level;
-  int tostdout;
+  bool tostdout;
   size_t log_len;
   char *buf;
 }logcfg_t;
@@ -88,9 +93,6 @@ static err_t fill_time(char *str,
 
   return ec_success;
 }
-#define FILE_NAME_LENGTH  10
-#define LINE_NAME_LENGTH  5
-#define FILE_LINE_LENGTH  (FILE_NAME_LENGTH + LINE_NAME_LENGTH + 3)
 
 static err_t fill_file_line(const char *file_name,
                             unsigned int line,
@@ -201,25 +203,18 @@ err_t __log(const char *file_name,
   if (lvl > (int)lcfg.level) {
     return ec_success;
   }
-  lcfg.buf = calloc(LOGBUF_SIZE, 1);
+  lcfg.buf = calloc(1, LOGBUF_SIZE);
 
   ECG(ec_success,
       fill_time(lcfg.buf, LOGBUF_SIZE, &lcfg.log_len),
       out);
   ECG(ec_success,
-      fill_file_line(file_name,
-                     line,
-                     lcfg.buf,
-                     LOGBUF_SIZE,
-                     lcfg.log_len,
-                     &lcfg.log_len),
+      fill_file_line(file_name, line, lcfg.buf, LOGBUF_SIZE,
+                     lcfg.log_len, &lcfg.log_len),
       out);
   ECG(ec_success,
-      fill_lvl(lvl,
-               lcfg.buf,
-               LOGBUF_SIZE,
-               lcfg.log_len,
-               &lcfg.log_len),
+      fill_lvl(lvl, lcfg.buf, LOGBUF_SIZE,
+               lcfg.log_len, &lcfg.log_len),
       out);
 
   va_start(valist, fmt);
@@ -237,8 +232,10 @@ err_t __log(const char *file_name,
   }
 
   out:
-  free(lcfg.buf);
-  lcfg.buf = NULL;
+  if (lcfg.buf) {
+    free(lcfg.buf);
+    lcfg.buf = NULL;
+  }
   return e;
 }
 
@@ -290,7 +287,7 @@ static void log_welcome(void)
 }
 
 err_t logging_init(const char *path,
-                   int tostdout,
+                   bool tostdout,
                    unsigned int lvl_threshold)
 {
   int ret;
