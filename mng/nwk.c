@@ -18,6 +18,7 @@
 #include "bg_uart_cbs.h"
 #include "socket_handler.h"
 #include "generic_parser.h"
+#include "startup.h"
 
 /* Defines  *********************************************************** */
 
@@ -40,6 +41,9 @@ err_t nwk_init(void *p)
   }
 
   while (1) {
+    if (getprojargs()->enc) {
+      poll_update(50);
+    }
     evt = gecko_peek_event();
     if (NULL == evt
         || BGLIB_MSG_ID(evt->header) != gecko_evt_mesh_prov_initialized_id) {
@@ -163,8 +167,8 @@ static err_t on_initialized_config(struct gecko_msg_mesh_prov_initialized_evt_t 
   if (ein->networks == 0 && (mng->cfg->addr || mng->cfg->ivi)) {
     uint16_t ret = gecko_cmd_mesh_prov_initialize_network(mng->cfg->addr,
                                                           mng->cfg->ivi)->result;
-    if (bg_err_success != ret) {
-      LOGBGE("init network", ret);
+    if (!(bg_err_success == ret || bg_err_mesh_already_initialized == ret)) {
+      LOGBGE("gecko_cmd_mesh_prov_initialize_network", ret);
       return err(ec_bgrsp);
     }
   } else if (ein->networks && (!mng->cfg->subnets || !mng->cfg->subnets[0].netkey.done)) {

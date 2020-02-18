@@ -75,45 +75,26 @@ void conn_ncptarget(void)
 void sync_host_and_ncp_target(void)
 {
   struct gecko_cmd_packet *p;
+  int timeout = 0;
 
   ncp_sync = false;
   LOGM("Syncing NCP Host and Target\n");
-  for (int numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
+  while (timeout < MAXSLEEP && !ncp_sync) {
     if (getprojargs()->enc) {
       poll_update(50);
     }
     p = gecko_peek_event();
-    if (p) {
-      switch (BGLIB_MSG_ID(p->header)) {
-        case gecko_evt_system_boot_id:
-          LOGM("System Booted - Host and NCP Target Synchronized\n");
-          ncp_sync = true;
-          break;
-        default:
-          gecko_cmd_system_reset(0);
-          LOGM("Sent reset signal to NCP target\n");
-          /*
-           * Delay before trying again.
-           */
-          if (numsec <= MAXSLEEP / 2) {
-            sleep(numsec);
-          }
-          break;
-      }
-    } else {
-      gecko_cmd_system_reset(0);
-      LOGM("Sent reset signal to NCP target\n");
-      /*
-       * Delay before trying again.
-       */
-      if (numsec <= MAXSLEEP / 2) {
-        sleep(numsec);
-      }
-    }
 
-    if (ncp_sync) {
+    if (p && BGLIB_MSG_ID(p->header) == gecko_evt_system_boot_id) {
+      LOGM("System Booted - Host and NCP Target Synchronized\n");
+      ncp_sync = true;
       return;
     }
+
+    gecko_cmd_system_reset(0);
+    LOGM("Sent reset signal to NCP target\n");
+    sleep(1);
+    timeout++;
   }
 
   if (!ncp_sync) {
