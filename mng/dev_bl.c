@@ -32,10 +32,13 @@ static inline bool __is_bl_active(mng_t *mng)
   return (g_list_length(mng->lists.bl) || mng->cache.bl.state != bl_idle);
 }
 
-static int __bl_till_oom(mng_t *mng)
+/*
+ * Push the nodes to be blakclisted to the stack until OOM received.
+ */
+static int bl_till_oom(mng_t *mng)
 {
   uint16_t ret = 0;
-  int num = 0;
+  int cnt = 0;
   if (!g_list_length(mng->lists.bl)) {
     return 0;
   }
@@ -51,12 +54,12 @@ static int __bl_till_oom(mng_t *mng)
       break;
     }
     mng->cache.bl.offset++;
-    num++;
+    cnt++;
   } while (ret == bg_err_success && mng->cache.bl.offset != g_list_length(mng->lists.bl));
-  if (num) {
-    LOGD("Sent %d node(s) to stack to blacklist.\n", num);
+  if (cnt) {
+    LOGD("Sent %d node(s) to stack to blacklist.\n", cnt);
   }
-  return num;
+  return cnt;
 }
 
 static err_t kr_start(mng_t *mng)
@@ -117,7 +120,7 @@ bool bl_loop(void *p)
       mng->cache.bl.rem.nodes = calloc(num, sizeof(remainig_nodes_t));
       load_remaining_nodes();
     }
-    __bl_till_oom(mng);
+    bl_till_oom(mng);
     if (mng->cache.bl.offset == g_list_length(mng->lists.bl)) {
       mng->cache.bl.state = bl_starting;
     } else {
@@ -125,7 +128,7 @@ bool bl_loop(void *p)
     }
     busy = true;
   } else if (mng->cache.bl.state == bl_prepare) {
-    if (!__bl_till_oom(mng) || mng->cache.bl.offset == g_list_length(mng->lists.bl)) {
+    if (!bl_till_oom(mng) || mng->cache.bl.offset == g_list_length(mng->lists.bl)) {
       mng->cache.bl.state = bl_starting;
     }
   } else if (mng->cache.bl.state == bl_starting) {

@@ -25,6 +25,11 @@
 /* Global Variables *************************************************** */
 
 /* Static Variables *************************************************** */
+/*
+ * Scanning for unprovisioned beacon could add big traffic to the queue of the
+ * stack, which makes OOM more likely to happen. When OOM happens, disable
+ * scanning for a while to relieve the device from OOM state.
+ */
 static bool scan_need_recover = false;
 
 /* Static Functions Declaractions ************************************* */

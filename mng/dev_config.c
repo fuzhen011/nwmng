@@ -246,16 +246,12 @@ void acc_init(bool use_default)
   acc.started = true;
 }
 
-static void __cache_item_load(mng_t *mng,
-                              int ofs,
-                              node_t *node,
-                              int type)
+static inline void __cache_item_load(mng_t *mng,
+                                     int ofs,
+                                     node_t *node,
+                                     int type)
 {
   config_cache_t * cache = &mng->cache.config.cache[ofs];
-
-  /* TODO: needed? */
-  /* __cache_reset_idx(ofs); */
-
   cache->node = node;
   if (type == type_config) {
     cache->state = provisioned_em;
@@ -336,51 +332,44 @@ static acc_state_t *as_get(int state)
   return p;
 }
 
-int to_next_state(config_cache_t *cache)
+static bool to_next_state(config_cache_t *cache)
 {
-  int ret, transitioned = 0;
-  acc_state_t *as = NULL, *nas = NULL;
-  /* If current state exit callback exist, exist first */
-  as = as_get(cache->state);
-  if (cache->next_state == -1) {
-    nas = as->next;
-  } else {
-    nas = as_get(cache->next_state);
-  }
+  acc_state_t *as, *nas;
 
-  LOGM("Node[0x%04x]: End   - [%s]\n",
-       cache->node->addr,
-       state_names[cache->state]);
-  if (as && as->exit) {
-    ret = as->exit(cache);
-  }
+  as = as_get(cache->state);
+  nas = (cache->next_state == -1) ? as->next : as_get(cache->next_state);
 
   if (!nas) {
     /* If specified next state doesn't exist, load the next of the current */
     /* state */
     nas = as->next;
   }
-
   /* Find next state with valid entry */
   while (nas && !nas->entry) {
     nas = nas->next;
+  }
+
+  /* If current state exit callback exist, exist first */
+  LOGM("Node[0x%04x]: End   - [%s]\n",
+       cache->node->addr,
+       state_names[cache->state]);
+  if (as && as->exit) {
+    as->exit(cache);
   }
 
   while (nas) {
     LOGV("Node[0x%04x]: Try to Enter %s State\n",
          cache->node->addr,
          state_names[nas->state]);
-    ret = nas->entry(cache, nas->guard);
-    switch (ret) {
+    switch (nas->entry(cache, nas->guard)) {
       case asr_suc:
       case asr_oom:
         cache->state = nas->state;
         cache->next_state = nas->state;
-        transitioned = 1;
         LOGM("Node[0x%04x]: Start - [%s]\n",
              cache->node->addr,
              state_names[nas->state]);
-        break;
+        return true;
       /* Implementation of the callback should make sure that won't return this
        * if not more states to load */
       case asr_tonext:
@@ -390,12 +379,9 @@ int to_next_state(config_cache_t *cache)
         nas = as_get(end_em);
         break;
     }
-    if (transitioned) {
-      break;
-    }
   }
 
-  return transitioned;
+  return false;
 }
 
 static int config_engine(mng_t *mng)
@@ -580,22 +566,14 @@ void timer_set(config_cache_t *cache, bool enable)
     cache->expired = 0;
     return;
   }
-
   cache->expired = time(NULL) + CONFIG_NO_RSP_TIMEOUT;
-
   if (!cache->dcd.elems || cache->dcd.feature & LPN_BITOFS) {
-    if (mng->cfg->timeout) {
-      cache->expired += (get_mng()->cfg->timeout->lpn + 999) / 1000;
-      return;
-    }
-    cache->expired += 120;
-    return;
+    /* Not able to figure out if the node is a LPN or normal node, always add
+     * longest possible value to it, this also applies if the node is LPN */
+    cache->expired += mng->cfg->timeout
+                      ? (get_mng()->cfg->timeout->lpn + 999) / 1000 : 120;
+  } else {
+    cache->expired += mng->cfg->timeout
+                      ? (get_mng()->cfg->timeout->normal + 999) / 1000 : 5;
   }
-
-  if (mng->cfg->timeout) {
-    cache->expired += (get_mng()->cfg->timeout->normal + 999) / 1000;
-    return;
-  }
-  cache->expired += 5;
-  return;
 }

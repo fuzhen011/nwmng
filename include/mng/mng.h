@@ -112,11 +112,13 @@ typedef struct {
 
 typedef struct {
   int state; /* @ref{bl_xxx} */
+  /* When the node is pushed to the stack for blacklisting, offset increment */
   int offset;
+  /* When the node is blacklisted, tail increment */
   int tail;
   struct {
-    int num;
-    remainig_nodes_t *nodes;
+    int num; /* The number of nodes which should remain in the network after blacklisting */
+    remainig_nodes_t *nodes; /* List of the nodes */
   }rem;
 }bl_cache_t;
 
