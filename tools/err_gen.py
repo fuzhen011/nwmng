@@ -4,8 +4,11 @@
 # File Name: err_gen.py
 # Author: Kevin
 # Created Time: 2019-10-22
-# Description:
+# Description: scan for all the source files in the project and map the file
+# names to the array in src_names.c file
+
 import os
+import copy
 from jinja2 import Environment, FileSystemLoader
 
 root_dir = ['work/projs/nwmng']
@@ -46,12 +49,12 @@ if __name__ == '__main__':
 
     out_file = env_home + out_file
 
-    f = get_files()
+    f = get_files(root_dir[:])
     if "main" not in f:
         f.append("main")
     #  print f
 
-    ct_path = env_home + "work/projs/nwmng/tools"
+    ct_path = root_dir[0] + '/tools'
     env = Environment(loader=FileSystemLoader(ct_path))
     template = env.get_template("file_names.ct")
     content = template.render(source_files=f)

@@ -49,20 +49,15 @@ void conn_ncptarget(void)
 
   BGLIB_INITIALIZE_NONBLOCK(u->bglib_output, u->bglib_input, u->bglib_peek);
   if (arg->enc) {
-    /* if (interface_args_ptr->encrypted) { */
-    if (connect_domain_socket_server(arg->sock.srv, arg->sock.clt, 1)) {
-      LOGE("Connection to encrypted domain socket unsuccessful. Exiting..\n");
+    if (connect_domain_socket_server(arg->sock.srv, arg->sock.clt, arg->sock.enc)) {
+      LOGE("Connection to domain socket unsuccessful. Exiting..\n");
       exit(EXIT_FAILURE);
     }
-    LOGD("Turning on Encryption. "
-         "All subsequent BGAPI commands and events will be encrypted..\n");
-    turnEncryptionOn();
-    /* } else { */
-    /* if (connect_domain_socket_server(interface_args_ptr->pSerSockPath, CLIENT_UNENCRYPTED_PATH, 0)) { */
-    /* printf("Connection to unencrypted domain socket unsuccessful. Exiting..\n"); */
-    /* exit(EXIT_FAILURE); */
-    /* } */
-    /* } */
+    if (arg->sock.enc) {
+      LOGD("Turning on Encryption. "
+           "All subsequent BGAPI commands and events will be encrypted..\n");
+      turnEncryptionOn();
+    }
   } else {
     uartClose();
     if (0 != uartOpen((int8_t *)arg->serial.port, arg->serial.br, 1, 100)) {

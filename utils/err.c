@@ -28,6 +28,7 @@ static const char *get_error_str(error_code_t e)
 {
   return "";
 }
+
 static int file_name_match(const char *file_path,
                            const char *name)
 {

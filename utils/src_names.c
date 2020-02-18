@@ -33,8 +33,13 @@ static const char *source_files[] = {
     "bg_uart_cbs", /* 32 */
     "socket_handler", /* 33 */
     "gecko_bglib", /* 34 */
-    "uart_win", /* 35 */
-    "uart_posix", /* 36 */
-    "platform", /* 37 */
-    "read_char", /* 38 */
+    "uart_posix", /* 35 */
+    "sl_bgapi", /* 36 */
+    "sl_security", /* 37 */
+    "main", /* 38 */
+    "sl_poll", /* 39 */
+    "uart_win", /* 40 */
+    "uart_posix", /* 41 */
+    "platform", /* 42 */
+    "read_char", /* 43 */
 };

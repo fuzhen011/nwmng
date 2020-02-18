@@ -1,0 +1,5 @@
+static const char *source_files[] = {
+    {% for err in errs %}
+    {{err.name}},            /* {{err.no}} */
+    {% endfor %}
+};
