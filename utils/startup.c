@@ -379,7 +379,7 @@ static inline void _setprojargs(int argc, char *argv[])
         __append_cfg(buf, arg_keys[i], projargs.sock.srv);
       } else if (i == ARG_DIRTY_SOCK_CLT) {
         __append_cfg(buf, arg_keys[i], projargs.sock.clt);
-      } else if (i== ARG_DIRTY_SOCK_ENC) {
+      } else if (i == ARG_DIRTY_SOCK_ENC) {
         char v[20] = { 0 };
         sprintf(v, "%d", projargs.sock.enc);
         __append_cfg(buf, arg_keys[i], v);

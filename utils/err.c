@@ -22,11 +22,13 @@
 
 /* Static Functions Declaractions ************************************* */
 #include "utils/src_names.c"
+#include "utils/err_str.c"
+
 static const size_t source_file_cnt = sizeof(source_files) / sizeof(char *);
 
 static const char *get_error_str(error_code_t e)
 {
-  return "";
+  return err_names[e];
 }
 
 static int file_name_match(const char *file_path,
@@ -158,4 +160,18 @@ void elog(err_t err)
          file,
          (unsigned long)line);
   }
+}
+
+void err_selftest(void)
+{
+  err_t e;
+
+  e = err(ec_not_supported);
+  elog(e);
+
+  e = err(ec_file_ope);
+  elog(e);
+
+  e = err(ec_json_null);
+  elog(e);
 }

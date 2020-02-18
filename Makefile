@@ -6,8 +6,6 @@ ifeq ($(OS),Windows_NT)
 MAKE = /c/MinGW/msys/1.0/bin/make.exe
 endif
 
-# all: $(BUILD_DIR)/nwmng
-
 all: $(BUILD_DIR)/Makefile
 	@echo "Building $@"
 	@cd $(BUILD_DIR) && $(MAKE) && cd ../..

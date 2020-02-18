@@ -1,4 +1,4 @@
-static const char *source_files[] = {
+static const char *err_names[] = {
     "ec_success",            /* 0 */
     "ec_length_leak",            /* 1 */
     "ec_param_null",            /* 2 */

@@ -1,4 +1,4 @@
-static const char *source_files[] = {
+static const char *err_names[] = {
     {% for err in errs %}
     {{err.name}},            /* {{err.no}} */
     {% endfor %}
