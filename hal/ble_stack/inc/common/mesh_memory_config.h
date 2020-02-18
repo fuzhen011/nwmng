@@ -43,33 +43,33 @@ typedef struct {
   /** Maximum number of models on the device */
   uint8_t max_models;
   /** Maximum number of network keys on the device */
-  uint8_t max_net_keys;
+  uint16_t max_net_keys;
   /** Maximum number of application keys on the device */
-  uint8_t max_appkeys;
+  uint16_t max_appkeys;
   /** Maximum number of device keys on the device. NOTE: this should always be set to 1! */
   uint8_t max_devkeys;
   /** Maximum number of friendships for a friend/LPN device */
   uint8_t max_friendships;
   /** Maximum number of model-application key bindings per model;
       should not be larger than the maximum number of application keys */
-  uint8_t max_app_binds;
+  uint16_t max_app_binds;
   /** Maximum number of subscription addresses per model */
-  uint8_t max_subscriptions;
+  uint16_t max_subscriptions;
   /** Maximum number of concurrently ongoing foundation model commands */
   uint8_t max_foundation_model_commands;
   /** Network cache entry size */
-  uint8_t net_cache_size;
+  uint16_t net_cache_size;
   /** Replay protection list entry size; must be equal to or larger than
       the number of nodes the device communicates with */
-  uint8_t replay_size;
+  uint16_t replay_size;
   /** Maximum number of concurrent transport layer segmented messages
       being sent */
-  uint8_t max_send_segs;
+  uint16_t max_send_segs;
   /** Maximum number of concurrent transport layer segmented messages
       being received */
-  uint8_t max_recv_segs;
+  uint16_t max_recv_segs;
   /** Maximum number of virtual addresses on the node */
-  uint8_t max_virtual_addresses;
+  uint16_t max_virtual_addresses;
   /** Maximum number of provisioning sessions */
   uint8_t max_provision_sessions;
   /** Maximum number of provisioning bearers */
@@ -80,15 +80,15 @@ typedef struct {
   /** GATT transport queue size */
   uint8_t gatt_txqueue_size;
   /** Maximum number of provisioner database entries; ignored for node */
-  uint8_t provisioner_max_ddb_entries;
+  uint16_t provisioner_max_ddb_entries;
   /** Maximum number of keys to store per node on provisioner;
       ignored for node */
-  uint8_t provisioner_max_node_net_keys;
+  uint16_t provisioner_max_node_net_keys;
   /** Maximum number of application keys to store per node on provisioner;
       ignored for node */
-  uint8_t provisioner_max_node_app_keys;
+  uint16_t provisioner_max_node_app_keys;
   /** Friend node total cache buffer count */
-  uint8_t friend_max_total_cache;
+  uint16_t friend_max_total_cache;
   /** Friend node friendship queue size */
   uint8_t friend_max_single_cache;
   /** Subscriptions per friendship */

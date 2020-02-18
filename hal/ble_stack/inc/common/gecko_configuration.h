@@ -19,7 +19,7 @@
 
 #include "bg_gattdb_def.h"
 
-#define DEFAULT_BLUETOOTH_HEAP(CONNECTIONS) (4824 +(CONNECTIONS)*(472))
+#define DEFAULT_BLUETOOTH_HEAP(CONNECTIONS) (4824 +(CONNECTIONS)*(476))
 
 #define SLEEP_FLAGS_DEEP_SLEEP_ENABLE  4
 typedef struct {
@@ -40,20 +40,17 @@ typedef struct {
   uint8_t conn_max;
   uint8_t init_min;
   uint8_t init_max;
-  uint8_t threshold_coex;
   uint8_t rail_mapping_offset;
   uint8_t rail_mapping_range;
-  uint8_t threshold_coex_req;
-  uint8_t coex_pwm_period;
-  uint8_t coex_pwm_dutycycle;
   uint8_t afh_scan_interval;
   uint8_t adv_step;
   uint8_t scan_step;
 }gecko_bluetooth_ll_priorities;
 
 //Default priority configuration
-#define GECKO_BLUETOOTH_PRIORITIES_DEFAULT { 191, 143, 175, 127, 135, 0, 55, 15, 175, 16, 16, 255, 0, 0, 0, 4, 4 }
+#define GECKO_BLUETOOTH_PRIORITIES_DEFAULT { 191, 143, 175, 127, 135, 0, 55, 15, 16, 16, 0, 4, 4 }
 
+#define GECKO_BLUETOOTH_PA_AUTOMODE 0xff
 #endif
 
 
@@ -141,7 +138,7 @@ typedef struct {
   gecko_mbedtls_config_t mbedtls;
   uint8_t max_timers;  // Max number of soft timers, up to 16, the application will use through BGAPI. Default: 4
   gecko_rf_config_t rf;
-  uint16_t btmesh_heap_size; // The amount of heap reserved for the BT Mesh stack
+  uint32_t btmesh_heap_size; // The amount of heap reserved for the BT Mesh stack
 }gecko_configuration_t;
 
 #endif

@@ -36,11 +36,11 @@
  *          BGLIB_DEFINE();
  *
  *      Declare and define output function, prototype is:
- *          void my_output(uint16 len,uint8* data);
+ *          void my_output(uint16_t len,uint8_t* data);
  *          Function sends "len" amount of data from pointer "data" to device.
  *
  *      Declare and define input function, prototype is:
- *          void my_input(uint16 len,uint8* data);
+ *          void my_input(uint16_t len,uint8_t* data);
  *          Function reads "len" amount of data to pointer "data" from device.
  *          Function return nonzero if it failed.
  *

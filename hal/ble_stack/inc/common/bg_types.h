@@ -20,50 +20,74 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef uint8_t   uint8;
-typedef uint16_t  uint16;
-typedef uint32_t  uint32;
-typedef int8_t    int8;
-typedef int16_t   int16;
-typedef int32_t   int32;
-
+#ifndef SL_BT_TYPE_UINT8ARRARY
+#define SL_BT_TYPE_UINT8ARRARY
 typedef struct {
-  uint8 len;
-  uint8  data[];
+  uint8_t len;
+  uint8_t  data[];
 }uint8array;
+#endif
 
+#ifndef SL_BT_TYPE_BYTE_ARRARY
+#define SL_BT_TYPE_BYTE_ARRARY
 typedef struct {
-  uint16 len;
-  uint8  data[];
-}uint16array;
+  uint16_t len;
+  uint8_t  data[];
+}byte_array;
+#endif
 
+#ifndef SL_BT_TYPE_STRING
+#define SL_BT_TYPE_STRING
 typedef struct {
-  uint8 len;
-  int8  data[];
-}string;
+  uint8_t len;
+  int8_t  data[];
+} string;
+#endif
 
+#ifndef SL_BT_TYPE_BDADDR
+#define SL_BT_TYPE_BDADDR
 typedef struct {
-  uint8 addr[6];
-}bd_addr;
+  uint8_t addr[6];
+} bd_addr;
+#endif
 
+#ifndef SL_BT_TYPE_SERNAME
+#define SL_BT_TYPE_SERNAME
 typedef struct {
-  uint8 name[16];
-}ser_name;
+  uint8_t name[16];
+} ser_name;
+#endif
 
+#ifndef SL_BT_TYPE_UUID128
+#define SL_BT_TYPE_UUID128
 typedef struct {
-  uint8 data[16];
+  uint8_t data[16];
 } uuid_128;
+#endif
 
+#ifndef SL_BT_TYPE_AES_KEY128
+#define SL_BT_TYPE_AES_KEY128
 typedef struct {
-  uint8 data[16];
+  uint8_t data[16];
 } aes_key_128;
+#endif
+
+#ifndef SL_BT_TYPE_UUID64
+#define SL_BT_TYPE_UUID64
+typedef struct {
+  uint8_t data[8];
+} sl_bt_uuid_64_t;
+#endif
 
 #define MAX_UUID_LEN 16
 
+#ifndef SL_BT_TYPE_UUID
+#define SL_BT_TYPE_UUID
 typedef struct {
   uint8_t uuid[MAX_UUID_LEN];
   uint32_t len;
 } sl_bt_uuid_t;
+#endif
 
 #if !defined _MSC_VER && !defined __APPLE__
 /* Don't define under MSVC and OSX */

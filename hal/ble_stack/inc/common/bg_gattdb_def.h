@@ -92,7 +92,6 @@ struct bg_gattdb_attribute{
   uint16_t uuid;
   uint16_t permissions;   //gatt_attribute_permission
   uint16_t caps;   // Capability bit flags
-  uint8_t min_key_size;   // minumum key size required in bytes to access attribute
   uint8_t datatype;   //Just use uint8_t Do not use enum type, may cause compatibility troubles
   union {
     const struct bg_gattdb_buffer_with_len *constdata;     //generic constant data

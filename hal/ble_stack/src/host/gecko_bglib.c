@@ -44,7 +44,7 @@ struct gecko_cmd_packet* gecko_wait_message(void)//wait for event from system
     if ((gecko_queue_w + 1) % BGLIB_QUEUE_LEN == gecko_queue_r) {
       //drop packet
       if (msg_length) {
-        uint8 tmp_payload[BGLIB_MSG_MAX_PAYLOAD];
+        uint8_t tmp_payload[BGLIB_MSG_MAX_PAYLOAD];
         bglib_input(msg_length, tmp_payload);
       }
       return 0;      //NO ROOM IN QUEUE
