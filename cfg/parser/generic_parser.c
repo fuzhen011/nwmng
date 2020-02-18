@@ -81,6 +81,8 @@ static inline err_t nodes_clrctl(void)
 err_t cfg_clrctl(void)
 {
   err_t e;
+  EC(ec_success, load_cfg_file(PROV_CFG_FILE, 0));
+  EC(ec_success, load_cfg_file(NW_NODES_CFG_FILE, 0));
   EC(ec_success, prov_clrctl());
   EC(ec_success, nodes_clrctl());
   return e;
