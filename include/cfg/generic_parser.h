@@ -95,9 +95,6 @@ typedef err_t (*gp_flush_func_t)(int cfg_fd);
 
 typedef err_t (*gp_free_cfg_func_t)(void **);
 
-/******************************************************************
- * IPC Callbacks
- * ***************************************************************/
 err_t cfg_clrctl(void);
 err_t prov_get(int len, const char *arg);
 err_t provset_addr(const uint16_t *addr);

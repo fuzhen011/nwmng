@@ -57,7 +57,9 @@ err_t nwk_init(void *p)
   mng_load_lists();     /* do the initial loading */
   LOGM("Network configured and nodes loaded\n");
 
-  /* Initialize all the required model classes */
+  /*
+   * Initialize all the required model classes
+   */
   /* Generic client model */
   if (bg_err_success != (ret = gecko_cmd_mesh_generic_client_init()->result)) {
     LOGBGE("gecko_cmd_mesh_generic_client_init", ret);
