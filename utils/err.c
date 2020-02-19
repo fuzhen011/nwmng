@@ -166,6 +166,8 @@ void err_selftest(void)
 {
   err_t e;
 
+  LOGM("Below is an example of printing the error information to the log file.\n");
+
   e = err(ec_not_supported);
   elog(e);
 
@@ -173,5 +175,11 @@ void err_selftest(void)
   elog(e);
 
   e = err(ec_json_null);
+  elog(e);
+
+  e = err(ec_already_exist);
+  elog(e);
+
+  e = err(ec_format);
   elog(e);
 }

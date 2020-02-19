@@ -45,7 +45,6 @@ typedef enum {
 /**
  * @defgroup err
  *
- *
  * The error code generator design is based on below principles:
  *
  * 1. Maximum number of source files is less than @ref{MAX_FILE_NUM}.

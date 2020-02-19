@@ -137,15 +137,19 @@ Conventions:
 - Argument followed by ... means variable number of the argument.
 - Content in \(\) following a argument is illustrative.
 
-| Command  |             Args             | Defaults |    Usage    | Description                                                                                                                                                     |
-| :------: | :--------------------------: | :------: | :---------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   sync   |           \[1/0\]            |    1     |    sync     | Start or stop synchronizing the network configuration with the JSON file                                                                                        |
-|  reset   | &lt;1(Factory)/0(Normal)&gt; |    0     |    reset    | Reset the device, if argument is 1, erase the storage                                                                                                           |
-|   info   |         \[addr...\]          |    /     | info 0x003a | If no argument is given, shows the overall configuration of the network, if address is given, shows configuration for the node, including UUID, Device key etc. |
-|    q     |              \               |    /     |      q      | Quit the program                                                                                                                                                |
-| freemode |          \[on/off\]          |    on    | freemode on | Turning on/off the free mode.                                                                                                                                   |
-|   help   |              \               |    \     |    help     | Print the usage of all commands.                                                                                                                                |
-|  status  |              \               |    \     |   status    | Print the device status.                                                                                                                                        |
+|  Command  |             Args             | Defaults |    Usage    | Description                                                                                                                                                     |
+| :-------: | :--------------------------: | :------: | :---------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|   sync    |           \[1/0\]            |    1     |    sync     | Start or stop synchronizing the network configuration with the JSON file                                                                                        |
+|   reset   | &lt;1(Factory)/0(Normal)&gt; |    0     |    reset    | Reset the device, if argument is 1, erase the storage                                                                                                           |
+|   info    |         \[addr...\]          |    /     | info 0x003a | If no argument is given, shows the overall configuration of the network, if address is given, shows configuration for the node, including UUID, Device key etc. |
+|     q     |              \               |    /     |      q      | Quit the program                                                                                                                                                |
+| freemode  |          \[on/off\]          |    on    | freemode on | Turning on/off the free mode.                                                                                                                                   |
+|   help    |              \               |    \     |    help     | Print the usage of all commands.                                                                                                                                |
+|  status   |              \               |    \     |   status    | Print the device status.                                                                                                                                        |
+|   rmall   |              \               |    \     |    rmall    | Remove all the nodes from the network                                                                                                                           |
+|   clrrb   |              \               |    \     |    clrrb    | Clear the RM_Blacklist fieldof the nodes                                                                                                                        |
+|  seqset   | combination of a, r, b and - |    \     | seqset arb  | determine the sequence of loadding the adding/removing/blacklisting actions.                                                                                    |
+| loglvlset |    \[e/w/m/d/v\] \[1/0\]     |    \     | loglvlset m | Only "message" and higher priority logging types will be output, the second parameter determines if the logging will be output via printf                       |
 
 <center>Table x: Network Configuration Commands</center>
 
@@ -165,65 +169,116 @@ Conventions:
 
 #### Provisioner
 
-|         What's it          |    Key    |    Value    | Description      |
-| :------------------------: | :-------: | :---------: | ---------------- |
-| Last sync time<sup>1</sup> | SyncTime  | time_t TBD  |                  |
-|          IV index          |    IVI    |   uint32    |                  |
-|            Keys            |    \      |     \       | Table x          |
-|   Network Transmit Count   |   TxCnt   |    uint8    | [0, 7]           |
-| Network Transmit Interval  |  TxIntv   |    uint8    | [10, 320]@step10 |
-|       Added Devices        |  Devices  | uint16array | (0, 0x7fff]      |
-|     Publication Groups     | PubGroups | uint16array | [0xc000, 0xfeff] |
-|    Subscription Groups     | SubGroups | uint16array | [0xc000, 0xfeff] |
+The content in this file describes how the provisioner should configure itself
+and how to create the network, see table x.
+
+|            What's it             |           Key            |    Value    | Description                                                     |
+| :------------------------------: | :----------------------: | :---------: | --------------------------------------------------------------- |
+|    Last sync time<sup>1</sup>    |         SyncTime         |   uint32    | Time stamp that the appliaction write to the file most recently |
+|             IV index             |           IVI            |   uint32    |                                                                 |
+|               Keys               |            \             |     \       | Details in Table x below                                        |
+|           Time To Live           |           TTL            |    uint8    |                                                                 |
+|      Network Transmit Count      |  TX Parameters - Count   |    uint8    | [0, 7]                                                          |
+|    Network Transmit Interval     | TX Parameters - Interval |    uint8    | [10, 320]@step10                                                |
+| Config timeout for non-LPN nodes | Config Timeout - Normal  |   uint16    | in milliseconds                                                 |
+|   Config timeout for LPN nodes   |   Config Timeout - LPN   |   uint16    | in milliseconds                                                 |
+|        Publication Groups        |        PubGroups         | uint16array | **Not Used Yet**                                                |
+|       Subscription Groups        |        SubGroups         | uint16array | **Not Used Yet**                                                |
 
 <center>Table x. Provisioner Config File Content</center>
 
-1. By checking the last modification time against last synchronized time to know
-   if the configuration is changed out of the program.
-
 |        What's it         |  Key  |      Value      | Description |
 | :----------------------: | :---: | :-------------: | ----------- |
-| Reference ID<sup>1</sup> | RefId |     uint16      |             |
+| Reference ID<sup>2</sup> | RefId |     uint16      |             |
 |        Key Index         |  Id   |     uint16      |             |
 |        Key Value         | Value | 16BL uint8array |             |
 |  Created successfully?   | Done  |      bool       |             |
 
 <center>Table x. Key Content</center>
 
-1. The read id is allocated when the key is created successfully, however, in most of the cases, configuration of the network happens before it.
-
 #### Network & Nodes
 
-|    What's it    | Key  | Value  | Description |
-| :-------------: | :--: | :----: | ----------- |
-| Unicast address | Addr | uint16 |             |
-|    IV index     | IVI  | uint32 |             |
+The content of this file describes how the nodes will be processed, including adding,
+removing, configuring and blacklisting.
+
+|              What's it               |           Key            |      Value      | Description                                                                                          |
+| :----------------------------------: | :----------------------: | :-------------: | ---------------------------------------------------------------------------------------------------- |
+|      Last sync time<sup>1</sup>      |         SyncTime         |     uint32      | Time stamp that the appliaction write to the file most recently                                      |
+|                 UUID                 |           UUID           | 16BL uint8array | 16 bytes device UUID of the node                                                                     |
+|           Unicast address            |         Address          |     uint16      | unicast address of the primary element of the node, 0 for unprovisioned/unassigned node              |
+|           Error bit masks            |           Err            |     uint32      | error bit masks to record where the last failure is                                                  |
+|         Template Identifier          |       Template ID        |      uint8      | template identified by ID to load to the node                                                        |
+|   Removing and Blacklisting Flags    |       RM_Blacklist       |      uint8      | bit 0 indicates if to blacklist the node, bit 4 indicates if to remove the node, other bits reserved |
+|             Funtionality             |       Funtionality       |      uint8      | Funtionality of the node, a light, sensor or others                                                  |
+|           Configured Flag            |           Done           |      uint8      | Indicates if the node has been configured properly                                                   |
+|             Time To Live             |           TTL            |      uint8      |                                                                                                      |
+|        Network Transmit Count        |  TX Parameters - Count   |      uint8      | [0, 7]                                                                                               |
+|      Network Transmit Interval       | TX Parameters - Interval |      uint8      | [10, 320]@step10                                                                                     |
+|    Features supported by the node    |      Features - \*       |    Structure    | Indicates if the feature is supported (1) or not (0)                                                 |
+|      Model Key Binding settings      |       Bind Appkeys       |   uint16array   | Appkey reference IDs to bind to the models                                                           |
+|         Publication settings         |     Publish To - \*      |    Structure    | Parameters for publication                                                                           |
+|        Subscription settings         |      Subscribe From      |   uint16array   | Addresses the nodes subscribe from                                                                   |
+| Enable/disable secure network beacon |  Secure Network Beacon   |      uint8      | 1 to enable, 0 to disable                                                                            |
+|               Backlog                |         Backlog          |      Nodes      | Nodes in backlog won't be processed                                                                  |
 
 <center>Table x. Network & Nodes Config File Content</center>
+
+1. By checking the last modification time against last synchronized time to know
+   if the configuration is changed out of the program.
+2. The real id is allocated when the key is created successfully, however, in
+   most of the cases, configuration of the network happens before it. So the
+   keys are referenced by the RefId across the configuration files.
 
 ## Utils
 
 This part can be used by any other parts as utils.
 
+### Error Code
+
+The error code design is to provide as much information as possible from
+the return value. Most of the functions in the program returns a _err_t_ which
+can either be a 64-bit or 32-bit unsigned value. With separating the bits into
+different fields, it could contain multiple information pieces. The design in
+this application divides the unsigned value into 3 fields - error code, line
+and file information where the error code is generated. There are several
+functions in the err.h and err.c for generating and parsering the unsigned
+value. In general, when there is a specific error happens, return the error
+code surrounded by err(x) macro, when getting a non-zero (not _ec_success_)
+unsigned return value, use elog(x) to print the error information to the log
+file or use eprint(x) which calls printf rather than writting to the log file.
+Figure x shows the elog output.
+
+<div align=center>![Error Information](doc/pic/err.png "Error Information")</div align=center>
+<center>Figure x. Error Information</center>
+
 ### Logging
 
 Logging has the level feature which is inspired from Android logging system.
+The threshold of the logging is settable via 'loglvlset' command, as a result
+of which, the logging messages with priority lower than the threshold will not
+be sent to the logging file. See the table x for the logging message types with
+priorities in descending order.
 
-| Key word | Meaning | Note                                          |
-| -------- | ------- | --------------------------------------------- |
-| AST      | assert  | Assert, call assert(0) directly, NON-MASKABLE |
-| ERR      | error   |                                               |
-| WRN      | warning |                                               |
-| MSG      | message |                                               |
-| DBG      | debug   |                                               |
-| VER      | verbose |                                               |
+The logging messages will be written to the file system, the path is specified
+when initializing the logging.
 
-<center></center>
-
-Format: \[Time\]\[File:Line]\[Level\]: Log Message...  
+Logging Format: \[Time\]\[File:Line]\[Level\]: Log Message...  
 \[2019-12-12 21:22:33\]\[xxx_source_xxx.c:225][MSG]: Initializing...
 
+| Key word | Message Type | Note                                           |
+| -------- | ------------ | ---------------------------------------------- |
+| AST      | Assert       | Call assert(0) after the message, NON-MASKABLE |
+| ERR      | Error        | Error messages                                 |
+| WRN      | Warning      | Warning messages                               |
+| MSG      | Message      | Normal messages                                |
+| DBG      | Debug        | Debugging message                              |
+| VER      | Verbose      | Verbose messages                               |
+
+<center>Table x. Logging</center>
+
 ![Logging](doc/pic/logging.png)
+
+<center>Figure x. Demonstration of Logging</center>
 
 ### Recommended NCP Target Configuration
 
