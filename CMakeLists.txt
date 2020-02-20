@@ -107,6 +107,7 @@ else()
   set(EXTRA_INC_PATH
       /usr/include/glib-2.0
       /usr/lib/x86_64-linux-gnu/glib-2.0/include
+      /usr/lib/arm-linux-gnueabihf/glib-2.0/include
       /usr/include/json-c)
   set(RL_LIB readline.so)
 endif()
