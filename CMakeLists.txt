@@ -94,7 +94,7 @@ set(SRC_LIST
 
 if(APPLE)
   set(CMAKE_C_LINK_FLAGS
-    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.4/lib -L/usr/lib/arm-linux-gnueabihf ${CMAKE_C_LINK_FLAGS}"
+    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.4/lib -L/usr/lib/arm-linux-gnueabihf -L/usr/local/lib ${CMAKE_C_LINK_FLAGS}"
   )
   set(EXTRA_INC_PATH
       /usr/local/Cellar/glib/2.62.4/include/glib-2.0
