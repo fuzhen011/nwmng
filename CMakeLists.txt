@@ -9,18 +9,19 @@ endif()
 
 project(nwmng C)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CWD)
   set(CWD "${CMAKE_SOURCE_DIR}/")
 endif()
-
-set(RL_INC "/usr/local/Cellar/readline/8.0.1/include")
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 message(STATUS "************************System Status************************")
 message(STATUS "Working Directory : ${CWD}")
 message(STATUS "SYSTEM_NAME : ${CMAKE_SYSTEM_NAME}")
 message(STATUS "************************System Status************************")
+
+find_package(PkgConfig)
+pkg_search_module(RL REQUIRED json-c)
+
+set(RL_INC "/usr/local/Cellar/readline/8.0.1/include")
 
 if(GCOV EQUAL 1)
   set(GCOV_FLAGS "-fprofile-arcs -ftest-coverage")
@@ -28,10 +29,9 @@ else()
   set(GCOV_FLAGS "")
 endif()
 
-set(
-  CMAKE_C_FLAGS
-  "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -Wno-missing-braces -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
-  )
+set(CMAKE_C_FLAGS
+    "${GCOV_FLAGS} -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSRC_ROOT_DIR='\"${CWD}\"' -Wall -Wno-missing-braces -std=c99 -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'"
+)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g3 -DDEBUG=1")
 set(CMAKE_C_FLAGS_RELEASE "-Os -DDEBUG=0")
 
@@ -53,7 +53,7 @@ set(HAL_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/hal/bg_uart_cbs.c
     ${CMAKE_CURRENT_LIST_DIR}/hal/socket_handler.c)
 set(CLI_SRC_LIST ${CMAKE_CURRENT_LIST_DIR}/cli/cli.c
-    ${CMAKE_CURRENT_LIST_DIR}/cli/cli_print.c)
+                 ${CMAKE_CURRENT_LIST_DIR}/cli/cli_print.c)
 set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/mng.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/models.c
@@ -74,8 +74,7 @@ set(MNG_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_rmend.c
     ${CMAKE_CURRENT_LIST_DIR}/mng/states/as_end.c)
 set(CFG_SRC_LIST
-    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c
-    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
+    ${CMAKE_CURRENT_LIST_DIR}/cfg/cfg.c ${CMAKE_CURRENT_LIST_DIR}/cfg/cfgdb.c
     ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/generic_parser.c
     ${CMAKE_CURRENT_LIST_DIR}/cfg/parser/json_parser.c)
 set(UTILS_SRC_LIST
@@ -94,10 +93,9 @@ set(SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
 
 if(APPLE)
-  set(
-    CMAKE_C_LINK_FLAGS
-    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.4/lib ${CMAKE_C_LINK_FLAGS}"
-    )
+  set(CMAKE_C_LINK_FLAGS
+    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.4/lib -L/usr/lib/arm-linux-gnueabihf ${CMAKE_C_LINK_FLAGS}"
+  )
   set(EXTRA_INC_PATH
       /usr/local/Cellar/glib/2.62.4/include/glib-2.0
       /usr/local/Cellar/glib/2.62.4/lib/glib-2.0/include
@@ -105,29 +103,27 @@ if(APPLE)
   set(RL_LIB readline.dylib)
 else()
   set(EXTRA_INC_PATH
-      /usr/include/glib-2.0
-      /usr/lib/x86_64-linux-gnu/glib-2.0/include
-      /usr/lib/arm-linux-gnueabihf/glib-2.0/include
-      /usr/include/json-c
-      /usr/local/include
-      /usr/local/include/json-c)
+      /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include
+      /usr/lib/arm-linux-gnueabihf/glib-2.0/include /usr/include/json-c
+      /usr/local/include /usr/local/include/json-c)
   set(RL_LIB readline.so)
 endif()
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}
-                    ${CMAKE_CURRENT_LIST_DIR}/include
-                    ${CMAKE_CURRENT_LIST_DIR}/include/utils
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cli
-                    ${CMAKE_CURRENT_LIST_DIR}/include/mng
-                    ${CMAKE_CURRENT_LIST_DIR}/include/cfg
-                    ${CMAKE_CURRENT_LIST_DIR}/hal
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/common
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/host
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/common
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/host
-                    ${CMAKE_CURRENT_LIST_DIR}/hal/common/uart
-                    ${RL_INC}
-                    ${EXTRA_INC_PATH})
+include_directories(
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/include
+  ${CMAKE_CURRENT_LIST_DIR}/include/utils
+  ${CMAKE_CURRENT_LIST_DIR}/include/cli
+  ${CMAKE_CURRENT_LIST_DIR}/include/mng
+  ${CMAKE_CURRENT_LIST_DIR}/include/cfg
+  ${CMAKE_CURRENT_LIST_DIR}/hal
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/common
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/inc/host
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/common
+  ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/host
+  ${CMAKE_CURRENT_LIST_DIR}/hal/common/uart
+  ${RL_INC}
+  ${EXTRA_INC_PATH})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${CMAKE_PROJECT_NAME} m glib-2.0 ${RL_LIB} pthread json-c)
