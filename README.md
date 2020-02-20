@@ -137,19 +137,19 @@ Conventions:
 - Argument followed by ... means variable number of the argument.
 - Content in \(\) following a argument is illustrative.
 
-|  Command  |             Args             | Defaults |    Usage    | Description                                                                                                                                                     |
-| :-------: | :--------------------------: | :------: | :---------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   sync    |           \[1/0\]            |    1     |    sync     | Start or stop synchronizing the network configuration with the JSON file                                                                                        |
-|   reset   | &lt;1(Factory)/0(Normal)&gt; |    0     |    reset    | Reset the device, if argument is 1, erase the storage                                                                                                           |
-|   info    |         \[addr...\]          |    /     | info 0x003a | If no argument is given, shows the overall configuration of the network, if address is given, shows configuration for the node, including UUID, Device key etc. |
-|     q     |              \               |    /     |      q      | Quit the program                                                                                                                                                |
-| freemode  |          \[on/off\]          |    on    | freemode on | Turning on/off the free mode.                                                                                                                                   |
-|   help    |              \               |    \     |    help     | Print the usage of all commands.                                                                                                                                |
-|  status   |              \               |    \     |   status    | Print the device status.                                                                                                                                        |
-|   rmall   |              \               |    \     |    rmall    | Remove all the nodes from the network                                                                                                                           |
-|   clrrb   |              \               |    \     |    clrrb    | Clear the RM_Blacklist fieldof the nodes                                                                                                                        |
-|  seqset   | combination of a, r, b and - |    \     | seqset arb  | determine the sequence of loadding the adding/removing/blacklisting actions.                                                                                    |
-| loglvlset |    \[e/w/m/d/v\] \[1/0\]     |    \     | loglvlset m | Only "message" and higher priority logging types will be output, the second parameter determines if the logging will be output via printf                       |
+|       Command        |             Args             | Defaults |    Usage    | Description                                                                                                                                                     |
+| :------------------: | :--------------------------: | :------: | :---------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|         sync         |           \[1/0\]            |    1     |    sync     | Start or stop synchronizing the network configuration with the JSON file                                                                                        |
+|        reset         | &lt;1(Factory)/0(Normal)&gt; |    0     |    reset    | Reset the device, if argument is 1, erase the storage                                                                                                           |
+|         info         |         \[addr...\]          |    /     | info 0x003a | If no argument is given, shows the overall configuration of the network, if address is given, shows configuration for the node, including UUID, Device key etc. |
+|          q           |              \               |    /     |      q      | Quit the program                                                                                                                                                |
+| freemode<sup>1</sup> |          \[on/off\]          |    on    | freemode on | Turning on/off the free mode.                                                                                                                                   |
+|         help         |              \               |    \     |    help     | Print the usage of all commands.                                                                                                                                |
+|        status        |              \               |    \     |   status    | Print the device status.                                                                                                                                        |
+|        rmall         |              \               |    \     |    rmall    | Remove all the nodes from the network                                                                                                                           |
+|        clrrb         |              \               |    \     |    clrrb    | Clear the RM_Blacklist fieldof the nodes                                                                                                                        |
+|        seqset        | combination of a, r, b and - |    \     | seqset arb  | determine the sequence of loadding the adding/removing/blacklisting actions.                                                                                    |
+|      loglvlset       |    \[e/w/m/d/v\] \[1/0\]     |    \     | loglvlset m | Only "message" and higher priority logging types will be output, the second parameter determines if the logging will be output via printf                       |
 
 <center>Table x: Network Configuration Commands</center>
 
@@ -160,6 +160,10 @@ Conventions:
 | colortemp | \[pecentage\] \[addr...\] | colortemp 30 0x1203 0x100c | Set the light color temperature status, if no argument is given, set to all light nodes |
 
 <center>Table x: Lighting Control Commands</center>
+
+1. When freemode is on, the device will start scanning for unprovisioned device
+   beacon and record the device information to the backlog in the nodes
+   configuration file if found.
 
 ## MNG
 
@@ -288,3 +292,51 @@ Logging Format: \[Time\]\[File:Line]\[Level\]: Log Message...
 | RPL size                | 128(0x80) | set to the expected network size if possible |
 | Net Cache Size          | 128(0x80) | set to the expected network size if possible |
 | Max Provisioned Devices | 128(0x80) | set to the expected network size             |
+
+## Usage Example for Typical Scenarios
+
+### Record Devices Nearby and Adding/Configuring Them
+
+This could be the first step you use the program. Make sure you have the
+unprovisioned device placed in the direct radio range to the provisioner and
+they are sending the unprovisioned device beacon. Then you can do the below
+steps to record them.
+
+1. Start the program.
+2. Type freemode on to start recording.
+3. Type freemode off when all the devices are recorded to the backlog.
+4. Move the nodes you want to operate onto the first item of "Subnets"
+5. Change the "Template ID" field of each node based on what configuration you
+   want to apply to the node. Certainly, you could change the configuration as
+   well.
+6. Once you have properly set the configuration to all the nodes, type "sync"
+   to start adding them to the network and configuring them.
+
+### Blacklisting Node(s)
+
+Assuming that you have established a network because we cannot blacklist nodes
+if they are not in the network yet.
+
+1. Open the nodes configuration file.
+2. Find the node(s) you want to blacklist from the netowkr and change the
+   "RM_Blacklist" field to "0x01". Note, the address of the node SHALL NOT be 0,
+   in which case the node is not yet added to the network. Then save it.
+3. Make sure 'b' is in the sequence, you could optionally set it as the first
+   priority action by "seqset" command.
+4. Type "sync", once it finishes, you will get the result in your terminal.
+
+### Removing Nodes(s)
+
+This procedure is very similar to the last one - **Blacklisting Node(s)**, the
+only difference is to modify the "RM_Blacklist" Field to "0x10"
+
+### Change Configuration to Node(s)
+
+The "Done" field indicates if the node has been configured properly, to change
+the configuration of nodes, follow the below steps.
+
+1. Open the nodes configuration file.
+2. Find the node(s) you want to configure and modify the configuration fields,
+   then change the "Done" field to 0x00.
+3. type "sync", the program will load the new configuration and apply to the
+   nodes.
