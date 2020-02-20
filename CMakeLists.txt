@@ -13,15 +13,61 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CWD)
   set(CWD "${CMAKE_SOURCE_DIR}/")
 endif()
+
 message(STATUS "************************System Status************************")
 message(STATUS "Working Directory : ${CWD}")
 message(STATUS "SYSTEM_NAME : ${CMAKE_SYSTEM_NAME}")
 message(STATUS "************************System Status************************")
 
-find_package(PkgConfig)
-pkg_search_module(RL REQUIRED json-c)
+if(APPLE)
+  set(READLINE_INC_DIRS "/usr/local/Cellar/readline/8.0.1/include")
+  set(READLINE_LIB_DIRS "/usr/local/Cellar/readline/8.0.1/lib")
+endif()
 
-set(RL_INC "/usr/local/Cellar/readline/8.0.1/include")
+find_package(PkgConfig)
+if(PkgConfig_FOUND)
+  pkg_search_module(JSONC REQUIRED json-c)
+  pkg_search_module(GLIB REQUIRED glib-2.0)
+else()
+
+endif()
+message(
+  ERROR
+  " >**********************************************************************************"
+)
+message(
+  ERROR
+  " >*** THE NECESSARY PATHES ARE NOT SPECIFIED EXPLICITLY, THIS MAY CAUSE PROBLEMS ***"
+)
+message(
+  ERROR
+  " >*** More Specifically they are:                                                ***"
+)
+message(
+  ERROR
+  " >*** GLIB_INCLUDE_DIRS JSONC_INCLUDE_DIRS READLINE_INC_DIRS                     ***"
+)
+message(
+  ERROR
+  " >*** JSONC_LIBRARY_DIRS GLIB_LIBRARY_DIRS READLINE_LIB_DIRS                     ***"
+)
+message(
+  ERROR
+  " >**********************************************************************************"
+)
+
+message(STATUS "${JSONC_FOUND}")
+message(STATUS "${JSONC_LIBRARIES}")
+message(STATUS "${JSONC_LIBRARY_DIRS}")
+message(STATUS "${JSONC_LDFLAGS}")
+message(STATUS "${JSONC_LDFLAGS_OTHER}")
+message(STATUS "${JSONC_INCLUDE_DIRS}")
+message(STATUS "${JSONC_CFLAGS}")
+message(STATUS "${JSONC_CFLAGS_OTHER}")
+message(STATUS "${JSONC_VERSION}")
+message(STATUS "${JSONC_PREFIX}")
+message(STATUS "${JSONC_INCLUDEDIR}")
+message(STATUS "${JSONC_LIBDIR}")
 
 if(GCOV EQUAL 1)
   set(GCOV_FLAGS "-fprofile-arcs -ftest-coverage")
@@ -92,22 +138,16 @@ set(SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/main.c
     ${CMAKE_CURRENT_LIST_DIR}/utils/startup.c)
 
+link_directories(${JSONC_LIBRARY_DIRS} ${GLIB_LIBRARY_DIRS}
+                 ${READLINE_LIB_DIRS})
+
 if(APPLE)
-  set(CMAKE_C_LINK_FLAGS
-    "-L/usr/local/Cellar/json-c/0.13.1/lib -L/usr/local/Cellar/readline/8.0.1/lib -L/usr/local/Cellar/glib/2.62.4/lib -L/usr/lib/arm-linux-gnueabihf -L/usr/local/lib ${CMAKE_C_LINK_FLAGS}"
-  )
-  set(EXTRA_INC_PATH
-      /usr/local/Cellar/glib/2.62.4/include/glib-2.0
-      /usr/local/Cellar/glib/2.62.4/lib/glib-2.0/include
-      /usr/local/Cellar/json-c/0.13.1/include/json-c)
   set(RL_LIB readline.dylib)
 else()
-  set(EXTRA_INC_PATH
-      /usr/include/glib-2.0 /usr/lib/x86_64-linux-gnu/glib-2.0/include
-      /usr/lib/arm-linux-gnueabihf/glib-2.0/include /usr/include/json-c
-      /usr/local/include /usr/local/include/json-c)
   set(RL_LIB readline.so)
 endif()
+
+set(EXTRA_INC_PATH ${GLIB_INCLUDE_DIRS} ${JSONC_INCLUDE_DIRS})
 
 include_directories(
   ${CMAKE_CURRENT_LIST_DIR}
@@ -122,7 +162,7 @@ include_directories(
   ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/common
   ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/host
   ${CMAKE_CURRENT_LIST_DIR}/hal/common/uart
-  ${RL_INC}
+  ${READLINE_INC_DIRS}
   ${EXTRA_INC_PATH})
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_LIST})
