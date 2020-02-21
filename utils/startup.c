@@ -190,10 +190,10 @@ const proj_args_t *getprojargs(void)
 
 static void store_args(lbitmap_t *dirty, int argc, char *argv[])
 {
-  char c;
+  int c;
 
   while (-1 != (c = getopt(argc, argv, "m:p:b:s:c:e:f:"))) {
-    switch (c) {
+    switch ((char)c) {
       case 'm':
         BIT_SET(*dirty, ARG_DIRTY_ENC);
         if (optarg[0] == 's') {
@@ -229,9 +229,9 @@ static void store_args(lbitmap_t *dirty, int argc, char *argv[])
       default:
         /* TODO: Workaround for issue with some ARM platform that it returns
          * 0xff when no more arguments are read */
-        if (c == 0xff) {
-          return;
-        }
+        /* if (c == 0xff) { */
+          /* return; */
+        /* } */
         printf("Argument Not Realized\n");
         print_usage(argv[0]);
         exit(1);
