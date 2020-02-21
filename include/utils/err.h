@@ -36,7 +36,7 @@ typedef enum {
 
   ec_bgrsp = 50,
   ec_bgevt = 51,
-  
+
   ec_errno = 0xff
 }error_code_t;
 
