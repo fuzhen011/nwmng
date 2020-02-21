@@ -29,8 +29,6 @@ if(PkgConfig_FOUND)
   pkg_search_module(JSONC REQUIRED json-c)
   pkg_search_module(GLIB REQUIRED glib-2.0)
 else()
-
-endif()
 message(
   ERROR
   " >**********************************************************************************"
@@ -55,19 +53,7 @@ message(
   ERROR
   " >**********************************************************************************"
 )
-
-message(STATUS "${JSONC_FOUND}")
-message(STATUS "${JSONC_LIBRARIES}")
-message(STATUS "${JSONC_LIBRARY_DIRS}")
-message(STATUS "${JSONC_LDFLAGS}")
-message(STATUS "${JSONC_LDFLAGS_OTHER}")
-message(STATUS "${JSONC_INCLUDE_DIRS}")
-message(STATUS "${JSONC_CFLAGS}")
-message(STATUS "${JSONC_CFLAGS_OTHER}")
-message(STATUS "${JSONC_VERSION}")
-message(STATUS "${JSONC_PREFIX}")
-message(STATUS "${JSONC_INCLUDEDIR}")
-message(STATUS "${JSONC_LIBDIR}")
+endif()
 
 if(GCOV EQUAL 1)
   set(GCOV_FLAGS "-fprofile-arcs -ftest-coverage")

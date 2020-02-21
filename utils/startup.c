@@ -79,7 +79,7 @@ static const int inits_num = ARR_LEN(initfs);
 /* Static Functions Declaractions ************************************* */
 static void setprojargs(int argc, char *argv[]);
 
-extern void err_selftest(void);
+/* extern void err_selftest(void); */
 void startup(int argc, char *argv[])
 {
   err_t e;
@@ -87,8 +87,8 @@ void startup(int argc, char *argv[])
     elog(e);
     return;
   }
-  err_selftest();
-  exit(0);
+  /* err_selftest(); */
+  /* exit(0); */
   cli_proc(argc, argv); /* should never return */
 
   logging_deinit();
