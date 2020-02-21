@@ -227,6 +227,11 @@ static void store_args(lbitmap_t *dirty, int argc, char *argv[])
         projargs.sock.enc = (bool)atoi(optarg);
         break;
       default:
+        /* TODO: Workaround for issue with some ARM platform that it returns
+         * 0xff when no more arguments are read */
+        if (c == 0xff) {
+          return;
+        }
         printf("Argument Not Realized\n");
         print_usage(argv[0]);
         exit(1);

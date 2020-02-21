@@ -25,31 +25,31 @@ extern "C"
 #define FILE_PATH_MAX 108
 #define MAXSLEEP (60 * 5)
 
+#ifndef SRC_ROOT_DIR
 #if __APPLE__ == 1
 #define PROJ_DIR  "/Users/zhfu/work/projs/nwmng/"
-#define PORT      "/dev/tty.usbmodem0004400502021"
-/* #define PORT      "/dev/tty.usbmodem0004400531901" */
+#else
+#define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
+#endif
+#else
+#define PROJ_DIR SRC_ROOT_DIR
+#endif
+
+#if __APPLE__ == 1
 /* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json" */
 /* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json" */
-
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/nwk.json"
 #else
-#define PROJ_DIR  "/home/zhfu/work/projs/nwmng/"
-#define PORT      "/dev/ttyACM3"
-#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/prov.json"
-#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/nwk.json"
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json"
+/* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/prov.json" */
+/* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/nwk.json" */
 #endif
 
 #define CONFIG_CACHE_FILE_PATH  PROJ_DIR ".config"
-
 #define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"
 #define CLI_LOG_FILE_PATH PROJ_DIR "logs/cli.log"
-
-#ifndef CLIENT_ENCRYPTED_PATH
-#define CLIENT_ENCRYPTED_PATH                       "/tmp/client_encrypted"
-#endif
-#define ENC_SOCK_FILE_PATH                          "/tmp/enc_sock"
 
 /*
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions
