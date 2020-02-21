@@ -17,6 +17,7 @@ endif()
 message(STATUS "************************System Status************************")
 message(STATUS "Working Directory : ${CWD}")
 message(STATUS "SYSTEM_NAME : ${CMAKE_SYSTEM_NAME}")
+message(STATUS "SYSTEM_PROCESSOR : ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "************************System Status************************")
 
 if(APPLE)
