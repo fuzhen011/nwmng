@@ -16,44 +16,32 @@ endif()
 
 message(STATUS "************************System Status************************")
 message(STATUS "Working Directory : ${CWD}")
-message(STATUS "SYSTEM_NAME : ${CMAKE_SYSTEM_NAME}")
-message(STATUS "SYSTEM_PROCESSOR : ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "System Name : ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Processor : ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "************************System Status************************")
-
-if(APPLE)
-  set(READLINE_INC_DIRS "/usr/local/Cellar/readline/8.0.1/include")
-  set(READLINE_LIB_DIRS "/usr/local/Cellar/readline/8.0.1/lib")
-endif()
 
 find_package(PkgConfig)
 if(PkgConfig_FOUND)
   pkg_search_module(JSONC REQUIRED json-c)
   pkg_search_module(GLIB REQUIRED glib-2.0)
 else()
-message(
-  ERROR
-  " >**********************************************************************************"
-)
-message(
-  ERROR
-  " >*** THE NECESSARY PATHES ARE NOT SPECIFIED EXPLICITLY, THIS MAY CAUSE PROBLEMS ***"
-)
-message(
-  ERROR
-  " >*** More Specifically they are:                                                ***"
-)
-message(
-  ERROR
-  " >*** GLIB_INCLUDE_DIRS JSONC_INCLUDE_DIRS READLINE_INC_DIRS                     ***"
-)
-message(
-  ERROR
-  " >*** JSONC_LIBRARY_DIRS GLIB_LIBRARY_DIRS READLINE_LIB_DIRS                     ***"
-)
-message(
-  ERROR
-  " >**********************************************************************************"
-)
+  message(
+    ERROR
+    "\n"
+    " >***************************************************************************\n"
+    " > pkg-config is not available in the platform                               \n"
+    " > THE NECESSARY PATHES NEED TO BE SPECIFIED EXPLICITLY                      \n"
+    " > More Specifically they are:                                               \n"
+    " > <GLIB_INCLUDE_DIRS>  <JSONC_INCLUDE_DIRS> <READLINE_INC_DIRS.             \n"
+    " > <JSONC_LIBRARY_DIRS> <GLIB_LIBRARY_DIRS>  <READLINE_LIB_DIRS>             \n"
+    " >***************************************************************************\n"
+  )
+endif()
+
+# readline doesn't work with pkg-config, so specify explicitly.
+if(APPLE)
+  set(READLINE_INC_DIRS "/usr/local/Cellar/readline/8.0.1/include")
+  set(READLINE_LIB_DIRS "/usr/local/Cellar/readline/8.0.1/lib")
 endif()
 
 if(GCOV EQUAL 1)

@@ -18,12 +18,14 @@
 #include "utils.h"
 /* Defines  *********************************************************** */
 #define LOGBUF_SIZE 1024
-
+/*
+ * Format of file and line information in the log message: [file:line]
+ */
 #define FILE_NAME_LENGTH  10
 #define LINE_NAME_LENGTH  5
 #define FILE_LINE_LENGTH  (FILE_NAME_LENGTH + LINE_NAME_LENGTH + 3)
 
-#define LOGGING_DBG
+/* #define LOGGING_DBG */
 #ifdef LOGGING_DBG
 #define LD(...) printf(__VA_ARGS__)
 #else
@@ -175,7 +177,7 @@ static err_t fill_lvl(int lvl,
       flaglen = sizeof(VER_FLAG);
       break;
   }
-  /* LD("%d - %lu\n", lvl, flaglen); */
+  LD("%d - %lu\n", lvl, flaglen);
 
   if (offset + flaglen + 2 > input_len) {
     return err(ec_length_leak);

@@ -227,11 +227,6 @@ static void store_args(lbitmap_t *dirty, int argc, char *argv[])
         projargs.sock.enc = (bool)atoi(optarg);
         break;
       default:
-        /* TODO: Workaround for issue with some ARM platform that it returns
-         * 0xff when no more arguments are read */
-        if (c == 0xff) {
-          return;
-        }
         printf("Argument Not Realized\n");
         print_usage(argv[0]);
         exit(1);
@@ -296,7 +291,7 @@ static inline void __append_cfg(char *buf, const char *key, const char *val)
   strcat(buf, line);
 }
 
-static inline void _setprojargs(int argc, char *argv[])
+static void setprojargs(int argc, char *argv[])
 {
   size_t len;
   FILE *fp;
@@ -420,19 +415,5 @@ static inline void _setprojargs(int argc, char *argv[])
   }
 
   projargs.initialized = true;
-  /* exit(0); */
 }
-
-static void setprojargs(int argc, char *argv[])
-{
-#if 1
-  _setprojargs(argc, argv);
-#else
-  projargs.enc = false;
-  memcpy(projargs.serial.port, PORT, sizeof(PORT));
-  projargs.serial.br = 115200;
-  projargs.initialized = true;
-#endif
-}
-
 /**  @} */

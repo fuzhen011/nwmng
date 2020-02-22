@@ -36,6 +36,8 @@ ideas in mind.
 
 ## Capabilities
 
+---
+
 The host network manager supports below functionalities:
 
 - Create network and application keys
@@ -96,10 +98,11 @@ properly before using the example.
 
 - json-c - Download and install it from https://github.com/json-c/json-c.
 - glib - Download and install it from https://developer.gnome.org/
-
----
+- readline - Download and install it from http://tiswww.case.edu/php/chet/readline/rltop.html
 
 ## Architecture
+
+---
 
 <div align=center>![Functional Diagram](doc/arch.png "Functional Diagram")</div align=center>
 <center>Figure 1. Functional Diagram</center>
@@ -107,18 +110,20 @@ properly before using the example.
 The architecture of the host network manager is as shown in figure 1. Below is
 a brief introduction to each module in this diagram.
 
-- Event dispenser - read events from NCP target and dispense them to all modules.
-- Generic config parser - Abstract layer for parsing different types of config
-  files, provides the configuration to all other modules.
-- Config Database - Store all the configuration, including network and nodes
-  configuration
+- Event Handler - read BGAPI events from NCP target and dispatch them to
+  corresponding modules.
+- Generic Config Parser - An abstract layer for parsing different types of
+  config files, which provides the configuration to all other modules.
+- Configuration Database - Store all the configuration, including network and
+  nodes configuration
 - MNG - Loads the configuration from CFG part and deploy to the network.
 - Logging - Receives data from other layers and writes to the log file.
 - CLI - Receives user input.
 
-Limitation of this design - Only **ONE** subnet is supported. Multiple subnets
-feature is supported by the Bluetooth Mesh SDK, however, the requirements for
-multiple subnets in practice is rare, so leave it for future implementation.
+Limitation of this design - Only **ONE** subnet is supported, while multiple
+subnets feature is supported by the Bluetooth Mesh SDK. It's because the
+requirements for multiple subnets in practice is not very common yet, so just
+leave it for future implementation.
 
 Generally, there are 3 parts in the program, CLI, MNG and CFG.
 
@@ -131,33 +136,31 @@ Supported commands
 
 Conventions:
 
-- Argument in \[\] means normal argument.
-- Argument in &lt;&gt; means that the argument is optional to present, in this
-  case, argument(s) probably have default value(s).
+- Each \[\] stands for an argument iteam, some of them are mandatory to present
+  and some are not, in which case, a default value of the argument is applied.
 - Argument followed by ... means variable number of the argument.
-- Content in \(\) following a argument is illustrative.
 
-|       Command        |             Args             | Defaults |    Usage    | Description                                                                                                                                                     |
-| :------------------: | :--------------------------: | :------: | :---------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|         sync         |           \[1/0\]            |    1     |    sync     | Start or stop synchronizing the network configuration with the JSON file                                                                                        |
-|        reset         | &lt;1(Factory)/0(Normal)&gt; |    0     |    reset    | Reset the device, if argument is 1, erase the storage                                                                                                           |
-|         info         |         \[addr...\]          |    /     | info 0x003a | If no argument is given, shows the overall configuration of the network, if address is given, shows configuration for the node, including UUID, Device key etc. |
-|          q           |              \               |    /     |      q      | Quit the program                                                                                                                                                |
-| freemode<sup>1</sup> |          \[on/off\]          |    on    | freemode on | Turning on/off the free mode.                                                                                                                                   |
-|         help         |              \               |    \     |    help     | Print the usage of all commands.                                                                                                                                |
-|        status        |              \               |    \     |   status    | Print the device status.                                                                                                                                        |
-|        rmall         |              \               |    \     |    rmall    | Remove all the nodes from the network                                                                                                                           |
-|        clrrb         |              \               |    \     |    clrrb    | Clear the RM_Blacklist fieldof the nodes                                                                                                                        |
-|        seqset        | combination of a, r, b and - |    \     | seqset arb  | determine the sequence of loadding the adding/removing/blacklisting actions.                                                                                    |
-|      loglvlset       |    \[e/w/m/d/v\] \[1/0\]     |    \     | loglvlset m | Only "message" and higher priority logging types will be output, the second parameter determines if the logging will be output via printf                       |
+|       Command        |             Args             | Defaults |    Usage    | Description                                                                                                                                                                 |
+| :------------------: | :--------------------------: | :------: | :---------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|         sync         |           \[1/0\]            |    1     |    sync     | Start or stop synchronizing the network configuration with the JSON configuration files                                                                                     |
+|        reset         |            [1/0]             |    0     |    reset    | Reset the device, if argument is 1, erase the storage as well, known as factory reset                                                                                       |
+|         info         |         \[addr...\]          |    /     | info 0x003a | If no argument is given, shows the overall configuration of the network, if address is given, shows the specific configuration to the node, including UUID, Device key etc. |
+|          q           |              \               |    /     |      q      | Quit the program                                                                                                                                                            |
+| freemode<sup>1</sup> |          \[on/off\]          |    on    | freemode on | Turning on/off the free mode.                                                                                                                                               |
+|         help         |              \               |    \     |    help     | Print the usage of all commands.                                                                                                                                            |
+|        status        |              \               |    \     |   status    | Print the device status.                                                                                                                                                    |
+|        rmall         |              \               |    \     |    rmall    | Remove all the nodes from the network                                                                                                                                       |
+|        clrrb         |              \               |    \     |    clrrb    | Clear the RM_Blacklist fieldof the nodes                                                                                                                                    |
+|        seqset        | combination of a, r, b and - |    \     | seqset ar-  | determine the sequence of loadding the adding/removing/blacklisting/none actions.                                                                                           |
+|      loglvlset       |    \[e/w/m/d/v\] \[1/0\]     |    \     | loglvlset w | Log with priority "warning" or higher will be sent to the log file, the second parameter determines if the logging will be sent to printf (stdout if not redirect)          |
 
 <center>Table x: Network Configuration Commands</center>
 
-|  Command  |           Args            |           Usage            | Description                                                                             |
-| :-------: | :-----------------------: | :------------------------: | --------------------------------------------------------------------------------------- |
-|   onoff   |  \[on/off\] \[addr...\]   |   onoff on 0x1203 0x100c   | Set the light onoff status, if no argument is given, set to all light nodes             |
-| lightness | \[pecentage\] \[addr...\] | lightness 50 0x1203 0x100c | Set the light lightness status, if no argument is given, set to all light nodes         |
-| colortemp | \[pecentage\] \[addr...\] | colortemp 30 0x1203 0x100c | Set the light color temperature status, if no argument is given, set to all light nodes |
+|  Command  |           Args            |           Usage            | Description                                                                            |
+| :-------: | :-----------------------: | :------------------------: | -------------------------------------------------------------------------------------- |
+|   onoff   |  \[on/off\] \[addr...\]   |   onoff on 0x1203 0x100c   | Set the light onoff status, if no address is given, set to all light nodes             |
+| lightness | \[pecentage\] \[addr...\] | lightness 50 0x1203 0x100c | Set the light lightness status, if no address is given, set to all light nodes         |
+| colortemp | \[pecentage\] \[addr...\] | colortemp 30 0x1203 0x100c | Set the light color temperature status, if no address is given, set to all light nodes |
 
 <center>Table x: Lighting Control Commands</center>
 
@@ -167,11 +170,66 @@ Conventions:
 
 ## MNG
 
+The MNG part is the core part of the application, which coprate with the other
+two parts and make sure the network is properly configured according to the
+configuration files and the received commands.
+
+### Features
+
+#### Simultaneously Provision and Configure Devices
+
+Silicon Labs Bluetooth Mesh SDK **supports** this feature, as most of the demos
+uses a 'single thread' way to do it (provision one -> configure one ->
+provision another -> ...), users may be misled that provision/configure the
+next device must wait for the compete of the previous one.
+
+To benefit from this, you need to set the 2 fields in the "Memory
+Configuration" in the NCP target isc file.
+
+- Max Prov Sessions - this determines how many devices can be provisioned by
+  the provisioner simultaneously. There is a define **#define MAX_PROV_SESSIONS
+  4** in _adding_devices.h_ of the host project, this value must be equal or
+  less than the setting in the NCP target memory configuration.
+
+- Max Foundation Client Cmds - this determines how many nodes can be configured
+  by the provisioner simultaneously. There is a define **#define
+  MAX_CONCURRENT_CONFIG_NODES 6** in _async_config_client.c_ of the host
+  project, this value must be equal or less than the setting in the NCP target
+  memory configuration.
+
+Below is a rough time comparison of provisioning and configuring a 15-node
+network between using 'single thread' way and the asynchronous way. The time
+itself is meaningless because it heavily depends on the environment, how you
+configure each node, how many retries for timeouts and interval between retries
+etc..
+
+- 'Single thread' way - around 6 minutes
+- Asynchronous way - around 1 minute
+
+### Retry
+
+Due to the nature of Bluetooth Mesh technology and the fact that wireless
+communication is heavily affected by the environments such as packet collision,
+commands sent to the nodes may be lost. Retry mechanism on the application
+layer has been implemented to increase the robustness. However, given that
+retry probably won't solve the error other than timeout or out of memory, so
+the current implementation will only retry on timeout and out of memory
+situation. For other errors, it will end the current operation immediately and
+record the failure status to the node configuration file, so developers could
+check the error and determine how to deal with it afterwards. It is easy to add
+any error events to retry, add any specific error event to below the timeout
+event case in each state callback switch block.
+
+The define symbols in the _projconfig.h_ file determines the maximum retry
+times for each specific configuration process.
+
 ## CFG
 
-### What information needs to be stored in config file
+An example of the configuration files is available in the
+\${PROJECT_ROOT}/tools/mesh_config/example folder, you could copy it and use it
+as starting point to configure your network and nodes.
 
-#### Provisioner
+#### Self Configuration
 
 The content in this file describes how the provisioner should configure itself
 and how to create the network, see table x.
@@ -227,11 +285,37 @@ removing, configuring and blacklisting.
 
 <center>Table x. Network & Nodes Config File Content</center>
 
+#### Template
+
+The configuration of one single node might be long, and multiple nodes may have the same configuration just like the concept of group. So the configuration item in the template file provides the configuration for groups. You could add the "Template ID" field to the node and fill it with the specific reference ID of the group. For the case where a specific configuration is both defined in the node field and the group field. The configuration in the node field will be used.
+
+---
+
 1. By checking the last modification time against last synchronized time to know
    if the configuration is changed out of the program.
 2. The real id is allocated when the key is created successfully, however, in
    most of the cases, configuration of the network happens before it. So the
    keys are referenced by the RefId across the configuration files.
+
+---
+
+## Security
+
+Security is extremely important for your products and the Bluetooth Mesh
+network. The application aims to provide an example or a starting point for
+developing this sort of application, so it stores the sensitive data including
+the network and application keys into the file without encryption. That **SHALL
+NEVER** be used when developping the real products. How to securely store the
+data to the file and make the file to be safe is left for developers
+respectively.
+
+### Secure & Insecure NCP
+
+The provisioner supports both secure and insecure NCP, which are 2 ways of
+commnicating between the NCP host and target provided by Silicon Labs. With
+secure NCP, the ncp secure daemon must be running and user needs to feed the
+socket file path with parameter if it's encrypted to the application. With the
+insecure NCP, user needs to feed the UART port and baud rate.
 
 ## Utils
 
@@ -286,6 +370,16 @@ Logging Format: \[Time\]\[File:Line]\[Level\]: Log Message...
 
 ### Recommended NCP Target Configuration
 
+The NCP target owns the device database of the network, it's important to set
+the memory configuration properly so that it can actually store the necessary
+information of the whole network for the target size. In other words, the
+memory configuration determines how large your network could be.
+
+Below is an example of setting the memory configuration, in which the network
+target size is 128. You need to set **AT LEAST** below items to the memory
+configuration file, which is in the {PROJECT_NAME}.isc file in your ncp target
+project.
+
 | Item                    | Value     | Note                                         |
 | ----------------------- | --------- | -------------------------------------------- |
 | Feature bitmask         | 0x0001    |                                              |
@@ -293,9 +387,33 @@ Logging Format: \[Time\]\[File:Line]\[Level\]: Log Message...
 | Net Cache Size          | 128(0x80) | set to the expected network size if possible |
 | Max Provisioned Devices | 128(0x80) | set to the expected network size             |
 
+<center>Table x. Memory Configuration of NCP Target</center>
+
+Furthermore, there are 2 important settings in NVM3 which is the persistent
+storage solution used in the Bluetooth Mesh stack. You possibly need to
+increase the settings below if you increase the network target size. For more
+information, please go through the [AN1135: Using Third Generation Non-Volatile Memory (NVM3) Data Storage](https://www.silabs.com/documents/public/application-notes/an1135-using-third-generation-nonvolatile-memory.pdf).
+
+- NVM3_DEFAULT_CACHE_SIZE
+- NVM3_DEFAULT_NVM_SIZE
+
 ## Usage Example for Typical Scenarios
 
-### Record Devices Nearby and Adding/Configuring Them
+### Get It Running
+
+You need to do at least below steps to get it running.
+
+1. Create a "NCP - Mesh Empty Target" or "NCP - Secure NCP Mesh Empty Target"
+   example based on the board you use.
+2. Modify the memory configuration mentioned above to meet your target network size requirement.
+3. Properly set the "Max Prov Sessions" and the "Max Foundation Client Cmds" in the memory configuration file, and make sure **Max Prov Sessions >= MAX_PROV_SESSIONS and Max Foundation Client Cmds >= MAX_CONCURRENT_CONFIG_NODES**
+4. Build the program and flash it to your board. Connect it to your host platform and make sure the UART is working.
+5. Make sure you have all the dependent libraries installed, and download the application.
+6. Speicify the JSON configuration file pathes to SELFCFG*FILE_PATH and NWNODES_FILE_PATH symbols in \_projconfig.h* file. You could specify a non-existing path so the application will create the files with basic configurations and you could modify the configuration afterwards. Note, the folder should exist already.
+7. Compile and run the application with proper argument according to your setup. Once you have successfully run it once, the arguments will be written to a cache file, the next time you can emit them if you don't want to change the arguments.
+8. A console should start and you could type "help" to get the usage.
+
+### Record Devices Nearby
 
 This could be the first step you use the program. Make sure you have the
 unprovisioned device placed in the direct radio range to the provisioner and
@@ -303,14 +421,29 @@ they are sending the unprovisioned device beacon. Then you can do the below
 steps to record them.
 
 1. Start the program.
-2. Type freemode on to start recording.
+2. Type freemode on to start recording. If any unprovisioned device beacon is
+   received, it will store the device information to the backlog of the node
+   configuration file.
 3. Type freemode off when all the devices are recorded to the backlog.
-4. Move the nodes you want to operate onto the first item of "Subnets"
-5. Change the "Template ID" field of each node based on what configuration you
+
+### Move Devices from Backlog to Primary Subnet
+
+As mentioned above, the nearby devices recorded by freemode will be added to
+backlog. You need to cherry pick those you want to add to your network from the
+backlog to the primary subnet field.
+
+1. Open the nodes configuration file.
+2. Move the nodes you want to operate onto the first item of "Subnets"
+3. Change the "Template ID" field of each node based on what configuration you
    want to apply to the node. Certainly, you could change the configuration as
    well.
-6. Once you have properly set the configuration to all the nodes, type "sync"
-   to start adding them to the network and configuring them.
+
+### Adding/Configuring Device(s)
+
+1. Make sure you have properly set the configuration to all the nodes in the
+   node configuration file.
+2. Start the program if not yet.
+3. Type "sync" to start adding them to the network and configuring them.
 
 ### Blacklisting Node(s)
 
