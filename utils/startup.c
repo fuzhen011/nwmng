@@ -165,21 +165,14 @@ int cli_proc(int argc, char *argv[])
  * @{ */
 static void print_usage(const char *name)
 {
-  fprintf(stderr, "Usage: %s [-m mode]"
-                  " [-p serial_port]"
-                  " [-b baud_rate]"
-                  " [-s server_domain_socket_path]"
-                  " [-c client_domain_socket_path]"
-                  " [-e 0/1 - is_domain_socket_encrypted?]\n",
+  fprintf(stderr, "Usage: %s [arguments...]\n"
+                  "       -m mode [s/i]                       s - Secure NCP, i - Insecure NCP\n"
+                  "       -p serial_port                      Valid in Insecure Mode\n"
+                  "       -b baud_rate                        Valid in Insecure Mode\n"
+                  "       -s server_domain_socket_path        Valid in Secure Mode\n"
+                  "       -c client_domain_socket_path        Valid in Secure Mode\n"
+                  "       -e is_domain_socket_encrypted[1/0]  Valid in Secure Mode\n",
           name);
-  fprintf(stderr, "       -m mode                        s - secure NCP with UNIX domain socket, i - insecure NCP, connect to UART directly\n");
-  fprintf(stderr, "       -p serial_port                 Which UART port to connect to    - [Only used when in insecure mode]\n");
-  fprintf(stderr, "       -b baud_rate                   UART baud rate                   - [Only used when in insecure mode]\n");
-  fprintf(stderr, "       -s server_domain_socket_path   Server UNIX domain socket path   - [Only used when in secure mode]\n");
-  fprintf(stderr, "       -c client_domain_socket_path   Client UNIX domain socket path   - [Only used when in secure mode]\n");
-  fprintf(stderr, "       -e is_domain_socket_encrypted  1 - encrypted, 0 - not encrypted - [Only used when in secure mode]\n");
-  /* fprintf(stderr, "     -f XML_file_path                XML node configuration file path\n"); */
-
   exit(EXIT_FAILURE);
 }
 
@@ -190,8 +183,7 @@ const proj_args_t *getprojargs(void)
 
 static void store_args(lbitmap_t *dirty, int argc, char *argv[])
 {
-  char c;
-
+  int c;
   while (-1 != (c = getopt(argc, argv, "m:p:b:s:c:e:f:"))) {
     switch (c) {
       case 'm':
