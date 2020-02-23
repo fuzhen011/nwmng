@@ -19,7 +19,7 @@
 #define ONCE_P(cache)                                                                \
   do {                                                                               \
     LOGV(                                                                            \
-      "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",                \
+      "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x]\n",            \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -30,7 +30,7 @@
 #define SUC_P(cache)                                                                 \
   do {                                                                               \
     LOGD(                                                                            \
-      "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",        \
+      "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] SUCCESS\n",    \
       cache->node->addr,                                                             \
       cache->iterators[ELEMENT_ITERATOR_INDEX],                                      \
       cache->vnm.vd,                                                                 \
@@ -38,16 +38,16 @@
       cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]]); \
   } while (0)
 
-#define FAIL_P(cache, err)                                                                 \
-  do {                                                                                     \
-    LOGE(                                                                                  \
+#define FAIL_P(cache, err)                                                                     \
+  do {                                                                                         \
+    LOGE(                                                                                      \
       "Node[0x%04x]:  --- Sub [Element-Model(%d-%04x:%04x) <- 0x%04x] FAILED, Err <0x%04x>\n", \
-      cache->node->addr,                                                                   \
-      cache->iterators[ELEMENT_ITERATOR_INDEX],                                            \
-      cache->vnm.vd,                                                                       \
-      cache->vnm.md,                                                                       \
-      cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]],        \
-      err);                                                                                \
+      cache->node->addr,                                                                       \
+      cache->iterators[ELEMENT_ITERATOR_INDEX],                                                \
+      cache->vnm.vd,                                                                           \
+      cache->vnm.md,                                                                           \
+      cache->node->config.sublist->data[cache->iterators[SUB_ADDR_ITERATOR_INDEX]],            \
+      err);                                                                                    \
   } while (0)
 
 /* Global Variables *************************************************** */

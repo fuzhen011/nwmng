@@ -18,7 +18,7 @@
 
 #define ONCE_P(cache)                                                                    \
   do {                                                                                   \
-    LOGV("Node[0x%04x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)]\n",                    \
+    LOGV("Node[0x%04x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)]\n",                \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
@@ -28,7 +28,7 @@
 
 #define SUC_P(cache, config)                                                             \
   do {                                                                                   \
-    LOGD("Node[0x%04x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n",            \
+    LOGD("Node[0x%04x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] SUCCESS\n",        \
          cache->node->addr,                                                              \
          get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id, \
          cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                              \
@@ -36,15 +36,15 @@
          cache->vnm.md);                                                                 \
   } while (0)
 
-#define FAIL_P(cache, config, err)                                                         \
-  do {                                                                                     \
+#define FAIL_P(cache, config, err)                                                             \
+  do {                                                                                         \
     LOGE("Node[0x%04x]:  --- Bind [refid(%d) <-> %s Model(%04x:%04x)] FAILED, Err <0x%04x>\n", \
-         cache->node->addr,                                                                \
-         get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id,   \
-         cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                                \
-         cache->vnm.vd,                                                                    \
-         cache->vnm.md,                                                                    \
-         err);                                                                             \
+         cache->node->addr,                                                                    \
+         get_mng()->cfg->subnets[0].appkey[cache->iterators[APP_KEY_ITERATOR_INDEX]].id,       \
+         cache->vnm.vd == SIG_VENDOR_ID ? "SIG" : "Vendor",                                    \
+         cache->vnm.vd,                                                                        \
+         cache->vnm.md,                                                                        \
+         err);                                                                                 \
   } while (0)
 
 /* Global Variables *************************************************** */

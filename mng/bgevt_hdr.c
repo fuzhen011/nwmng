@@ -69,16 +69,14 @@ void conn_ncptarget(void)
 
 void sync_host_and_ncp_target(void)
 {
-  struct gecko_cmd_packet *p;
   int timeout = 0;
-
   ncp_sync = false;
   LOGM("Syncing NCP Host and Target\n");
   while (timeout < MAXSLEEP && !ncp_sync) {
     if (getprojargs()->enc) {
       poll_update(50);
     }
-    p = gecko_peek_event();
+    struct gecko_cmd_packet *p = gecko_peek_event();
 
     if (p && BGLIB_MSG_ID(p->header) == gecko_evt_system_boot_id) {
       LOGM("System Booted - Host and NCP Target Synchronized\n");

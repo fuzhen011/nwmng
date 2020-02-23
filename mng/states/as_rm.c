@@ -12,23 +12,23 @@
 #include "logging.h"
 
 /* Defines  *********************************************************** */
-#define ONCE_P(cache)           \
-  do {                          \
+#define ONCE_P(cache)               \
+  do {                              \
     LOGV("Node[0x%04x]:  --- RM\n", \
-         cache->node->addr);    \
+         cache->node->addr);        \
   } while (0)
 
-#define SUC_P(cache)                 \
-  do {                               \
+#define SUC_P(cache)                     \
+  do {                                   \
     LOGD("Node[0x%04x]:  --- SUCCESS\n", \
-         cache->node->addr);         \
+         cache->node->addr);             \
   } while (0)
 
-#define FAIL_P(cache, err)                           \
-  do {                                               \
+#define FAIL_P(cache, err)                               \
+  do {                                                   \
     LOGE("Node[0x%04x]:  --- RM FAILED, Err <0x%04x>\n", \
-         cache->node->addr,                          \
-         err);                                       \
+         cache->node->addr,                              \
+         err);                                           \
   } while (0)
 
 /* Global Variables *************************************************** */
