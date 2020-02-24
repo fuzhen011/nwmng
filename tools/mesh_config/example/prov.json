@@ -1,0 +1,30 @@
+{
+  "Address":"0x0000",
+  "IVI":"0x00000000",
+  "TTL":"0x09",
+  "SyncTime":"0x5e4b7921",
+  "TX Parameters":{
+    "Count":"0x03",
+    "Interval":"0x001E"
+  },
+  "Config Timeout":{
+    "Normal":"0x1388",
+    "LPN":"0x3A98"
+  },
+  "Subnets":[
+    {
+      "RefId":"0x0000",
+      "Id":"0x0000",
+      "Value":"9ddb055fdbe5e0320b56b5c192cc5683",
+      "Done":"0x01",
+      "AppKey":[
+        {
+          "RefId":"0x0000",
+          "Id":"0x0000",
+          "Value":"9ddb055fdbe5e0320b56b5c192cc5683",
+          "Done":"0x01"
+        }
+      ]
+    }
+  ]
+}

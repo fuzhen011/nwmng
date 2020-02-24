@@ -11,5 +11,6 @@ cppcheck.xml
 .history
 .config
 .gdb*
-tools/mesh_config
+tools/mesh_config/*
 !tools/mesh_config/templates.json
+!tools/mesh_config/example
