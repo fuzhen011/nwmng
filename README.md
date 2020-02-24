@@ -154,7 +154,7 @@ Conventions:
 |        seqset        | combination of a, r, b and - |    \     | seqset ar-  | determine the sequence of loadding the adding/removing/blacklisting/none actions.                                                                                           |
 |      loglvlset       |    \[e/w/m/d/v\] \[1/0\]     |    \     | loglvlset w | Log with priority "warning" or higher will be sent to the log file, the second parameter determines if the logging will be sent to printf (stdout if not redirect)          |
 
-<center>Table x: Network Configuration Commands</center>
+<center>Table 2: Network Configuration Commands</center>
 
 |  Command  |           Args            |           Usage            | Description                                                                            |
 | :-------: | :-----------------------: | :------------------------: | -------------------------------------------------------------------------------------- |
@@ -162,7 +162,7 @@ Conventions:
 | lightness | \[pecentage\] \[addr...\] | lightness 50 0x1203 0x100c | Set the light lightness status, if no address is given, set to all light nodes         |
 | colortemp | \[pecentage\] \[addr...\] | colortemp 30 0x1203 0x100c | Set the light color temperature status, if no address is given, set to all light nodes |
 
-<center>Table x: Lighting Control Commands</center>
+<center>Table 3: Lighting Control Commands</center>
 
 1. When freemode is on, the device will start scanning for unprovisioned device
    beacon and record the device information to the backlog in the nodes
@@ -232,13 +232,13 @@ as starting point to configure your network and nodes.
 #### Self Configuration
 
 The content in this file describes how the provisioner should configure itself
-and how to create the network, see table x.
+and how to create the network, see table 4.
 
 |            What's it             |           Key            |    Value    | Description                                                     |
 | :------------------------------: | :----------------------: | :---------: | --------------------------------------------------------------- |
 |    Last sync time<sup>1</sup>    |         SyncTime         |   uint32    | Time stamp that the appliaction write to the file most recently |
 |             IV index             |           IVI            |   uint32    |                                                                 |
-|               Keys               |            \             |     \       | Details in Table x below                                        |
+|               Keys               |            \             |     \       | Details in Table 5 below                                        |
 |           Time To Live           |           TTL            |    uint8    |                                                                 |
 |      Network Transmit Count      |  TX Parameters - Count   |    uint8    | [0, 7]                                                          |
 |    Network Transmit Interval     | TX Parameters - Interval |    uint8    | [10, 320]@step10                                                |
@@ -247,7 +247,7 @@ and how to create the network, see table x.
 |        Publication Groups        |        PubGroups         | uint16array | **Not Used Yet**                                                |
 |       Subscription Groups        |        SubGroups         | uint16array | **Not Used Yet**                                                |
 
-<center>Table x. Provisioner Config File Content</center>
+<center>Table 4. Provisioner Config File Content</center>
 
 |        What's it         |  Key  |      Value      | Description |
 | :----------------------: | :---: | :-------------: | ----------- |
@@ -256,7 +256,7 @@ and how to create the network, see table x.
 |        Key Value         | Value | 16BL uint8array |             |
 |  Created successfully?   | Done  |      bool       |             |
 
-<center>Table x. Key Content</center>
+<center>Table 5. Key Content</center>
 
 #### Network & Nodes
 
@@ -283,7 +283,7 @@ removing, configuring and blacklisting.
 | Enable/disable secure network beacon |  Secure Network Beacon   |      uint8      | 1 to enable, 0 to disable                                                                            |
 |               Backlog                |         Backlog          |      Nodes      | Nodes in backlog won't be processed                                                                  |
 
-<center>Table x. Network & Nodes Config File Content</center>
+<center>Table 6. Network & Nodes Config File Content</center>
 
 #### Template
 
@@ -334,17 +334,17 @@ value. In general, when there is a specific error happens, return the error
 code surrounded by err(x) macro, when getting a non-zero (not _ec_success_)
 unsigned return value, use elog(x) to print the error information to the log
 file or use eprint(x) which calls printf rather than writting to the log file.
-Figure x shows the elog output.
+Figure 2 shows the elog output.
 
 <div align=center>![Error Information](doc/pic/err.png "Error Information")</div align=center>
-<center>Figure x. Error Information</center>
+<center>Figure 2. Error Information</center>
 
 ### Logging
 
 Logging has the level feature which is inspired from Android logging system.
 The threshold of the logging is settable via 'loglvlset' command, as a result
 of which, the logging messages with priority lower than the threshold will not
-be sent to the logging file. See the table x for the logging message types with
+be sent to the logging file. See the table 7 for the logging message types with
 priorities in descending order.
 
 The logging messages will be written to the file system, the path is specified
@@ -362,11 +362,11 @@ Logging Format: \[Time\]\[File:Line]\[Level\]: Log Message...
 | DBG      | Debug        | Debugging message                              |
 | VER      | Verbose      | Verbose messages                               |
 
-<center>Table x. Logging</center>
+<center>Table 7. Logging</center>
 
 ![Logging](doc/pic/logging.png)
 
-<center>Figure x. Demonstration of Logging</center>
+<center>Figure 3. Demonstration of Logging</center>
 
 ### Recommended NCP Target Configuration
 
@@ -387,7 +387,7 @@ project.
 | Net Cache Size          | 128(0x80) | set to the expected network size if possible |
 | Max Provisioned Devices | 128(0x80) | set to the expected network size             |
 
-<center>Table x. Memory Configuration of NCP Target</center>
+<center>Table 8. Memory Configuration of NCP Target</center>
 
 Furthermore, there are 2 important settings in NVM3 which is the persistent
 storage solution used in the Bluetooth Mesh stack. You possibly need to
@@ -484,3 +484,7 @@ to control the light status.
   0x000x are the unicast address of the nodes.
 - To set a group nodes  on, type the command "onoff on 0x000x...", where 0x000x
   are the group address that the group subscribe from.
+
+## Project Repo
+
+Available on Github - https://github.com/fuzhen011/nwmng
