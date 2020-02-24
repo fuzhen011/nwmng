@@ -337,7 +337,8 @@ unsigned return value, use elog(x) to print the error information to the log
 file or use eprint(x) which calls printf rather than writting to the log file.
 Figure 2 shows the elog output.
 
-<div align=center>![Error Information](doc/pic/err.png "Error Information")</div align=center>
+![Error Information](https://github.com/fuzhen011/nwmng/raw/master/doc/pic/err.png "Error Information")
+
 <center>Figure 2. Error Information</center>
 
 ### Logging
