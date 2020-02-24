@@ -104,7 +104,7 @@ properly before using the example.
 
 ---
 
-<div align=center>![Functional Diagram](doc/arch.png "Functional Diagram")</div align=center>
+<div align=center>![Functional Diagram](https://github.com/fuzhen011/nwmng/raw/master/doc/arch.png "Functional Diagram")</div align=center>
 <center>Figure 1. Functional Diagram</center>
 
 The architecture of the host network manager is as shown in figure 1. Below is
