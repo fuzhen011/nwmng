@@ -104,7 +104,8 @@ properly before using the example.
 
 ---
 
-<div align=center>![Functional Diagram](https://github.com/fuzhen011/nwmng/raw/master/doc/arch.png "Functional Diagram")</div align=center>
+![Functional Diagram](https://github.com/fuzhen011/nwmng/raw/master/doc/arch.png)
+
 <center>Figure 1. Functional Diagram</center>
 
 The architecture of the host network manager is as shown in figure 1. Below is
@@ -364,7 +365,7 @@ Logging Format: \[Time\]\[File:Line]\[Level\]: Log Message...
 
 <center>Table 7. Logging</center>
 
-![Logging](doc/pic/logging.png)
+![Logging](https://github.com/fuzhen011/nwmng/raw/master/doc/pic/logging.png)
 
 <center>Figure 3. Demonstration of Logging</center>
 
@@ -482,7 +483,7 @@ to control the light status.
 
 - To set a single node or nodes on, type the command "onoff on 0x000x...", where
   0x000x are the unicast address of the nodes.
-- To set a group nodes  on, type the command "onoff on 0x000x...", where 0x000x
+- To set a group nodes on, type the command "onoff on 0x000x...", where 0x000x
   are the group address that the group subscribe from.
 
 ## Project Repo
