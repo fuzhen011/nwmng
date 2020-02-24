@@ -1,7 +1,45 @@
 static const char *source_files[] = {
     "main", /* 1 */
     "mng", /* 2 */
-    "cli", /* 3 */
-    "err", /* 4 */
-    "logging", /* 5 */
+    "models", /* 3 */
+    "dev_add", /* 4 */
+    "nwk", /* 5 */
+    "bgevt_hdr", /* 6 */
+    "dev_bl", /* 7 */
+    "stat", /* 8 */
+    "demo", /* 9 */
+    "dev_config", /* 10 */
+    "as_rmend", /* 11 */
+    "as_end", /* 12 */
+    "as_setpub", /* 13 */
+    "as_bindappkey", /* 14 */
+    "as_rm", /* 15 */
+    "as_setconfig", /* 16 */
+    "as_getdcd", /* 17 */
+    "as_addappkey", /* 18 */
+    "as_addsub", /* 19 */
+    "cfg", /* 20 */
+    "cfgdb", /* 21 */
+    "generic_parser", /* 22 */
+    "json_parser", /* 23 */
+    "cli", /* 24 */
+    "cli_print", /* 25 */
+    "src_names", /* 26 */
+    "utils_print", /* 27 */
+    "utils", /* 28 */
+    "err", /* 29 */
+    "logging", /* 30 */
+    "startup", /* 31 */
+    "bg_uart_cbs", /* 32 */
+    "socket_handler", /* 33 */
+    "gecko_bglib", /* 34 */
+    "uart_posix", /* 35 */
+    "sl_bgapi", /* 36 */
+    "sl_security", /* 37 */
+    "main", /* 38 */
+    "sl_poll", /* 39 */
+    "uart_win", /* 40 */
+    "uart_posix", /* 41 */
+    "platform", /* 42 */
+    "read_char", /* 43 */
 };

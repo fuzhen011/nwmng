@@ -11,7 +11,25 @@
 extern "C"
 {
 #endif
+#include <stdbool.h>
 #include "err.h"
+
+#define COLOR_OFF "\x1B[0m"
+#define COLOR_BLACK "\x1B[0;30m"
+#define COLOR_RED "\x1B[0;31m"
+#define COLOR_GREEN "\x1B[0;32m"
+#define COLOR_YELLOW  "\x1B[0;33m"
+#define COLOR_BLUE  "\x1B[0;34m"
+#define COLOR_MAGENTA "\x1B[0;35m"
+#define COLOR_CYAN  "\x1B[0;36m"
+#define COLOR_WHITE "\x1B[0;37m"
+#define COLOR_WHITE_BG  "\x1B[0;47;30m"
+#define COLOR_HIGHLIGHT "\x1B[1;39m"
+
+#define COLOR_RED_BOLD    "\x1B[1;31m"
+#define COLOR_GREEN_BOLD  "\x1B[1;32m"
+#define COLOR_BLUE_BOLD   "\x1B[1;34m"
+#define COLOR_MAGENTA_BOLD  "\x1B[1;35m"
 /******************************************************************
  * Copied from RTT
  * ***************************************************************/
@@ -54,17 +72,22 @@ extern "C"
 #define RTT_CTRL_BG_BRIGHT_CYAN       "[4;46m"
 #define RTT_CTRL_BG_BRIGHT_WHITE      "[4;47m"
 
+#define AST_FLAG  "[" RTT_CTRL_TEXT_BRIGHT_RED "AST" RTT_CTRL_RESET "]"
+#define ERR_FLAG  "[" RTT_CTRL_BG_BRIGHT_RED "ERR" RTT_CTRL_RESET "]"
+#define WRN_FLAG  "[" RTT_CTRL_BG_BRIGHT_YELLOW "WRN" RTT_CTRL_RESET "]"
+#define MSG_FLAG  "[" RTT_CTRL_BG_BRIGHT_BLUE "MSG" RTT_CTRL_RESET "]"
+#define DBG_FLAG  "[" RTT_CTRL_BG_BRIGHT_GREEN "DBG" RTT_CTRL_RESET "]"
+#define VER_FLAG  "[" "VER" "]"
+
 /* LVL_AST cannot be masked */
-enum {
+typedef enum {
   LVL_AST = -1,
   LVL_ERR,
   LVL_WRN,
   LVL_MSG,
   LVL_DBG,
   LVL_VER
-};
-
-#define LOG_MINIMAL_LVL(lvl) ((lvl) + 1)
+}log_lvl_t;
 
 /**
  * @brief logging_init - initialization of logging
@@ -72,12 +95,12 @@ enum {
  * @param path - which file the log is writen to
  * @param tostdout - set to 1 also writes to stdout
  * @param lvl_threshold - set the logging level threshold, the logging with
- * level **LESS THAN** the threshold will be writen to file.
+ * level **LESS THAN OR EQUAL** the threshold will be writen to file.
  *
  * @return @ref{err_t}
  */
 err_t logging_init(const char *path,
-                   int tostdout,
+                   bool tostdout,
                    unsigned int lvl_threshold);
 
 /**
@@ -95,22 +118,28 @@ err_t __log(const char *file_name,
             int lvl,
             const char *fmt,
             ...);
+
+void log_n(void);
 #define LOG(lvl, fmt, ...) __log(__FILE__, __LINE__, (lvl), (fmt), ##__VA_ARGS__)
+#define LOGN() log_n()
 
 /*
  * Below 7 LOGx macros are used for logging data in specific level.
  */
-#define LOGA(fmt, ...) LOG(LVL_AST, (fmt), ##__VA_ARGS__)
+#define LOGA(fmt, ...) \
+  do { LOG(LVL_AST, (fmt), ##__VA_ARGS__); abort(); } while (0)
 #define LOGE(fmt, ...) LOG(LVL_ERR, (fmt), ##__VA_ARGS__)
 #define LOGW(fmt, ...) LOG(LVL_WRN, (fmt), ##__VA_ARGS__)
 #define LOGM(fmt, ...) LOG(LVL_MSG, (fmt), ##__VA_ARGS__)
 #define LOGD(fmt, ...) LOG(LVL_DBG, (fmt), ##__VA_ARGS__)
 #define LOGV(fmt, ...) LOG(LVL_VER, (fmt), ##__VA_ARGS__)
 
+#define LOGBGE(what, err) LOGE(what " returns Error[0x%04x]\n", (err))
+
 void set_logging_tostdout(int enable);
 int get_logging_tostdout(void);
-void set_logging_lvl_threshold(unsigned int lvl);
-unsigned int get_logging_lvl_threshold(void);
+void set_logging_lvl_threshold(log_lvl_t lvl);
+int get_logging_lvl_threshold(void);
 
 #ifdef __cplusplus
 }

@@ -17,9 +17,15 @@
 #include "logging.h"
 #include "utils.h"
 /* Defines  *********************************************************** */
-#define LOGBUF_SIZE 512
+#define LOGBUF_SIZE 1024
+/*
+ * Format of file and line information in the log message: [file:line]
+ */
+#define FILE_NAME_LENGTH  10
+#define LINE_NAME_LENGTH  5
+#define FILE_LINE_LENGTH  (FILE_NAME_LENGTH + LINE_NAME_LENGTH + 3)
 
-#define LOGGING_DBG
+/* #define LOGGING_DBG */
 #ifdef LOGGING_DBG
 #define LD(...) printf(__VA_ARGS__)
 #else
@@ -31,8 +37,8 @@
 /* Static Variables *************************************************** */
 typedef struct {
   FILE *fp;
-  unsigned int level;
-  int tostdout;
+  log_lvl_t level;
+  bool tostdout;
   size_t log_len;
   char *buf;
 }logcfg_t;
@@ -88,9 +94,6 @@ static err_t fill_time(char *str,
 
   return ec_success;
 }
-#define FILE_NAME_LENGTH  10
-#define LINE_NAME_LENGTH  5
-#define FILE_LINE_LENGTH  (FILE_NAME_LENGTH + LINE_NAME_LENGTH + 3)
 
 static err_t fill_file_line(const char *file_name,
                             unsigned int line,
@@ -133,12 +136,6 @@ static err_t fill_file_line(const char *file_name,
   *len = offset + FILE_LINE_LENGTH;
   return ec_success;
 }
-#define AST_FLAG  "[" RTT_CTRL_TEXT_BRIGHT_RED "AST" RTT_CTRL_RESET "]"
-#define ERR_FLAG  "[" RTT_CTRL_BG_BRIGHT_RED "ERR" RTT_CTRL_RESET "]"
-#define WRN_FLAG  "[" RTT_CTRL_BG_BRIGHT_YELLOW "WRN" RTT_CTRL_RESET "]"
-#define MSG_FLAG  "[" RTT_CTRL_BG_BRIGHT_BLUE "MSG" RTT_CTRL_RESET "]"
-#define DBG_FLAG  "[" RTT_CTRL_BG_BRIGHT_GREEN "DBG" RTT_CTRL_RESET "]"
-#define VER_FLAG  "[" "VER" "]"
 
 static err_t fill_lvl(int lvl,
                       char *str,
@@ -180,7 +177,7 @@ static err_t fill_lvl(int lvl,
       flaglen = sizeof(VER_FLAG);
       break;
   }
-  /* LD("%d - %lu\n", lvl, flaglen); */
+  LD("%d - %lu\n", lvl, flaglen);
 
   if (offset + flaglen + 2 > input_len) {
     return err(ec_length_leak);
@@ -204,28 +201,21 @@ err_t __log(const char *file_name,
   err_t e;
   va_list valist;
 
-  if (lvl >= (int)lcfg.level) {
+  if (lvl > (int)lcfg.level) {
     return ec_success;
   }
-  lcfg.buf = calloc(LOGBUF_SIZE, 1);
+  lcfg.buf = calloc(1, LOGBUF_SIZE);
 
   ECG(ec_success,
       fill_time(lcfg.buf, LOGBUF_SIZE, &lcfg.log_len),
       out);
   ECG(ec_success,
-      fill_file_line(file_name,
-                     line,
-                     lcfg.buf,
-                     LOGBUF_SIZE,
-                     lcfg.log_len,
-                     &lcfg.log_len),
+      fill_file_line(file_name, line, lcfg.buf, LOGBUF_SIZE,
+                     lcfg.log_len, &lcfg.log_len),
       out);
   ECG(ec_success,
-      fill_lvl(lvl,
-               lcfg.buf,
-               LOGBUF_SIZE,
-               lcfg.log_len,
-               &lcfg.log_len),
+      fill_lvl(lvl, lcfg.buf, LOGBUF_SIZE,
+               lcfg.log_len, &lcfg.log_len),
       out);
 
   va_start(valist, fmt);
@@ -235,14 +225,18 @@ err_t __log(const char *file_name,
             valist);
   if (lcfg.fp) {
     fprintf(lcfg.fp, "%s", lcfg.buf);
+    fflush(lcfg.fp);
   }
   if (lcfg.tostdout) {
     printf("%s", lcfg.buf);
+    fflush(lcfg.fp);
   }
 
   out:
-  free(lcfg.buf);
-  lcfg.buf = NULL;
+  if (lcfg.buf) {
+    free(lcfg.buf);
+    lcfg.buf = NULL;
+  }
   return e;
 }
 
@@ -264,8 +258,37 @@ void logging_demo(void)
   LOGV("%s\n", msg[0]);
 }
 
+void log_n(void)
+{
+  if (lcfg.fp) {
+    fprintf(lcfg.fp, "\n");
+  }
+  if (lcfg.tostdout) {
+    printf("\n");
+  }
+}
+
+static void log_welcome(void)
+{
+  char buf[200] = { 0 };
+  snprintf(buf, 200,
+           RTT_CTRL_BG_BRIGHT_BLUE
+           "* * * * * NWMNG LOG - Compiled at %s - %s"
+           RTT_CTRL_RESET
+           "\n"
+           ,
+           __DATE__,
+           __TIME__);
+  if (lcfg.fp) {
+    fprintf(lcfg.fp, "%s", buf);
+  }
+  if (lcfg.tostdout) {
+    printf("%s", buf);
+  }
+}
+
 err_t logging_init(const char *path,
-                   int tostdout,
+                   bool tostdout,
                    unsigned int lvl_threshold)
 {
   int ret;
@@ -273,11 +296,7 @@ err_t logging_init(const char *path,
     return ec_success;
   }
   ret = access(path, R_OK | W_OK | F_OK);
-  if (-1 == ret) {
-    if (errno == ENOENT) {
-      fprintf(stderr, "%s not exists\n", path);
-      return err(ec_not_exist);
-    }
+  if (-1 == ret && errno != ENOENT) {
     fprintf(stderr, "The current user don 't have the RW permit? Error[%u]\n", errno);
     return err(ec_file_ope);
   }
@@ -291,11 +310,15 @@ err_t logging_init(const char *path,
   lcfg.tostdout = tostdout;
   lcfg.level = lvl_threshold;
 
+  log_welcome();
   return ec_success;
 }
 
 void logging_deinit(void)
 {
+  if (lcfg.fp) {
+    fclose(lcfg.fp);
+  }
   memset(&lcfg, 0, sizeof(logcfg_t));
 }
 
@@ -310,14 +333,14 @@ int get_logging_tostdout(void)
   return lcfg.fp ? lcfg.tostdout : 0;
 }
 
-void set_logging_lvl_threshold(unsigned int lvl)
+void set_logging_lvl_threshold(log_lvl_t lvl)
 {
   if (lcfg.fp) {
     lcfg.level = lvl;
   }
 }
 
-unsigned int get_logging_lvl_threshold(void)
+int get_logging_lvl_threshold(void)
 {
-  return lcfg.fp ? lcfg.level : 0;
+  return lcfg.fp ? lcfg.level : LVL_VER;
 }

@@ -9,3 +9,7 @@ core
 cppcheck.xml
 .clangd
 .history
+.config
+.gdb*
+tools/mesh_config
+!tools/mesh_config/templates.json

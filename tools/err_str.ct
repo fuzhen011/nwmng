@@ -1,0 +1,5 @@
+static const char *err_names[] = {
+    {% for err in errs %}
+    {{err.name}},            /* {{err.no}} */
+    {% endfor %}
+};

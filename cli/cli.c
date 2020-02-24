@@ -6,75 +6,232 @@
  ************************************************************************/
 
 /* Includes *********************************************************** */
+#include <pthread.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdarg.h>
 
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
+#include <setjmp.h>
 
-#include <readline/readline.h>
+#include <wordexp.h>
+
 #include <readline/history.h>
 
-#include "cli/cli.h"
+#include "projconfig.h"
+#include "cli.h"
+#include "cfg.h"
+#include "mng.h"
+
+#include "startup.h"
+#include "utils.h"
+#include "err.h"
+#include "logging.h"
 
 /* Defines  *********************************************************** */
-#define RL_HISTORY  ".history"
-#define CMD_ENTRY(name, pfncb, doc) { (name), (pfncb), (doc) },
-#define DECLARE_CB(name)  int ccb_##name(char *str)
+#define STATIC_CB(name)  static err_t clicb_##name(int argc, char *argv[])
 
-typedef struct {
-  const char *name;
-  rl_icpfunc_t *fn;
-  const char *doc;
-}command_t;
+#define SHELL_NAME RTT_CTRL_TEXT_BRIGHT_BLUE "NWK-Mng$ " RTT_CTRL_RESET
+#define RL_HISTORY  ".history"
+#define DECLARE_VAGET_FUN(name) static err_t vaget_##name(void *vap, int inbuflen, int *ulen, int *rlen)
+
+#define VAP_LEN 256
+
+#define foreach_cmds(i) for (int i = 0; i < cmd_num; i++)
+
 /* Global Variables *************************************************** */
+extern jmp_buf initjmpbuf;
+extern pthread_mutex_t qlock;
+extern err_t cmd_ret;
 
 /* Static Variables *************************************************** */
-DECLARE_CB(sync);
-DECLARE_CB(reset);
-DECLARE_CB(list);
-DECLARE_CB(help);
-DECLARE_CB(quit);
+DECLARE_VAGET_FUN(addrs);
+DECLARE_VAGET_FUN(onoff_lights_addrs);
+DECLARE_VAGET_FUN(lightness_lights_addrs);
+DECLARE_VAGET_FUN(ctl_lights_addrs);
 
-DECLARE_CB(ct);
-DECLARE_CB(lightness);
-DECLARE_CB(onoff);
+STATIC_CB(reset);
+STATIC_CB(help);
+STATIC_CB(quit);
 
-static const command_t commands[] = {
-  CMD_ENTRY("sync", ccb_sync,
-            "Synchronize the configuration of the network with the JSON file")
-  CMD_ENTRY("reset", ccb_reset,
-            "[Factory] Reset the device")
-  CMD_ENTRY("q", ccb_quit,
-            "Quit the program")
-  CMD_ENTRY("help", ccb_help,
-            "Print help")
-  CMD_ENTRY("list", ccb_list,
-            "List all devices in the database")
-
-  CMD_ENTRY("onoff", ccb_onoff,
-            "Set the onoff of a light")
-  CMD_ENTRY("lightness", ccb_lightness,
-            "Set the lightness of a light")
-  CMD_ENTRY("colortemp", ccb_ct,
-            "Set the color temperature of a light")
+static const char *seqset_arg[] = {
+  "a--", "r--", "b--",
+  "ar-", "ab-",
+  "ra-", "rb-",
+  "ba-", "br-",
+  "arb", "abr",
+  "rab", "rba",
+  "bar", "bra"
 };
-static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 
-static int children_num = 0;
-static pid_t *children = NULL;
+static char *seqset_arg_generator(const char *text, int state);
+
+const command_t commands[] = {
+  /* CLI local commands */
+  { "reset", "<1/0>", clicb_reset,
+    "[Factory] Reset the device" },
+  { "q", NULL, clicb_quit,
+    "Quit the program" },
+  { "help", NULL, clicb_help,
+    "Print help" },
+
+  /* Commands need to be handled by mng */
+  { "sync", "[1/0]", clicb_sync,
+    "Synchronize network configuration" },
+  { "list", NULL, clicb_list,
+    "List all devices in the database" },
+  { "info", "[all/addr...]", clicb_info,
+    "Show the node(s) information in the database",
+    NULL, NULL, vaget_addrs },
+  { "freemode", "[on/off]", clicb_freemode,
+    "Turn on/off unprovisioned beacon scanning" },
+  { "rmall", NULL, clicb_rmall,
+    "Remove all the nodes" },
+  { "clrrb", NULL, clicb_rmblclr,
+    "Clear the rm_bl fields of all the nodes" },
+  { "seqset",
+    "[arb-]",
+    clicb_seqset,
+    "Set the action loading priority\n"
+    "\ta - adding devices\n"
+    "\tr - removing devices\n"
+    "\tb - blacklisting devices",
+    NULL,
+    seqset_arg_generator,
+    NULL },
+  { "loglvlset", "[e/w/m/d/v] [1/0]", clicb_loglvlset,
+    "Set the log threshold level and if output to stdout" },
+
+  /* Light Control Commands */
+  { "onoff", "[on/off] [addr...]", clicb_onoff,
+    "Set the onoff of a light", NULL, NULL, vaget_onoff_lights_addrs },
+  { "lightness", "[pecentage] [addr...]", clicb_lightness,
+    "Set the lightness of a light", NULL, NULL, vaget_lightness_lights_addrs },
+  { "colortemp", "[pecentage] [addr...]", clicb_ct,
+    "Set the color temperature of a light", NULL, NULL, vaget_ctl_lights_addrs },
+
+  /* Sensor Control Commands */
+  /* {"sensor_set", "[cadence/setting]"}, */
+  /* {"sensor_get", "[descriptor/cadence/setting/column/series]"}, */
+
+  /* Debug Commands */
+  { "status", NULL, clicb_status,
+    "Print the device status" },
+#ifdef DEMO_EN
+  { "demo", "[on/off]", clicb_demo,
+    "Start/Stop a quick demo" },
+#endif
+};
+
+static wordexp_t args;
+static const size_t cmd_num = sizeof(commands) / sizeof(command_t);
 static char *line = NULL;
+static int reset = 0;
 
 /* Static Functions Declaractions ************************************* */
-char **cmd_cmpl(const char *text, int start, int end);
+char **shell_completion(const char *text, int start, int end);
 
-static void cli_init(void)
+#define ADDRULEN  7
+static err_t _vaget_lights_addrs(void *vap,
+                                 int inbuflen,
+                                 int *ulen,
+                                 int *rlen,
+                                 uint8_t type)
+{
+  if (!vap || !inbuflen || !ulen || !rlen) {
+    return err(ec_param_null);
+  }
+  char *p = vap;
+  uint16list_t *addrs;
+  *ulen = ADDRULEN;
+  addrs = get_lights_addrs(type);
+  if (!addrs) {
+    return ec_success;
+  }
+
+  if (addrs->len * (*ulen) > inbuflen ) {
+    addrs->len = inbuflen / (*ulen);
+  }
+  *rlen = addrs->len * (*ulen);
+
+  while (addrs->len--) {
+    addr_to_buf(addrs->data[addrs->len], &p[addrs->len * (*ulen)]);
+  }
+  free(addrs->data);
+  free(addrs);
+  return ec_success;
+}
+
+static inline err_t vaget_onoff_lights_addrs(void *vap,
+                                      int inbuflen,
+                                      int *ulen,
+                                      int *rlen)
+{
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, ONOFF_SV_BIT);
+}
+
+static inline err_t vaget_lightness_lights_addrs(void *vap,
+                                          int inbuflen,
+                                          int *ulen,
+                                          int *rlen)
+{
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, LIGHTNESS_SV_BIT);
+}
+
+static inline err_t vaget_ctl_lights_addrs(void *vap,
+                                    int inbuflen,
+                                    int *ulen,
+                                    int *rlen)
+{
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, CTL_SV_BIT);
+}
+
+static err_t vaget_addrs(void *vap,
+                         int inbuflen,
+                         int *ulen,
+                         int *rlen)
+{
+  if (!vap || !inbuflen || !ulen || !rlen) {
+    return err(ec_param_null);
+  }
+  char *p = vap;
+  uint16list_t *addrs;
+
+  *ulen = ADDRULEN;
+
+  addrs = get_node_addrs();
+  if (!addrs) {
+    return ec_success;
+  }
+
+  if (addrs->len * (*ulen) > inbuflen ) {
+    addrs->len = inbuflen / (*ulen);
+  }
+  *rlen = addrs->len * (*ulen);
+
+  while (addrs->len--) {
+    addr_to_buf(addrs->data[addrs->len], &p[addrs->len * (*ulen)]);
+  }
+  free(addrs->data);
+  free(addrs);
+  return ec_success;
+}
+
+err_t cli_init(void *p)
 {
   /* Tell the completer that we want a crack first. */
-  rl_attempted_completion_function = cmd_cmpl;
+  rl_attempted_completion_function = shell_completion;
+  setlinebuf(stdout);
+  rl_erase_empty_line = 1;
   using_history();
   read_history(RL_HISTORY);
+  LOGD("CLI Init Done\n");
+  return ec_success;
 }
 
 /* Generator function for command completion.  STATE lets us know whether
@@ -108,17 +265,222 @@ char *command_generator(const char *text, int state)
   return ((char *)NULL);
 }
 
-char **cmd_cmpl(const char *text, int start, int end)
+static int parse_args(char *arg, wordexp_t *w, char *del, int flags)
 {
-  char **matches;
-  matches = (char **)NULL;
+  char *str;
 
-  /* printf("\ntext[%s][%d:%d]\n", text, start, end); */
-  /* If this word is at the start of the line, then it is a command
-   *      to complete.  Otherwise it is the name of a file in the current
-   *           directory. */
+  str = strdelimit(arg, del, '"');
+
+  if (wordexp(str, w, flags)) {
+    free(str);
+    return -EINVAL;
+  }
+
+  /* If argument ends with ... set we_offs bypass strict checks */
+  if (w->we_wordc && !strsuffix(w->we_wordv[w->we_wordc - 1], "...")) {
+    w->we_offs = 1;
+  }
+
+  free(str);
+  return 0;
+}
+
+static char *seqset_arg_generator(const char *text, int state)
+{
+  static unsigned int index, len;
+  const char *arg;
+
+  if (!state) {
+    index = 0;
+    len = strlen(text);
+  }
+
+  while (index < ARR_LEN(seqset_arg)) {
+    arg = seqset_arg[index];
+    index++;
+    if (!strncmp(arg, text, len)) {
+      return strdup(arg);
+    }
+  }
+  return NULL;
+}
+
+static char *arg_generator(const char *text, int state)
+{
+  static unsigned int index, len;
+  const char *arg;
+
+  if (!state) {
+    index = 0;
+    len = strlen(text);
+  }
+
+  while (index < args.we_wordc) {
+    arg = args.we_wordv[index];
+    index++;
+
+    if (!strncmp(arg, text, len)) {
+      return strdup(arg);
+    }
+  }
+
+  return NULL;
+}
+
+static struct {
+  char va_param[VAP_LEN];
+  int len;
+  int ulen;
+  va_param_get_func_t *pvpget;
+} vaget;
+
+static char *var_arg_generator(const char *text, int state)
+{
+  static unsigned int index, len;
+  const char *arg;
+
+  if (!state) {
+    if (!vaget.pvpget) {
+      return NULL;
+    }
+    index = 0;
+    len = strlen(text);
+    memset(vaget.va_param, 0, VAP_LEN);
+    vaget.len = 0;
+    if (ec_success != (*vaget.pvpget)(vaget.va_param, VAP_LEN, &vaget.ulen, &vaget.len)) {
+      return NULL;
+    }
+  }
+
+  while (index < vaget.len / vaget.ulen) {
+    arg = &vaget.va_param[index * vaget.ulen];
+    index++;
+
+    if (!strncmp(arg, text, len)) {
+      return strdup(arg);
+    }
+  }
+
+  return NULL;
+}
+
+static char **args_completion(const command_t *entry,
+                              int argc,
+                              const char *text)
+{
+  char **matches = NULL;
+  char *str;
+  int index;
+
+  index = text[0] == '\0' ? argc - 1 : argc - 2;
+  if (index < 0) {
+    return NULL;
+  }
+
+  if (!entry->arg) {
+    goto end;
+  }
+
+  str = strdup(entry->arg);
+
+  if (parse_args(str, &args, "<>[]", WRDE_NOCMD)) {
+    goto done;
+  }
+
+  /* Check if argument is valid */
+  if (args.we_offs == 0) {
+    /* No variable number args */
+    if ((unsigned) index > args.we_wordc - 1) {
+      goto done;
+    }
+  } else {
+    if ((unsigned) index >= args.we_wordc - 1) {
+      goto var_handler;
+    }
+  }
+
+  if (!strrchr(args.we_wordv[index], '/')) {
+    goto done;
+  }
+
+  free(str);
+  /* Split values separated by / */
+  str = strdelimit(args.we_wordv[index], "/", ' ');
+
+  args.we_offs = 0;
+  wordfree(&args);
+
+  if (wordexp(str, &args, WRDE_NOCMD)) {
+    goto done;
+  }
+
+  rl_completion_display_matches_hook = NULL;
+  matches = rl_completion_matches(text, arg_generator);
+  goto done;
+
+  var_handler:
+  if (entry->vpget) {
+    vaget.pvpget = (va_param_get_func_t *)&entry->vpget;
+    rl_completion_display_matches_hook = NULL;
+    matches = rl_completion_matches(text, var_arg_generator);
+  }
+  done:
+  free(str);
+  end:
+  if (!matches && text[0] == '\0') {
+    bt_shell_printf("Usage: %s %s\n", entry->name,
+                    entry->arg ? entry->arg : "");
+  }
+
+  args.we_offs = 0;
+  wordfree(&args);
+  return matches;
+}
+
+static char **menu_completion(const char *text,
+                              int argc,
+                              char *input_cmd)
+{
+  char **matches = NULL;
+
+  for (int i = 0; i < cmd_num; i++) {
+    const command_t *cmd = &commands[i];
+    if (strcmp(cmd->name, input_cmd)) {
+      continue;
+    }
+
+    if (!cmd->argcmpl) {
+      matches = args_completion(cmd, argc, text);
+      break;
+    }
+
+    rl_completion_display_matches_hook = cmd->disp;
+    matches = rl_completion_matches(text, cmd->argcmpl);
+    break;
+  }
+
+  return matches;
+}
+
+char **shell_completion(const char *text, int start, int end)
+{
+  char **matches = NULL;
+
   if (start == 0) {
+    rl_completion_display_matches_hook = NULL;
     matches = rl_completion_matches(text, command_generator);
+  } else {
+    wordexp_t w;
+    if (wordexp(rl_line_buffer, &w, WRDE_NOCMD)) {
+      return NULL;
+    }
+
+    matches = menu_completion(text, w.we_wordc,
+                              w.we_wordv[0]);
+    wordfree(&w);
+  }
+  if (!matches) {
+    rl_attempted_completion_over = 1;
   }
 
   return (matches);
@@ -158,18 +520,25 @@ static inline int find_cmd_index(const char *cmd)
 
 static void output_nspt(const char *cmd)
 {
-  printf("Command [%s] NOT SUPPORTED\n", cmd);
+  print_text(COLOR_HIGHLIGHT,
+             "Invalid command: %s",
+             cmd);
+  print_text(COLOR_HIGHLIGHT,
+             "\n"
+             "Use \"help\" for a list of available commands");
 }
 
 void readcmd(void)
 {
   char *str;
   int ret;
+  wordexp_t w;
+
   if (line) {
     free(line);
     line = NULL;
   }
-  line = readline("[1;34m" "nwmng$ " "[0m");
+  line = readline(SHELL_NAME);
   if (!line) {
     return;
   }
@@ -178,91 +547,262 @@ void readcmd(void)
    * and execute it. */
   str = stripwhite(line);
 
-  ret = find_cmd_index(str);
-  if (ret == -1) {
-    output_nspt(str);
+  if (wordexp(str, &w, WRDE_NOCMD)) {
     return;
   }
-  ret = commands[ret].fn(str);
+  if (!str || str[0] == '\0') {
+    goto out;
+  }
 
+  ret = find_cmd_index(str);
+  if (ret == -1) {
+    output_nspt(w.we_wordv[0]);
+    goto out;
+  }
+  DUMP_PARAMS(w.we_wordc, w.we_wordv);
+  ret = commands[ret].fn(w.we_wordc, w.we_wordv);
+  if (ec_param_invalid == ret) {
+    printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+    print_cmd_usage(&commands[ret]);
+    goto out;
+  }
+
+  out:
   if (*str) {
     add_history(str);
     write_history(RL_HISTORY);
   }
+  wordfree(&w);
 }
 
-int cli_proc_init(int child_num, const pid_t *pids)
+err_t cli_proc_init(int child_num, const pid_t *pids)
 {
-  if (children) {
-    free(children);
+  err_t e;
+  if (ec_success != (e = logging_init(CLI_LOG_FILE_PATH,
+                                      0, /* Not output to stdout */
+                                      LVL_VER))) {
+    fprintf(stderr, "LOG INIT ERROR (%x)\n", e);
+    return e;
   }
-  children = calloc(child_num, sizeof(pid_t));
-  memcpy(children, pids, child_num * sizeof(pid_t));
-  children_num = child_num;
-
-  cli_init();
-  return 0;
+  return e;
 }
 
-int cli_proc(void)
+#if (READLINE_ASYNC == 1)
+static void rl_handler(char *input)
 {
-  for (;;) {
-    readcmd();
+  char *str;
+  int ret;
+  wordexp_t w;
+
+  /* Remove leading and trailing whitespace from the line.
+   * Then, if there is anything left, add it to the history list
+   * and execute it. */
+  str = stripwhite(input);
+  if (wordexp(str, &w, WRDE_NOCMD)) {
+    goto done;
+  }
+  if (!str || str[0] == '\0') {
+    goto out;
+  }
+  ret = find_cmd_index(str);
+  if (ret == -1) {
+    output_nspt(w.we_wordv[0]);
+    goto out;
+  }
+  DUMP_PARAMS(w.we_wordc, w.we_wordv);
+  /* Handle the command - call the callback */
+  ret = commands[ret].fn(w.we_wordc, w.we_wordv);
+  if (ec_param_invalid == ret) {
+    printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+    print_cmd_usage(&commands[ret]);
+  }
+
+  out:
+  if (*str) {
+    add_history(str);
+    write_history(RL_HISTORY);
+  }
+  wordfree(&w);
+  done:
+  free(input);
+}
+void *cli_mainloop(void *pIn)
+{
+  int ret = 0, rl_saved = 0;
+  struct timeval tv = { 0 };
+  int stdinfd, maxfd = -1, r;
+  fd_set rset, allset;
+
+  rl_readline_name = SHELL_NAME;
+  setlinebuf(stdout);
+  rl_erase_empty_line = 1;
+  rl_callback_handler_install(SHELL_NAME, rl_handler);
+
+  FD_ZERO(&allset);
+  stdinfd = fileno(stdin);
+  FD_SET(stdinfd, &allset);
+  maxfd = MAX(stdinfd, maxfd);
+
+  while (1) {
+    rset = allset;   /* rset gets modified each time around */
+    if (rl_saved && get_mng()->state <= configured) {
+      LOGD("restore\n");
+      rl_replace_line("", 0);
+      rl_restore_prompt();
+      rl_saved = 0;
+      rl_redisplay();
+    }
+    if ((r = select(maxfd + 1, &rset, NULL, NULL, ret ? &tv : NULL)) < 0) {
+      LOGE("Select returns [%d], err[%s]\n", r, strerror(errno));
+      return (void *)(uintptr_t)err(ec_sock);
+    }
+
+    if (get_mng()->state <= configured) {
+      if (FD_ISSET(stdinfd, &rset)) {
+        LOGD("read\n");
+        rl_callback_read_char();
+      }
+    }
+    if (!rl_saved && get_mng()->state > configured) {
+      LOGD("save\n");
+      rl_save_prompt();
+      rl_replace_line("", 0);
+      rl_redisplay();
+      rl_saved = 1;
+    }
+    ret = (mng_mainloop(NULL) != NULL);
+  }
+  return NULL;
+}
+#else
+void *cli_mainloop(void *pin)
+{
+  err_t e;
+  char *str;
+  int ret;
+  wordexp_t w;
+
+  while (1) {
+    if (line) {
+      free(line);
+      line = NULL;
+    }
+    if (NULL == (line = readline(SHELL_NAME))) {
+      continue;
+    }
+    /* Remove leading and trailing whitespace from the line.
+     * Then, if there is anything left, add it to the history list
+     * and execute it. */
+    str = stripwhite(line);
+    if (wordexp(str, &w, WRDE_NOCMD)) {
+      continue;
+    }
+    if (!str || str[0] == '\0') {
+      goto out;
+    }
+    DUMP_PARAMS(w.we_wordc, w.we_wordv);
+    ret = find_cmd_index(str);
+    if (ret == -1) {
+      output_nspt(w.we_wordv[0]);
+      goto out;
+    } else if (ret < 3) {
+      /* Locally handled */
+      e = commands[ret].fn(w.we_wordc, w.we_wordv);
+      if (ec_param_invalid == e) {
+        printf(COLOR_HIGHLIGHT "Invalid Parameter(s)\nUsage: " COLOR_OFF);
+        print_cmd_usage(&commands[ret]);
+        goto out;
+      }
+    } else {
+      /* Need the mng component to handle */
+      cmd_enq(str, ret);
+    }
+
+    out:
+    if (*str) {
+      add_history(str);
+      write_history(RL_HISTORY);
+    }
+    wordfree(&w);
+    if (reset) {
+      int r = reset;
+      reset = 0;
+      longjmp(initjmpbuf, (r == 2) ? FACTORY_RESET : NORMAL_RESET);
+    }
+  }
+  return NULL;
+}
+#endif
+
+void bt_shell_printf(const char *fmt, ...)
+{
+  va_list args;
+  bool save_input;
+  char *saved_line;
+  int saved_point;
+
+  /* if (!data.input) */
+  /* return; */
+
+  /* if (data.mode) { */
+  /* va_start(args, fmt); */
+  /* vprintf(fmt, args); */
+  /* va_end(args); */
+  /* return; */
+  /* } */
+
+  save_input = !RL_ISSTATE(RL_STATE_DONE);
+
+  if (save_input) {
+    saved_point = rl_point;
+    saved_line = rl_copy_text(0, rl_end);
+    /* if (!data.saved_prompt) */
+    rl_save_prompt();
+    rl_replace_line("", 0);
+    rl_redisplay();
+  }
+
+  va_start(args, fmt);
+  vprintf(fmt, args);
+  va_end(args);
+
+  /* if (data.monitor) { */
+  /* va_start(args, fmt); */
+  /* bt_log_vprintf(0xffff, data.name, LOG_INFO, fmt, args); */
+  /* va_end(args); */
+  /* } */
+
+  if (save_input) {
+    /* if (!data.saved_prompt) */
+    rl_restore_prompt();
+    rl_replace_line(saved_line, 0);
+    rl_point = saved_point;
+    rl_forced_update_display();
+    free(saved_line);
   }
 }
 
-/******************************************************************
- * Callbacks
- * ***************************************************************/
-int ccb_sync(char *str)
+static err_t clicb_reset(int argc, char *argv[])
 {
-  sleep(5);
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
-int ccb_reset(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
-int ccb_list(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
-int ccb_help(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
-int ccb_quit(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  for (int i = 0; i < children_num; i++) {
-    kill(children[i], SIGKILL);
+  int r = 0;
+  if (argc > 1) {
+    r = atoi(argv[1]);
   }
+  reset = r + 1;
+  return 0;
+}
+
+static err_t clicb_help(int argc, char *argv[])
+{
+  print_text(COLOR_HIGHLIGHT, "Available commands:");
+  print_text(COLOR_HIGHLIGHT, "-------------------");
+  foreach_cmds(i){
+    print_cmd_usage(&commands[i]);
+  }
+  return 0;
+}
+
+static err_t clicb_quit(int argc, char *argv[])
+{
   exit(EXIT_SUCCESS);
 }
-
-int ccb_ct(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
-int ccb_lightness(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
-int ccb_onoff(char *str)
-{
-  printf("%s\n", __FUNCTION__);
-  return 0;
-}
-
