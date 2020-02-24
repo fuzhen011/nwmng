@@ -197,14 +197,14 @@ Configuration" in the NCP target isc file.
   project, this value must be equal or less than the setting in the NCP target
   memory configuration.
 
-Below is a rough time comparison of provisioning and configuring a 15-node
+Below is a rough time comparison of provisioning and configuring a 50-node
 network between using 'single thread' way and the asynchronous way. The time
 itself is meaningless because it heavily depends on the environment, how you
 configure each node, how many retries for timeouts and interval between retries
 etc..
 
-- 'Single thread' way - around 6 minutes
-- Asynchronous way - around 1 minute
+- 'Single thread' way - around 20 minutes
+- Asynchronous way - around 4.5 minutes
 
 ### Retry
 
@@ -473,3 +473,14 @@ the configuration of nodes, follow the below steps.
    then change the "Done" field to 0x00.
 3. type "sync", the program will load the new configuration and apply to the
    nodes.
+
+### Lighting Control
+
+Once you have the network and the nodes configured, the node functionality is
+stored in the configuration file respectively. Then you can use the CLI commands
+to control the light status.
+
+- To set a single node or nodes on, type the command "onoff on 0x000x...", where
+  0x000x are the unicast address of the nodes.
+- To set a group nodes  on, type the command "onoff on 0x000x...", where 0x000x
+  are the group address that the group subscribe from.
