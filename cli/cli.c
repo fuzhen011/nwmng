@@ -97,8 +97,8 @@ static const char *lc_properties[] = {
 #define MAX_ARGS_LEN  20
 static struct arg_cache{
   uint8_t cnt;
-  char 
-}
+  char argv[MAX_ARGS_CNT][MAX_ARGS_LEN];
+} arg_cache = { 0 };
 
 static char *seqset_arg_generator(const char *text, int state);
 
@@ -480,16 +480,23 @@ static char **args_completion(const command_t *entry,
 
 static char **menu_completion(const char *text,
                               int argc,
-                              char *input_cmd)
+                              char *argv[])
 {
   char **matches = NULL;
 
   for (int i = 0; i < cmd_num; i++) {
     const command_t *cmd = &commands[i];
-    if (strcmp(cmd->name, input_cmd)) {
+    if (strcmp(cmd->name, argv[0])) {
       continue;
     }
 
+    if (!strcmp(cmd->name, "lcset") || !strcmp(cmd->name, "lcget")) {
+      if (argc == arg_cache.cnt + 1) {
+        memset(arg_cache.argv[arg_cache.cnt], 0, MAX_ARGS_LEN);
+        strcpy(arg_cache.argv[arg_cache.cnt], argv[arg_cache.cnt]);
+        arg_cache.cnt++;
+      }
+    }
     if (!cmd->argcmpl) {
       matches = args_completion(cmd, argc, text);
       break;
@@ -516,8 +523,7 @@ char **shell_completion(const char *text, int start, int end)
       return NULL;
     }
 
-    matches = menu_completion(text, w.we_wordc,
-                              w.we_wordv[0]);
+    matches = menu_completion(text, w.we_wordc, w.we_wordv);
     wordfree(&w);
   }
   if (!matches) {
