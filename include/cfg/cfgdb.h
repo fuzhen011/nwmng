@@ -32,10 +32,11 @@ enum {
 #define ONOFF_SV_BIT  (1UL << 0)
 #define LIGHTNESS_SV_BIT  (1UL << 1)
 #define CTL_SV_BIT  (1UL << 2)
+#define LC_SV_BIT (1UL << 3)
 /* Sensor bits */
-#define SENSOR_SV_BIT  (1UL << 3)
+#define SENSOR_SV_BIT  (1UL << 4)
 
-#define KIND_LIGHTING (ONOFF_SV_BIT | LIGHTNESS_SV_BIT | CTL_SV_BIT)
+#define KIND_LIGHTING (ONOFF_SV_BIT | LIGHTNESS_SV_BIT | CTL_SV_BIT | LC_SV_BIT)
 #define KIND_SENSOR (SENSOR_SV_BIT)
 
 typedef struct {

@@ -54,6 +54,7 @@ DECLARE_VAGET_FUN(addrs);
 DECLARE_VAGET_FUN(onoff_lights_addrs);
 DECLARE_VAGET_FUN(lightness_lights_addrs);
 DECLARE_VAGET_FUN(ctl_lights_addrs);
+DECLARE_VAGET_FUN(lc_lights_addrs);
 
 STATIC_CB(reset);
 STATIC_CB(help);
@@ -68,6 +69,36 @@ static const char *seqset_arg[] = {
   "rab", "rba",
   "bar", "bra"
 };
+
+#define LC_PROPERTY_BASE  0x002b
+static const char *lc_properties[] = {
+  "ambient_luxlevel_on",
+  "ambient_luxlevel_prolong",
+  "ambient_luxlevel_standby",
+  "lightness_on",
+  "lightness_prolong",
+  "lightness_standby",
+  "regulator_accuracy",
+  "regulator_kid",
+  "regulator_kiu",
+  "regulator_kpd",
+  "regulator_kpu",
+  "time_fade",
+  "time_fade_on",
+  "time_fade_standby_auto",
+  "time_fade_standby_manual",
+  "time_occupancy_delay",
+  "time_prolong",
+  "time_run_on",
+};
+
+#define LC_PROP_ID_FROM_INDEX(x)  ((x) + LC_PROPERTY_BASE)
+#define MAX_ARGS_CNT  5
+#define MAX_ARGS_LEN  20
+static struct arg_cache{
+  uint8_t cnt;
+  char 
+}
 
 static char *seqset_arg_generator(const char *text, int state);
 
@@ -114,6 +145,8 @@ const command_t commands[] = {
     "Set the lightness of a light", NULL, NULL, vaget_lightness_lights_addrs },
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
     "Set the color temperature of a light", NULL, NULL, vaget_ctl_lights_addrs },
+  { "lcget", "[onoff/mode/om/property] [addr...]", clicb_onoff,
+    "Set the onoff of a light", NULL, NULL, vaget_lc_lights_addrs },
 
   /* Sensor Control Commands */
   /* {"sensor_set", "[cadence/setting]"}, */
@@ -168,27 +201,35 @@ static err_t _vaget_lights_addrs(void *vap,
 }
 
 static inline err_t vaget_onoff_lights_addrs(void *vap,
-                                      int inbuflen,
-                                      int *ulen,
-                                      int *rlen)
+                                             int inbuflen,
+                                             int *ulen,
+                                             int *rlen)
 {
   return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, ONOFF_SV_BIT);
 }
 
 static inline err_t vaget_lightness_lights_addrs(void *vap,
-                                          int inbuflen,
-                                          int *ulen,
-                                          int *rlen)
+                                                 int inbuflen,
+                                                 int *ulen,
+                                                 int *rlen)
 {
   return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, LIGHTNESS_SV_BIT);
 }
 
 static inline err_t vaget_ctl_lights_addrs(void *vap,
-                                    int inbuflen,
-                                    int *ulen,
-                                    int *rlen)
+                                           int inbuflen,
+                                           int *ulen,
+                                           int *rlen)
 {
   return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, CTL_SV_BIT);
+}
+
+static inline err_t vaget_lc_lights_addrs(void *vap,
+                                          int inbuflen,
+                                          int *ulen,
+                                          int *rlen)
+{
+  return _vaget_lights_addrs(vap, inbuflen, ulen, rlen, LC_SV_BIT);
 }
 
 static err_t vaget_addrs(void *vap,

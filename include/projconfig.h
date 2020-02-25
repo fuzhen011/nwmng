@@ -19,7 +19,7 @@ extern "C"
 #endif
 
 #define PROJ_VERSION_MAJOR  1
-#define PROJ_VERSION_MINOR  0
+#define PROJ_VERSION_MINOR  1
 #define PROJ_VERSION_PATCH  0
 
 #define FILE_PATH_MAX 108
@@ -54,6 +54,10 @@ extern "C"
 #define TMPLATE_FILE_PATH PROJ_DIR "tools/mesh_config/templates.json"
 #define CLI_LOG_FILE_PATH PROJ_DIR "logs/cli.log"
 
+#define LC_CLIENT_PRESENT 1
+#if defined(LC_CLIENT_PRESENT) && (LC_CLIENT_PRESENT == 1)
+#define LC_ELEM_INDEX 0
+#endif
 /*
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions
  * definition on the NCP target side

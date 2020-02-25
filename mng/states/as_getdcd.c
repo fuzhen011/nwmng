@@ -18,6 +18,7 @@
 
 #define LIGHT_LIGHTNESS_SERVER_MDID     0x1300
 #define LIGHT_CTL_SERVER_MDID     0x1303
+#define LIGHT_LC_SERVER_MDID  0x130f
 #define SENSOR_SERVER_MDID  0x1100
 
 #define CONFIGURATION_SERVER_MDID       0x0000
@@ -263,6 +264,8 @@ static void __dcd_store(const uint8_t *data,
           cache->node->models.func |= CTL_SV_BIT;
         } else if (mdid == SENSOR_SERVER_MDID) {
           cache->node->models.func |= SENSOR_SV_BIT;
+        } else if (mdid == LIGHT_LC_SERVER_MDID) {
+          cache->node->models.func |= LC_SV_BIT;
         }
 #if 0
         if (mdid == GENERIC_ONOFF_CLIENT_MDID) {
