@@ -243,8 +243,65 @@ err_t clicb_ct(int argc, char *argv[])
   return clicb_perc_set(argc, argv, CTL_SV_BIT);
 }
 
+enum {
+  LC_STATE_ONOFF,
+  LC_STATE_MODE,
+  LC_STATE_OM
+};
+
 err_t clicb_lcget(int argc, char *argv[])
 {
+  mng_t *mng = get_mng();
+  err_t e = ec_success;
+
+  if (mng->cache.model_operation.type) {
+    cli_print_busy();
+    return err(ec_state);
+  }
+
+  if (argc < 2) {
+    return err(ec_param_invalid);
+  }
+
+  if (!strcmp(argv[1], "onoff")) {
+    mng->cache.model_operation.value = LC_STATE_ONOFF;
+  } else if (!strcmp(argv[1], "mode")) {
+    mng->cache.model_operation.value = LC_STATE_MODE;
+  } else if (!strcmp(argv[1], "om")) {
+    mng->cache.model_operation.value = LC_STATE_OM;
+  } else {
+    return err(ec_param_invalid);
+  }
+
+  if (argc == 2) {
+    uint16list_t *addrs = get_lights_addrs(LC_SV_BIT);
+    if (!addrs) {
+      return e;
+    }
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 2; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGE("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+  }
+
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_GET;
+    mng->cache.model_operation.func = LC_SV_BIT;
+  }
+
   return ec_success;
 }
 
@@ -370,7 +427,21 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl)
 
 static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
 {
-  return err(ec_not_supported);
+  if (mng->cache.model_operation.func == LC_SV_BIT) {
+    if (mng->cache.model_operation.value == LC_STATE_ONOFF) {
+      *bgerr = gecko_cmd_mesh_lc_client_get_light_onoff(LC_ELEM_INDEX,
+                                                        addr, 0)->result;
+    } else if (mng->cache.model_operation.value == LC_STATE_MODE) {
+      *bgerr = gecko_cmd_mesh_lc_client_get_mode(LC_ELEM_INDEX,
+                                                 addr, 0)->result;
+    } else {
+      *bgerr = gecko_cmd_mesh_lc_client_get_om(LC_ELEM_INDEX,
+                                               addr, 0)->result;
+    }
+  } else {
+    return err(ec_not_supported);
+  }
+  return (*bgerr == bg_err_success) ? ec_success : err(ec_bgrsp);
 }
 
 static err_t model_set_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
@@ -447,4 +518,48 @@ bool models_loop(mng_t *mng)
     mng->cache.model_operation.func = 0;
   }
   return false;
+}
+
+void lc_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
+{
+  if (evt_id == gecko_evt_mesh_lc_client_light_onoff_status_id) {
+    LOGM("LC Light Onoff Status\n"
+         "  From: 0x%04x To: 0x%04x\n"
+         "  Present value: %d\n"
+         "  Target  value: %d\n"
+         "  Remaining time: %u\n",
+         evt->data.evt_mesh_lc_client_light_onoff_status.server_address,
+         evt->data.evt_mesh_lc_client_light_onoff_status.destination_address,
+         evt->data.evt_mesh_lc_client_light_onoff_status.present_light_onoff,
+         evt->data.evt_mesh_lc_client_light_onoff_status.target_light_onoff,
+         evt->data.evt_mesh_lc_client_light_onoff_status.remaining_time);
+  } else if (evt_id == gecko_evt_mesh_lc_client_mode_status_id) {
+    LOGM("LC Light Mode Status\n"
+         "  From: 0x%04x To: 0x%04x\n"
+         "  Mode: %u\n",
+         evt->data.evt_mesh_lc_client_mode_status.server_address,
+         evt->data.evt_mesh_lc_client_mode_status.destination_address,
+         evt->data.evt_mesh_lc_client_mode_status.mode_status_value);
+  } else if (evt_id == gecko_evt_mesh_lc_client_om_status_id) {
+    LOGM("LC Light Occupancy Mode Status\n"
+         "  From: 0x%04x To: 0x%04x\n"
+         "  Mode: %u\n",
+         evt->data.evt_mesh_lc_client_om_status.server_address,
+         evt->data.evt_mesh_lc_client_om_status.destination_address,
+         evt->data.evt_mesh_lc_client_om_status.om_status_value);
+  } else if (evt_id == gecko_evt_mesh_lc_client_property_status_id) {
+    LOGE("NOT IMPL YET\n");
+  }
+}
+
+int model_evt_hdr(const struct gecko_cmd_packet *evt)
+{
+  uint32_t evt_id = BGLIB_MSG_ID(evt->header);
+
+  if ((evt_id & 0x00ff0000) == 0x004c0000) {
+    lc_client_evt_hdr(evt_id, evt);
+  } else {
+    return 0;
+  }
+  return 1;
 }

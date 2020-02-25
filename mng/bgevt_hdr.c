@@ -35,6 +35,7 @@ static bgevt_hdr hdrs[] = {
   dev_config_hdr,
   bl_hdr,
   bgevt_dflt_hdr,
+  model_evt_hdr,
   NULL
 };
 

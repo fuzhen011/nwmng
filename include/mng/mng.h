@@ -242,6 +242,8 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl);
 
 void demo_run(void);
 void demo_start(int en);
+
+int model_evt_hdr(const struct gecko_cmd_packet *evt);
 #ifdef __cplusplus
 }
 #endif
