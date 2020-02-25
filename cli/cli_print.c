@@ -125,7 +125,7 @@ void cli_status(const mng_t *mng)
   bt_shell_printf("Used config/rm caches = %d\n", utils_popcount(mng->cache.config.used));
   bt_shell_printf("Blacklisting          = %s\n", mng->cache.bl.state == bl_idle ? "Idle" : "Busy");
   bt_shell_printf("Action Sequence       = %s\n", mng->status.seq.prios);
-  bt_shell_printf("Node(s) to set state  = %d\n", g_list_length(mng->cache.model_set.nodes));
+  bt_shell_printf("Node(s) to set state  = %d\n", g_list_length(mng->cache.model_operation.nodes));
   bt_shell_printf("Free mode             = %s\n", mng->status.free_mode == 2 ? "On" : "Off");
   bt_shell_printf("Logging Threshold     = %s\n", loglvls[loglvl + 1]);
   bt_shell_printf("[%d-%d-%d-%d] to be [added-configured-removed-blacklisted]\n",

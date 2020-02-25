@@ -363,7 +363,7 @@ gboolean copy_light_addr_to_user(gpointer key,
                                  gpointer ud)
 {
   node_t *n = (node_t *)value;
-  if (IS_BIT_SET(n->models.func, kind)) {
+  if (n->models.func & kind) {
     ((uint16_t *)ud)[offs++] = n->addr;
   }
   return FALSE;

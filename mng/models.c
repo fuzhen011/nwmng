@@ -187,7 +187,7 @@ err_t clicb_onoff(int argc, char *argv[])
   mng_t *mng = get_mng();
   err_t e = ec_success;
 
-  if (mng->cache.model_set.type) {
+  if (mng->cache.model_operation.type) {
     cli_print_busy();
     return err(ec_state);
   }
@@ -195,9 +195,9 @@ err_t clicb_onoff(int argc, char *argv[])
     return err(ec_param_invalid);
   }
   if (!strcmp(argv[1], "on")) {
-    mng->cache.model_set.value = 1;
+    mng->cache.model_operation.value = 1;
   } else if (!strcmp(argv[1], "off")) {
-    mng->cache.model_set.value = 0;
+    mng->cache.model_operation.value = 0;
   } else {
     return err(ec_param_invalid);
   }
@@ -210,7 +210,7 @@ err_t clicb_onoff(int argc, char *argv[])
     for (int i = 0; i < addrs->len; i++) {
       uint16 *addr = malloc(sizeof(uint16_t));
       *addr = addrs->data[i];
-      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
     }
     free(addrs->data);
     free(addrs);
@@ -222,12 +222,13 @@ err_t clicb_onoff(int argc, char *argv[])
         free(addr);
         continue;
       }
-      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
     }
   }
 
-  if (mng->cache.model_set.nodes) {
-    mng->cache.model_set.type = ONOFF_SV_BIT;
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_SET;
+    mng->cache.model_operation.func = ONOFF_SV_BIT;
   }
   return e;
 }
@@ -242,11 +243,31 @@ err_t clicb_ct(int argc, char *argv[])
   return clicb_perc_set(argc, argv, CTL_SV_BIT);
 }
 
+err_t clicb_lcget(int argc, char *argv[])
+{
+  return ec_success;
+}
+
+err_t clicb_lcset(int argc, char *argv[])
+{
+  return ec_success;
+}
+
+err_t clicb_lcpropertyget(int argc, char *argv[])
+{
+  return ec_success;
+}
+
+err_t clicb_lcpropertyset(int argc, char *argv[])
+{
+  return ec_success;
+}
+
 static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
 {
   mng_t *mng = get_mng();
   err_t e = ec_success;
-  if (mng->cache.model_set.type) {
+  if (mng->cache.model_operation.type) {
     cli_print_busy();
     return err(ec_state);
   }
@@ -254,11 +275,13 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
     return err(ec_param_invalid);
   }
 
-  if (ec_success != (e = str2uint(argv[1], strlen(argv[1]), &mng->cache.model_set.value,
-                                  sizeof(uint8_t)))) {
+  if (ec_success != (e = str2uint(argv[1],
+                                  strlen(argv[1]),
+                                  &mng->cache.model_operation.value,
+                                  sizeof(uint32_t)))) {
     return err(ec_param_invalid);
   }
-  if (mng->cache.model_set.value > 100) {
+  if (mng->cache.model_operation.value > 100) {
     return err(ec_param_invalid);
   }
 
@@ -270,7 +293,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
     for (int i = 0; i < addrs->len; i++) {
       uint16 *addr = malloc(sizeof(uint16_t));
       *addr = addrs->data[i];
-      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
     }
     free(addrs->data);
     free(addrs);
@@ -282,11 +305,12 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
         free(addr);
         continue;
       }
-      mng->cache.model_set.nodes = g_list_append(mng->cache.model_set.nodes, addr);
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
     }
   }
-  if (mng->cache.model_set.nodes) {
-    mng->cache.model_set.type = type;
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_SET;
+    mng->cache.model_operation.func = type;
   }
   return e;
 }
@@ -344,50 +368,83 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl)
                                            buf)->result;
 }
 
+static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
+{
+  return err(ec_not_supported);
+}
+
+static err_t model_set_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
+{
+  if (mng->cache.model_operation.func == ONOFF_SV_BIT) {
+    *bgerr = send_onoff(addr, mng->cache.model_operation.value);
+  } else if (mng->cache.model_operation.func == LIGHTNESS_SV_BIT) {
+    *bgerr = send_lightness(addr, mng->cache.model_operation.value);
+  } else if (mng->cache.model_operation.func == CTL_SV_BIT) {
+    *bgerr = send_ctl(addr, mng->cache.model_operation.value);
+  } else {
+    return err(ec_not_supported);
+  }
+  return (*bgerr == bg_err_success) ? ec_success : err(ec_bgrsp);
+}
+
+static err_t model_get_property_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
+{
+  return err(ec_not_supported);
+}
+
+static err_t model_set_property_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
+{
+  return err(ec_not_supported);
+}
+
 bool models_loop(mng_t *mng)
 {
-  uint16_t ret;
+  err_t e;
+  uint16_t ret = bg_err_success;
 
 #ifdef DEMO_EN
   check_demo();
 #endif
-  if (!g_list_length(mng->cache.model_set.nodes)) {
+  if (!g_list_length(mng->cache.model_operation.nodes)) {
     return false;
   }
 
-  GList *item = g_list_first(mng->cache.model_set.nodes);
-  if (!item) {
-    ASSERT(0);
+  GList *item = g_list_first(mng->cache.model_operation.nodes);
+  ASSERT(item);
+
+  if (mng->cache.model_operation.type == MO_GET) {
+    e = model_get_handler(*(uint16_t *)item->data, mng, &ret);
+  } else if (mng->cache.model_operation.type == MO_SET) {
+    e = model_set_handler(*(uint16_t *)item->data, mng, &ret);
+  } else if (mng->cache.model_operation.type == MO_GET_PROPERTY) {
+    e = model_get_property_handler(*(uint16_t *)item->data, mng, &ret);
+  } else if (mng->cache.model_operation.type == MO_SET_PROPERTY) {
+    e = model_set_property_handler(*(uint16_t *)item->data, mng, &ret);
+  } else {
+    e = err(ec_not_supported);
   }
 
-  if (mng->cache.model_set.type == ONOFF_SV_BIT) {
-    ret = send_onoff(*(uint16_t *)item->data, mng->cache.model_set.value);
-  } else if (mng->cache.model_set.type == LIGHTNESS_SV_BIT) {
-    ret = send_lightness(*(uint16_t *)item->data, mng->cache.model_set.value);
-  } else {
-    ret = send_ctl(*(uint16_t *)item->data, mng->cache.model_set.value);
-  }
-
-  if (ret != bg_err_success) {
-    if (ret == bg_err_out_of_memory) {
-      return true;
-    }
-    LOGE("Model Set to Node[0x%04x] Error[0x%04x].\n", *(uint16_t *)item->data, ret);
-  } else {
+  if (e == ec_success) {
 #if 0
     cli_print_modelset_done(*(uint16_t *)item->data,
-                            mng->cache.model_set.type,
-                            mng->cache.model_set.value);
+                            mng->cache.model_operation.type,
+                            mng->cache.model_operation.value);
 #endif
+  } else if (ret == bg_err_out_of_memory) {
+    return true;
+  } else {
+    elog(e);
+    LOGE("Model Operation to Node[0x%04x] Error[0x%04x].\n", *(uint16_t *)item->data, ret);
   }
 
-  mng->cache.model_set.nodes = g_list_remove_link(mng->cache.model_set.nodes, item);
+  mng->cache.model_operation.nodes = g_list_remove_link(mng->cache.model_operation.nodes, item);
   free(item->data);
   g_list_free(item);
-  if (!g_list_length(mng->cache.model_set.nodes)) {
-    g_list_free(mng->cache.model_set.nodes);
-    mng->cache.model_set.nodes = NULL;
-    mng->cache.model_set.type = 0;
+  if (!g_list_length(mng->cache.model_operation.nodes)) {
+    g_list_free(mng->cache.model_operation.nodes);
+    mng->cache.model_operation.nodes = NULL;
+    mng->cache.model_operation.type = MO_IDLE;
+    mng->cache.model_operation.func = 0;
   }
   return false;
 }

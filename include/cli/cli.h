@@ -33,7 +33,7 @@ extern "C"
 #define DUMP_PARAMS(argc, argv)
 #endif
 
-#define CMD_LENGTH  36
+#define CMD_LENGTH  40
 #define print_text(color, fmt, args ...) \
   printf(color fmt COLOR_OFF "\n", ## args)
 #define print_cmd_usage(cmd)                                   \
@@ -65,6 +65,7 @@ typedef struct {
   rl_compdisp_func_t *disp;
   rl_compentry_func_t *argcmpl;
   va_param_get_func_t vpget;
+  void *extra_args;
 }command_t;
 
 err_t cli_init(void *p);

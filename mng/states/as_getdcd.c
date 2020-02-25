@@ -267,13 +267,6 @@ static void __dcd_store(const uint8_t *data,
         } else if (mdid == LIGHT_LC_SERVER_MDID) {
           cache->node->models.func |= LC_SV_BIT;
         }
-#if 0
-        if (mdid == GENERIC_ONOFF_CLIENT_MDID) {
-          CS_LOG("-|||>>>OnOff Client Node (Switch)<<<|||-\n");
-        } else if (mdid == GENERIC_ONOFF_SERVER_MDID) {
-          CS_LOG("-|||>>>OnOff Server Node (Light)<<<|||-\n");
-        }
-#endif
         i += 2;
         if (mdid == CONFIGURATION_CLIENT_MDID
             || mdid == CONFIGURATION_SERVER_MDID) {

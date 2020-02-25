@@ -146,6 +146,14 @@ enum {
   fm_freemode
 };
 
+enum{
+  MO_IDLE,
+  MO_GET,
+  MO_SET,
+  MO_GET_PROPERTY,
+  MO_SET_PROPERTY
+};
+
 typedef struct {
   mng_state_t state;
   uint8_t conn;
@@ -165,11 +173,13 @@ typedef struct {
       config_cache_t cache[MAX_CONCURRENT_CONFIG_NODES];
     }config;
     bl_cache_t bl;
-    struct {
+    struct{
       uint8_t type;
-      uint8_t value;
+      uint32_t property;
+      bbitmap_t func;
+      uint32_t value;
       GList *nodes;
-    }model_set;
+    }model_operation;
   }cache;
 
   struct {
@@ -214,6 +224,10 @@ DECLARE_CB(lightness);
 DECLARE_CB(ct);
 DECLARE_CB(status);
 DECLARE_CB(loglvlset);
+DECLARE_CB(lcget);
+DECLARE_CB(lcset);
+DECLARE_CB(lcpropertyget);
+DECLARE_CB(lcpropertyset);
 #ifdef DEMO_EN
 DECLARE_CB(demo);
 #endif

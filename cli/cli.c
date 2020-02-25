@@ -71,6 +71,25 @@ static const char *seqset_arg[] = {
 };
 
 #define LC_PROPERTY_BASE  0x002b
+#define LC_PROPERTY_ARGS  "[ambient_luxlevel_on"      \
+                          "/ambient_luxlevel_prolong" \
+                          "/ambient_luxlevel_standby" \
+                          "/lightness_on"             \
+                          "/lightness_prolong"        \
+                          "/lightness_standby"        \
+                          "/regulator_accuracy"       \
+                          "/regulator_kid"            \
+                          "/regulator_kiu"            \
+                          "/regulator_kpd"            \
+                          "/regulator_kpu"            \
+                          "/time_fade"                \
+                          "/time_fade_on"             \
+                          "/time_fade_standby_auto"   \
+                          "/time_fade_standby_manual" \
+                          "/time_occupancy_delay"     \
+                          "/time_prolong"             \
+                          "/time_run_on]"             \
+
 static const char *lc_properties[] = {
   "ambient_luxlevel_on",
   "ambient_luxlevel_prolong",
@@ -93,12 +112,6 @@ static const char *lc_properties[] = {
 };
 
 #define LC_PROP_ID_FROM_INDEX(x)  ((x) + LC_PROPERTY_BASE)
-#define MAX_ARGS_CNT  5
-#define MAX_ARGS_LEN  20
-static struct arg_cache{
-  uint8_t cnt;
-  char argv[MAX_ARGS_CNT][MAX_ARGS_LEN];
-} arg_cache = { 0 };
 
 static char *seqset_arg_generator(const char *text, int state);
 
@@ -140,13 +153,23 @@ const command_t commands[] = {
 
   /* Light Control Commands */
   { "onoff", "[on/off] [addr...]", clicb_onoff,
-    "Set the onoff of a light", NULL, NULL, vaget_onoff_lights_addrs },
+    "Set the onoff of a light", NULL, NULL,
+    vaget_onoff_lights_addrs },
   { "lightness", "[pecentage] [addr...]", clicb_lightness,
-    "Set the lightness of a light", NULL, NULL, vaget_lightness_lights_addrs },
+    "Set the lightness of a light", NULL, NULL,
+    vaget_lightness_lights_addrs },
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
-    "Set the color temperature of a light", NULL, NULL, vaget_ctl_lights_addrs },
-  { "lcget", "[onoff/mode/om/property] [addr...]", clicb_onoff,
-    "Set the onoff of a light", NULL, NULL, vaget_lc_lights_addrs },
+    "Set the color temperature of a light", NULL, NULL,
+    vaget_ctl_lights_addrs },
+  /* LC Commands  */
+  { "lcget", "[onoff/mode/om] [addr...]", clicb_lcget,
+    "Get LC server state", NULL, NULL, vaget_lc_lights_addrs },
+  { "lcset", "[onoff/mode/om] [value] [addr...]", clicb_lcset,
+    "Set LC server state", NULL, NULL, vaget_lc_lights_addrs },
+  { "lcproperty_get", LC_PROPERTY_ARGS " [addr...]", clicb_lcget,
+    "Get LC server property", NULL, NULL, vaget_lc_lights_addrs },
+  { "lcproperty_set", LC_PROPERTY_ARGS " [value] [addr...]", clicb_lcset,
+    "Set LC server property", NULL, NULL, vaget_lc_lights_addrs },
 
   /* Sensor Control Commands */
   /* {"sensor_set", "[cadence/setting]"}, */
@@ -389,6 +412,7 @@ static char *var_arg_generator(const char *text, int state)
     memset(vaget.va_param, 0, VAP_LEN);
     vaget.len = 0;
     if (ec_success != (*vaget.pvpget)(vaget.va_param, VAP_LEN, &vaget.ulen, &vaget.len)) {
+      LOGE("Variable Address Get Error\n");
       return NULL;
     }
   }
@@ -490,13 +514,6 @@ static char **menu_completion(const char *text,
       continue;
     }
 
-    if (!strcmp(cmd->name, "lcset") || !strcmp(cmd->name, "lcget")) {
-      if (argc == arg_cache.cnt + 1) {
-        memset(arg_cache.argv[arg_cache.cnt], 0, MAX_ARGS_LEN);
-        strcpy(arg_cache.argv[arg_cache.cnt], argv[arg_cache.cnt]);
-        arg_cache.cnt++;
-      }
-    }
     if (!cmd->argcmpl) {
       matches = args_completion(cmd, argc, text);
       break;
@@ -839,12 +856,24 @@ static err_t clicb_reset(int argc, char *argv[])
   return 0;
 }
 
+#define DEFAULT_ARGS  "[xxx]"
 static err_t clicb_help(int argc, char *argv[])
 {
+  const char *args;
   print_text(COLOR_HIGHLIGHT, "Available commands:");
   print_text(COLOR_HIGHLIGHT, "-------------------");
   foreach_cmds(i){
-    print_cmd_usage(&commands[i]);
+    /* print_cmd_usage(&commands[i]); */
+    if (commands[i].arg && strlen(commands[i].arg) > CMD_LENGTH) {
+      args = DEFAULT_ARGS;
+    } else {
+      args = commands[i].arg;
+    }
+    printf(COLOR_HIGHLIGHT "%s %-*s " COLOR_OFF "%s\n",
+           commands[i].name,
+           (int)(CMD_LENGTH - strlen(commands[i].name)),
+           args ? args : "",
+           commands[i].doc);
   }
   return 0;
 }
