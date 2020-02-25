@@ -177,6 +177,7 @@ typedef struct {
       uint8_t type;
       uint32_t property;
       bbitmap_t func;
+      uint8_t sub_which;
       uint32_t value;
       GList *nodes;
     }model_operation;

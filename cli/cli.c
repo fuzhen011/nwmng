@@ -164,7 +164,7 @@ const command_t commands[] = {
   /* LC Commands  */
   { "lcget", "[onoff/mode/om] [addr...]", clicb_lcget,
     "Get LC server state", NULL, NULL, vaget_lc_lights_addrs },
-  { "lcset", "[onoff/mode/om] [value] [addr...]", clicb_lcset,
+  { "lcset", "[onoff/mode/om] [on/off] [addr...]", clicb_lcset,
     "Set LC server state", NULL, NULL, vaget_lc_lights_addrs },
   { "lcproperty_get", LC_PROPERTY_ARGS " [addr...]", clicb_lcget,
     "Get LC server property", NULL, NULL, vaget_lc_lights_addrs },

@@ -264,11 +264,11 @@ err_t clicb_lcget(int argc, char *argv[])
   }
 
   if (!strcmp(argv[1], "onoff")) {
-    mng->cache.model_operation.value = LC_STATE_ONOFF;
+    mng->cache.model_operation.sub_which = LC_STATE_ONOFF;
   } else if (!strcmp(argv[1], "mode")) {
-    mng->cache.model_operation.value = LC_STATE_MODE;
+    mng->cache.model_operation.sub_which = LC_STATE_MODE;
   } else if (!strcmp(argv[1], "om")) {
-    mng->cache.model_operation.value = LC_STATE_OM;
+    mng->cache.model_operation.sub_which = LC_STATE_OM;
   } else {
     return err(ec_param_invalid);
   }
@@ -307,6 +307,75 @@ err_t clicb_lcget(int argc, char *argv[])
 
 err_t clicb_lcset(int argc, char *argv[])
 {
+  mng_t *mng = get_mng();
+  err_t e = ec_success;
+
+  if (mng->cache.model_operation.type) {
+    cli_print_busy();
+    return err(ec_state);
+  }
+
+  if (argc < 3) {
+    return err(ec_param_invalid);
+  }
+
+  if (!strcmp(argv[1], "onoff")) {
+    mng->cache.model_operation.sub_which = LC_STATE_ONOFF;
+  } else if (!strcmp(argv[1], "mode")) {
+    mng->cache.model_operation.sub_which = LC_STATE_MODE;
+  } else if (!strcmp(argv[1], "om")) {
+    mng->cache.model_operation.sub_which = LC_STATE_OM;
+  } else {
+    return err(ec_param_invalid);
+  }
+
+#if 1
+  if (!strcmp(argv[2], "on")) {
+    mng->cache.model_operation.value = 1;
+  } else if (!strcmp(argv[2], "off")) {
+    mng->cache.model_operation.value = 0;
+  } else {
+    return err(ec_param_invalid);
+  }
+#else
+  if (ec_success != (e = str2uint(argv[2],
+                                  strlen(argv[2]),
+                                  &mng->cache.model_operation.value,
+                                  sizeof(uint32_t)))) {
+    return err(ec_param_invalid);
+  }
+  if (mng->cache.model_operation.value > 1) {
+    return err(ec_param_invalid);
+  }
+#endif
+  if (argc == 3) {
+    uint16list_t *addrs = get_lights_addrs(LC_SV_BIT);
+    if (!addrs) {
+      return e;
+    }
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 3; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGE("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+  }
+
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_SET;
+    mng->cache.model_operation.func = LC_SV_BIT;
+  }
   return ec_success;
 }
 
@@ -428,10 +497,10 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl)
 static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
 {
   if (mng->cache.model_operation.func == LC_SV_BIT) {
-    if (mng->cache.model_operation.value == LC_STATE_ONOFF) {
+    if (mng->cache.model_operation.sub_which == LC_STATE_ONOFF) {
       *bgerr = gecko_cmd_mesh_lc_client_get_light_onoff(LC_ELEM_INDEX,
                                                         addr, 0)->result;
-    } else if (mng->cache.model_operation.value == LC_STATE_MODE) {
+    } else if (mng->cache.model_operation.sub_which == LC_STATE_MODE) {
       *bgerr = gecko_cmd_mesh_lc_client_get_mode(LC_ELEM_INDEX,
                                                  addr, 0)->result;
     } else {
@@ -452,6 +521,29 @@ static err_t model_set_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
     *bgerr = send_lightness(addr, mng->cache.model_operation.value);
   } else if (mng->cache.model_operation.func == CTL_SV_BIT) {
     *bgerr = send_ctl(addr, mng->cache.model_operation.value);
+  } else if (mng->cache.model_operation.func == LC_SV_BIT) {
+    if (mng->cache.model_operation.sub_which == LC_STATE_ONOFF) {
+      *bgerr = gecko_cmd_mesh_lc_client_set_light_onoff(LC_ELEM_INDEX,
+                                                        addr,
+                                                        0,
+                                                        0x2,
+                                                        (uint8_t)mng->cache.model_operation.value,
+                                                        tid++,
+                                                        0,
+                                                        0)->result;
+    } else if (mng->cache.model_operation.value == LC_STATE_MODE) {
+      *bgerr = gecko_cmd_mesh_lc_client_set_mode(LC_ELEM_INDEX,
+                                                 addr,
+                                                 0,
+                                                 0x2,
+                                                 (uint8_t)mng->cache.model_operation.value)->result;
+    } else {
+      *bgerr = gecko_cmd_mesh_lc_client_set_om(LC_ELEM_INDEX,
+                                               addr,
+                                               0,
+                                               0x2,
+                                               (uint8_t)mng->cache.model_operation.value)->result;
+    }
   } else {
     return err(ec_not_supported);
   }
