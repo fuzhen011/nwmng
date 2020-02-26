@@ -21,6 +21,7 @@
 #include "nwk.h"
 #include "dev_config.h"
 #include "startup.h"
+#include "models.h"
 
 /* Defines  *********************************************************** */
 BGLIB_DEFINE();

@@ -146,6 +146,9 @@ enum {
   fm_freemode
 };
 
+/**
+ * @brief Model operations
+ */
 enum{
   MO_IDLE,
   MO_GET,
@@ -236,15 +239,6 @@ DECLARE_CB(demo);
 bool bl_loop(void *p);
 bool add_loop(void *p);
 
-bool models_loop(mng_t *mng);
-uint16_t send_onoff(uint16_t addr, uint8_t onoff);
-uint16_t send_lightness(uint16_t addr, uint8_t lightness);
-uint16_t send_ctl(uint16_t addr, uint8_t ctl);
-
-void demo_run(void);
-void demo_start(int en);
-
-int model_evt_hdr(const struct gecko_cmd_packet *evt);
 #ifdef __cplusplus
 }
 #endif

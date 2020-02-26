@@ -11,6 +11,7 @@
 #include "generic_parser.h"
 #include "cli.h"
 #include "stat.h"
+#include "models.h"
 
 #define ON_END_DEBUG
 #ifdef ON_END_DEBUG

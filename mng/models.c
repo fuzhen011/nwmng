@@ -9,11 +9,19 @@
 #include "projconfig.h"
 #include "host_gecko.h"
 #include "mng.h"
+#include "models.h"
 #include "cli.h"
 #include "logging.h"
 #include "utils.h"
 
 /* Defines  *********************************************************** */
+enum {
+  LC_STATE_ONOFF,
+  LC_STATE_MODE,
+  LC_STATE_OM
+};
+
+
 #ifdef DEMO_EN
 #if 0
 const char *demo_cmds[] = {
@@ -104,7 +112,7 @@ static uint8_t tid = 0;
 /* Static Variables *************************************************** */
 
 /* Static Functions Declaractions ************************************* */
-static err_t clicb_perc_set(int argc, char *argv[], uint8_t type);
+static err_t clicb_perc_set(int argc, char *argv[], uint8_t func);
 
 #ifdef DEMO_EN
 #if 0
@@ -243,12 +251,6 @@ err_t clicb_ct(int argc, char *argv[])
   return clicb_perc_set(argc, argv, CTL_SV_BIT);
 }
 
-enum {
-  LC_STATE_ONOFF,
-  LC_STATE_MODE,
-  LC_STATE_OM
-};
-
 err_t clicb_lcget(int argc, char *argv[])
 {
   mng_t *mng = get_mng();
@@ -329,7 +331,6 @@ err_t clicb_lcset(int argc, char *argv[])
     return err(ec_param_invalid);
   }
 
-#if 1
   if (!strcmp(argv[2], "on")) {
     mng->cache.model_operation.value = 1;
   } else if (!strcmp(argv[2], "off")) {
@@ -337,17 +338,6 @@ err_t clicb_lcset(int argc, char *argv[])
   } else {
     return err(ec_param_invalid);
   }
-#else
-  if (ec_success != (e = str2uint(argv[2],
-                                  strlen(argv[2]),
-                                  &mng->cache.model_operation.value,
-                                  sizeof(uint32_t)))) {
-    return err(ec_param_invalid);
-  }
-  if (mng->cache.model_operation.value > 1) {
-    return err(ec_param_invalid);
-  }
-#endif
   if (argc == 3) {
     uint16list_t *addrs = get_lights_addrs(LC_SV_BIT);
     if (!addrs) {
@@ -389,7 +379,7 @@ err_t clicb_lcpropertyset(int argc, char *argv[])
   return ec_success;
 }
 
-static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
+static err_t clicb_perc_set(int argc, char *argv[], uint8_t func)
 {
   mng_t *mng = get_mng();
   err_t e = ec_success;
@@ -436,7 +426,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t type)
   }
   if (mng->cache.model_operation.nodes) {
     mng->cache.model_operation.type = MO_SET;
-    mng->cache.model_operation.func = type;
+    mng->cache.model_operation.func = func;
   }
   return e;
 }

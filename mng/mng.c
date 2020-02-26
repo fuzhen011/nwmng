@@ -31,6 +31,8 @@
 #include "gecko_bglib.h"
 #include "dev_config.h"
 #include "stat.h"
+#include "models.h"
+
 /* Defines  *********************************************************** */
 /*
  * Default priority for taking actions: Adding > Removing > Blacklisting
