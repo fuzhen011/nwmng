@@ -11,16 +11,12 @@
 #include "utils.h"
 #include "logging.h"
 #include "generic_parser.h"
+#include "mesh_generic_model_capi_types.h"
+#include "mesh_lighting_model_capi_types.h"
+#include "mesh_sensor_model_capi_types.h"
 
 /* Defines  *********************************************************** */
-#define GENERIC_ONOFF_SERVER_MDID       0x1000
-#define GENERIC_ONOFF_CLIENT_MDID       0x1001
-
-#define LIGHT_LIGHTNESS_SERVER_MDID     0x1300
-#define LIGHT_CTL_SERVER_MDID     0x1303
 #define LIGHT_LC_SERVER_MDID  0x130f
-#define SENSOR_SERVER_MDID  0x1100
-
 #define CONFIGURATION_SERVER_MDID       0x0000
 #define CONFIGURATION_CLIENT_MDID       0x0001
 #define HEALTH_SERVER_MDID              0x0002
@@ -256,13 +252,13 @@ static void __dcd_store(const uint8_t *data,
       uint8_t offset = 0;
       for (uint8_t ms = 0; ms < dcd->elems[e].sigm_cnt; ms++) {
         uint16_t mdid = BUILD_UINT16(data[i], data[i + 1]);
-        if (mdid == GENERIC_ONOFF_SERVER_MDID) {
+        if (mdid == MESH_GENERIC_ON_OFF_SERVER_MODEL_ID) {
           cache->node->models.func |= ONOFF_SV_BIT;
-        } else if (mdid == LIGHT_LIGHTNESS_SERVER_MDID) {
+        } else if (mdid == MESH_LIGHTING_LIGHTNESS_SERVER_MODEL_ID) {
           cache->node->models.func |= LIGHTNESS_SV_BIT;
-        } else if (mdid == LIGHT_CTL_SERVER_MDID) {
+        } else if (mdid == MESH_LIGHTING_CTL_SERVER_MODEL_ID) {
           cache->node->models.func |= CTL_SV_BIT;
-        } else if (mdid == SENSOR_SERVER_MDID) {
+        } else if (mdid == MESH_SENSOR_SERVER_MODEL_ID) {
           cache->node->models.func |= SENSOR_SV_BIT;
         } else if (mdid == LIGHT_LC_SERVER_MDID) {
           cache->node->models.func |= LC_SV_BIT;

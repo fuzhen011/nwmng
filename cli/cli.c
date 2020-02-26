@@ -27,6 +27,7 @@
 #include "cli.h"
 #include "cfg.h"
 #include "mng.h"
+#include "models.h"
 
 #include "startup.h"
 #include "utils.h"
@@ -88,8 +89,8 @@ static const char *seqset_arg[] = {
                           "/time_fade_standby_manual" \
                           "/time_occupancy_delay"     \
                           "/time_prolong"             \
-                          "/time_run_on]"             \
-
+                          "/time_run_on]"
+#if 0
 static const char *lc_properties[] = {
   "ambient_luxlevel_on",
   "ambient_luxlevel_prolong",
@@ -110,6 +111,7 @@ static const char *lc_properties[] = {
   "time_prolong",
   "time_run_on",
 };
+#endif
 
 #define LC_PROP_ID_FROM_INDEX(x)  ((x) + LC_PROPERTY_BASE)
 
@@ -155,11 +157,20 @@ const command_t commands[] = {
   { "onoff", "[on/off] [addr...]", clicb_onoff,
     "Set the onoff of a light", NULL, NULL,
     vaget_onoff_lights_addrs },
+  { "onoff_get", "[addr...]", clicb_onoff_get,
+    "Get the onoff status from light(s)", NULL, NULL,
+    vaget_onoff_lights_addrs },
   { "lightness", "[pecentage] [addr...]", clicb_lightness,
     "Set the lightness of a light", NULL, NULL,
     vaget_lightness_lights_addrs },
+  { "lightness_get", "[addr...]", clicb_lightness_get,
+    "Get the lightness from light(s)", NULL, NULL,
+    vaget_lightness_lights_addrs },
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
     "Set the color temperature of a light", NULL, NULL,
+    vaget_ctl_lights_addrs },
+  { "colortemp_get", "[addr...]", clicb_ct_get,
+    "Get the color temperature from light(s)", NULL, NULL,
     vaget_ctl_lights_addrs },
   /* LC Commands  */
   { "lcget", "[onoff/mode/om] [addr...]", clicb_lcget,
@@ -575,6 +586,9 @@ static inline int find_cmd_index(const char *cmd)
 {
   int pos;
   for (pos = 0; pos < cmd_num; pos++) {
+    if (strlen(cmd) != strlen(commands[pos].name)) {
+      continue;
+    }
     if (!strncmp(cmd, commands[pos].name, strlen(commands[pos].name))) {
       return pos;
     }

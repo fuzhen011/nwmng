@@ -137,6 +137,7 @@ include_directories(
   ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/common
   ${CMAKE_CURRENT_LIST_DIR}/hal/ble_stack/host
   ${CMAKE_CURRENT_LIST_DIR}/hal/common/uart
+  ${CMAKE_CURRENT_LIST_DIR}/hal/bt_mesh/inc
   ${READLINE_INC_DIRS}
   ${EXTRA_INC_PATH})
 

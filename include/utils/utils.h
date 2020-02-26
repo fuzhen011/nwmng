@@ -274,6 +274,15 @@ static inline int fmt_key(char *buf, const uint8_t *key)
  * ***************************************************************/
 void uprint_tmpl(uint16_t refid);
 
+static inline uint16_t uint16_from_buf(const uint8_t *ptr)
+{
+    return ((uint16_t)ptr[0]) | ((uint16_t)ptr[1] << 8);
+}
+
+static inline int16_t int16_from_buf(const uint8_t *ptr)
+{
+    return ((int16_t)ptr[0]) | ((int16_t)ptr[1] << 8);
+}
 #ifdef __cplusplus
 }
 #endif

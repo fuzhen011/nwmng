@@ -223,15 +223,8 @@ DECLARE_CB(info);
 DECLARE_CB(rmall);
 DECLARE_CB(rmblclr);
 DECLARE_CB(seqset);
-DECLARE_CB(onoff);
-DECLARE_CB(lightness);
-DECLARE_CB(ct);
 DECLARE_CB(status);
 DECLARE_CB(loglvlset);
-DECLARE_CB(lcget);
-DECLARE_CB(lcset);
-DECLARE_CB(lcpropertyget);
-DECLARE_CB(lcpropertyset);
 #ifdef DEMO_EN
 DECLARE_CB(demo);
 #endif

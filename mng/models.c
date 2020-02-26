@@ -13,14 +13,17 @@
 #include "cli.h"
 #include "logging.h"
 #include "utils.h"
+#include "mesh_generic_model_capi_types.h"
+#include "mesh_lighting_model_capi_types.h"
+#include "mesh_sensor_model_capi_types.h"
 
 /* Defines  *********************************************************** */
+
 enum {
   LC_STATE_ONOFF,
   LC_STATE_MODE,
   LC_STATE_OM
 };
-
 
 #ifdef DEMO_EN
 #if 0
@@ -113,6 +116,7 @@ static uint8_t tid = 0;
 
 /* Static Functions Declaractions ************************************* */
 static err_t clicb_perc_set(int argc, char *argv[], uint8_t func);
+static err_t clicb_perc_get(int argc, char *argv[], uint8_t func);
 
 #ifdef DEMO_EN
 #if 0
@@ -241,6 +245,47 @@ err_t clicb_onoff(int argc, char *argv[])
   return e;
 }
 
+err_t clicb_onoff_get(int argc, char *argv[])
+{
+  mng_t *mng = get_mng();
+  err_t e = ec_success;
+
+  if (mng->cache.model_operation.type) {
+    cli_print_busy();
+    return err(ec_state);
+  }
+
+  if (argc == 1) {
+    uint16list_t *addrs = get_lights_addrs(ONOFF_SV_BIT);
+    if (!addrs) {
+      return e;
+    }
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 2; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGE("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+  }
+
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_GET;
+    mng->cache.model_operation.func = ONOFF_SV_BIT;
+  }
+  return e;
+}
+
 err_t clicb_lightness(int argc, char *argv[])
 {
   return clicb_perc_set(argc, argv, LIGHTNESS_SV_BIT);
@@ -249,6 +294,16 @@ err_t clicb_lightness(int argc, char *argv[])
 err_t clicb_ct(int argc, char *argv[])
 {
   return clicb_perc_set(argc, argv, CTL_SV_BIT);
+}
+
+err_t clicb_lightness_get(int argc, char *argv[])
+{
+  return clicb_perc_get(argc, argv, LIGHTNESS_SV_BIT);
+}
+
+err_t clicb_ct_get(int argc, char *argv[])
+{
+  return clicb_perc_get(argc, argv, CTL_SV_BIT);
 }
 
 err_t clicb_lcget(int argc, char *argv[])
@@ -402,7 +457,46 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t func)
   }
 
   if (argc == 2) {
-    uint16list_t *addrs = get_lights_addrs(LIGHTNESS_SV_BIT);
+    uint16list_t *addrs = get_lights_addrs(func);
+    if (!addrs) {
+      return e;
+    }
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 2; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGE("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+  }
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_SET;
+    mng->cache.model_operation.func = func;
+  }
+  return e;
+}
+
+static err_t clicb_perc_get(int argc, char *argv[], uint8_t func)
+{
+  mng_t *mng = get_mng();
+  err_t e = ec_success;
+  if (mng->cache.model_operation.type) {
+    cli_print_busy();
+    return err(ec_state);
+  }
+
+  if (argc == 1) {
+    uint16list_t *addrs = get_lights_addrs(func);
     if (!addrs) {
       return e;
     }
@@ -433,7 +527,7 @@ static err_t clicb_perc_set(int argc, char *argv[], uint8_t func)
 
 uint16_t send_onoff(uint16_t addr, uint8_t onoff)
 {
-  return gecko_cmd_mesh_generic_client_set(0x1001,
+  return gecko_cmd_mesh_generic_client_set(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
                                            0,
                                            addr,
                                            0, /* TODO: correct this */
@@ -446,10 +540,19 @@ uint16_t send_onoff(uint16_t addr, uint8_t onoff)
                                            &onoff)->result;
 }
 
+uint16_t onoff_get(uint16_t addr)
+{
+  return gecko_cmd_mesh_generic_client_get(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
+                                           0,
+                                           addr,
+                                           0,
+                                           mesh_generic_request_on_off)->result;
+}
+
 uint16_t send_lightness(uint16_t addr, uint8_t lightness)
 {
   uint16_t lvl = lightness * 0xffff / 100;
-  return gecko_cmd_mesh_generic_client_set(0x1302,
+  return gecko_cmd_mesh_generic_client_set(MESH_LIGHTING_LIGHTNESS_CLIENT_MODEL_ID,
                                            0,
                                            addr,
                                            0, /* TODO: correct this */
@@ -461,17 +564,22 @@ uint16_t send_lightness(uint16_t addr, uint8_t lightness)
                                            2,
                                            (uint8_t *)&lvl)->result;
 }
-// Minimum color temperature 800K
-#define TEMPERATURE_MIN      0x0320
-// Maximum color temperature 20000K
-#define TEMPERATURE_MAX      0x4e20
+
+uint16_t lightness_get(uint16_t addr)
+{
+  return gecko_cmd_mesh_generic_client_get(MESH_LIGHTING_LIGHTNESS_CLIENT_MODEL_ID,
+                                           0,
+                                           addr,
+                                           0,
+                                           mesh_lighting_request_lightness_actual)->result;
+}
 
 uint16_t send_ctl(uint16_t addr, uint8_t ctl)
 {
   uint8_t buf[4] = { 0 };
-  uint16_t lvl = TEMPERATURE_MIN + (ctl * ctl / 100) * (TEMPERATURE_MAX - TEMPERATURE_MIN) / 100;
+  uint16_t lvl = MESH_LIGHTING_CTL_TEMPERATURE_MIN + (ctl * ctl / 100) * (MESH_LIGHTING_CTL_TEMPERATURE_MAX - MESH_LIGHTING_CTL_TEMPERATURE_MIN) / 100;
   memcpy(buf, (uint8_t *)&lvl, 2);
-  return gecko_cmd_mesh_generic_client_set(0x1305,
+  return gecko_cmd_mesh_generic_client_set(MESH_LIGHTING_CTL_CLIENT_MODEL_ID,
                                            0,
                                            addr,
                                            0, /* TODO: correct this */
@@ -482,6 +590,15 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl)
                                            MESH_GENERIC_CLIENT_REQUEST_CTL_TEMPERATURE,
                                            4,
                                            buf)->result;
+}
+
+uint16_t ctl_get(uint16_t addr)
+{
+  return gecko_cmd_mesh_generic_client_get(MESH_LIGHTING_CTL_CLIENT_MODEL_ID,
+                                           0,
+                                           addr,
+                                           0,
+                                           mesh_lighting_request_ctl)->result;
 }
 
 static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
@@ -497,6 +614,12 @@ static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
       *bgerr = gecko_cmd_mesh_lc_client_get_om(LC_ELEM_INDEX,
                                                addr, 0)->result;
     }
+  } else if (mng->cache.model_operation.func == ONOFF_SV_BIT) {
+    *bgerr = onoff_get(addr);
+  } else if (mng->cache.model_operation.func == LIGHTNESS_SV_BIT) {
+    *bgerr = lightness_get(addr);
+  } else if (mng->cache.model_operation.func == CTL_SV_BIT) {
+    *bgerr = ctl_get(addr);
   } else {
     return err(ec_not_supported);
   }
@@ -634,12 +757,56 @@ void lc_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
   }
 }
 
+void generic_light_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
+{
+  if (!(evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_request_on_off
+        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_lightness_actual
+        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_ctl)) {
+    return;
+  }
+  if (evt_id == gecko_evt_mesh_generic_client_server_status_id) {
+    LOGD("Server Status Message:\n"
+         "  Model[0x%04x] on Element[%d]\n"
+         "  From: 0x%04x To 0x%04x\n"
+         "  Relayed %s\n"
+         "  Type: %s\n",
+         evt->data.evt_mesh_generic_client_server_status.model_id,
+         evt->data.evt_mesh_generic_client_server_status.elem_index,
+         evt->data.evt_mesh_generic_client_server_status.server_address,
+         evt->data.evt_mesh_generic_client_server_status.client_address,
+         evt->data.evt_mesh_generic_client_server_status.flags & 0x1 ? "Yes" : "No",
+         evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_request_on_off
+         ? "ONOFF Status"
+         : evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_lightness_actual
+         ? "Lightness Status" : "CTL Status");
+  }
+  if (evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_request_on_off) {
+    LOGD("  Type: ONOFF Status\n"
+         "    Value: %s\n",
+         evt->data.evt_mesh_generic_client_server_status.parameters.data[0] ? "ON" : "OFF");
+  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_lightness_actual) {
+    LOGD("  Type: Lightness Status\n"
+         "    Value: 0x%x\n",
+         uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data));
+  } else {
+    LOGD("  Type: CTL Status\n"
+         "    Lightness: 0x%x\n"
+         "    Color Temperature: 0x%x\n",
+         "    Color Temperature: %d\n",
+         uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data),
+         uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 2),
+         int16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 4));
+  }
+}
+
 int model_evt_hdr(const struct gecko_cmd_packet *evt)
 {
   uint32_t evt_id = BGLIB_MSG_ID(evt->header);
 
   if ((evt_id & 0x00ff0000) == 0x004c0000) {
     lc_client_evt_hdr(evt_id, evt);
+  } else if ((evt_id & 0x00ff0000) == 0x001e0000) {
+    generic_light_client_evt_hdr(evt_id, evt);
   } else {
     return 0;
   }
