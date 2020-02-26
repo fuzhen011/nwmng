@@ -149,7 +149,7 @@ enum {
 /**
  * @brief Model operations
  */
-enum{
+enum {
   MO_IDLE,
   MO_GET,
   MO_SET,
@@ -158,10 +158,31 @@ enum{
 };
 
 typedef struct {
+  uint16_t location;
+  uint8_t sig_model_num;
+  uint8_t vendor_model_num;
+  uint16_t *sigmodels;
+  struct {
+    uint16_t vendor_id;
+    uint16_t model_id;
+  } *vendor_models;
+}dcd_element_t;
+
+typedef struct {
   mng_state_t state;
   uint8_t conn;
   provcfg_t *cfg;
 
+  struct {
+    bool valid;
+    uint16_t company_id;
+    uint16_t product_id;
+    uint16_t version_numer;
+    uint16_t rpl_size;
+    uint16_t feature_bitmask;
+    uint8_t element_num;
+    dcd_element_t *elements;
+  }dcd;
   struct {
     int free_mode;
     seqprio_t seq;
@@ -176,7 +197,7 @@ typedef struct {
       config_cache_t cache[MAX_CONCURRENT_CONFIG_NODES];
     }config;
     bl_cache_t bl;
-    struct{
+    struct {
       uint8_t type;
       uint32_t property;
       bbitmap_t func;

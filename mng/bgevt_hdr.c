@@ -32,11 +32,11 @@ BGLIB_DEFINE();
 static volatile int ncp_sync = false;
 
 static bgevt_hdr hdrs[] = {
+  model_evt_hdr,
   dev_add_hdr,
   dev_config_hdr,
   bl_hdr,
   bgevt_dflt_hdr,
-  model_evt_hdr,
   NULL
 };
 

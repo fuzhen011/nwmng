@@ -263,7 +263,10 @@ static inline uint16list_t **pbindings_from_fd(int cfg_fd, void *dest)
     return (&((node_t *)dest)->config.bindings);
   } else if (cfg_fd == TEMPLATE_FILE) {
     return (&((tmpl_t *)dest)->bindings);
+  } else if (cfg_fd == PROV_CFG_FILE) {
+    return &((provcfg_t *)dest)->bindings;
   }
+
   ASSERT(0);
 }
 
@@ -1246,6 +1249,7 @@ static err_t load_provself(void)
   _load_ttl(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
   _load_txp(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
   _load_timeout(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
+  _load_bindings(jcfg.prov.gen.root, PROV_CFG_FILE, provcfg);
 
   /* Load Primary Subnet */
   if (!json_object_object_get_ex(jcfg.prov.gen.root, STR_SUBNETS, &n)) {

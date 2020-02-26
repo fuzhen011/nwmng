@@ -31,6 +31,7 @@ uint16_t send_onoff(uint16_t addr, uint8_t onoff);
 uint16_t send_lightness(uint16_t addr, uint8_t lightness);
 uint16_t send_ctl(uint16_t addr, uint8_t ctl);
 
+void models_init(mng_t *mng);
 void demo_run(void);
 void demo_start(int en);
 

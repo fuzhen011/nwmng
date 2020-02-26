@@ -151,6 +151,7 @@ typedef struct {
   uint8_t *ttl;
   txparam_t *net_txp;
   timeout_t *timeout;
+  uint16list_t *bindings;
 }provcfg_t;
 
 typedef struct {

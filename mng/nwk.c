@@ -19,7 +19,7 @@
 #include "socket_handler.h"
 #include "generic_parser.h"
 #include "startup.h"
-
+#include "models.h"
 /* Defines  *********************************************************** */
 
 /* Global Variables *************************************************** */
@@ -57,33 +57,7 @@ err_t nwk_init(void *p)
   mng_load_lists();     /* do the initial loading */
   LOGM("Network configured and nodes loaded\n");
 
-  /*
-   * Initialize all the required model classes
-   */
-  /* Generic client model */
-  if (bg_err_success != (ret = gecko_cmd_mesh_generic_client_init()->result)) {
-    LOGBGE("gecko_cmd_mesh_generic_client_init", ret);
-    return err(ec_bgrsp);
-  }
-  /* Sensor client model */
-  if (bg_err_success != (ret = gecko_cmd_mesh_sensor_client_init()->result)) {
-    LOGBGE("gecko_cmd_mesh_sensor_client_init", ret);
-    return err(ec_bgrsp);
-  }
-#if (LC_CLIENT_PRESENT == 1)
-  /* LC client model */
-  if (bg_err_success != (ret = gecko_cmd_mesh_lc_client_init(LC_ELEM_INDEX)->result)) {
-    LOGBGE("gecko_cmd_mesh_lc_client_init", ret);
-    return err(ec_bgrsp);
-  }
-#endif
-#if (SCENE_CLIENT_PRESENT == 1)
-  /* Scene client model */
-  if (bg_err_success != (ret = gecko_cmd_mesh_scene_client_init(SCENE_ELEM_INDEX)->result)) {
-    LOGBGE("gecko_cmd_mesh_scene_client_init", ret);
-    return err(ec_bgrsp);
-  }
-#endif
+  models_init(mng);
 
   return e;
 }

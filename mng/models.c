@@ -194,6 +194,157 @@ void check_demo(void)
 }
 #endif
 
+static inline void parse_dcd(const uint8_t *data, uint8_t len, mng_t *mng)
+{
+  uint8_t offs = 0, offs1, nums, numv;
+  if (mng->dcd.valid) {
+    /* TODO: Free first */
+  }
+  /* No sanity check here */
+  mng->dcd.company_id = uint16_from_buf(data);
+  offs += 2;
+  mng->dcd.product_id = uint16_from_buf(data + offs);
+  offs += 2;
+  mng->dcd.version_numer = uint16_from_buf(data + offs);
+  offs += 2;
+  mng->dcd.rpl_size = uint16_from_buf(data + offs);
+  offs += 2;
+  mng->dcd.feature_bitmask = uint16_from_buf(data + offs);
+  offs += 2;
+
+  offs1 = offs;
+
+  /* Allocate memory for elements */
+  mng->dcd.element_num = 0;
+  while (offs1 < len) {
+    offs1 += 2;
+    nums = data[offs1++];
+    numv = data[offs1++];
+    mng->dcd.element_num++;
+    offs1 += nums * 2 + numv * 4;
+  }
+  LOGD("%d Elements\n", mng->dcd.element_num);
+  if (!mng->dcd.element_num) {
+    return;
+  }
+
+  mng->dcd.elements = malloc(mng->dcd.element_num * sizeof(dcd_element_t));
+
+  offs1 = 0;
+  while (offs < len) {
+    mng->dcd.elements[offs1].location = uint16_from_buf(data + offs);
+    offs += 2;
+    mng->dcd.elements[offs1].sig_model_num = data[offs++];
+    mng->dcd.elements[offs1].vendor_model_num = data[offs++];
+    if (mng->dcd.elements[offs1].sig_model_num) {
+      mng->dcd.elements[offs1].sigmodels = malloc(sizeof(uint16_t) * mng->dcd.elements[offs1].sig_model_num);
+    }
+    if (mng->dcd.elements[offs1].vendor_model_num) {
+      mng->dcd.elements[offs1].vendor_models = malloc(2 * sizeof(uint16_t) * mng->dcd.elements[offs1].vendor_model_num);
+    }
+    for (int i = 0; i < mng->dcd.elements[offs1].sig_model_num; i++) {
+      mng->dcd.elements[offs1].sigmodels[i] = uint16_from_buf(data + offs);
+      offs += 2;
+    }
+    for (int i = 0; i < mng->dcd.elements[offs1].vendor_model_num; i++) {
+      mng->dcd.elements[offs1].vendor_models[i].vendor_id = uint16_from_buf(data + offs);
+      offs += 2;
+      mng->dcd.elements[offs1].vendor_models[i].model_id = uint16_from_buf(data + offs);
+      offs += 2;
+    }
+    offs1++;
+  }
+  mng->dcd.valid = true;
+}
+
+extern int appkey_by_refid(mng_t *mng, uint16_t refid, uint16_t *id);
+/**
+ * @brief models_init - This function will read the DCD from the ncp, then
+ * initialize the client models on it.
+ *
+ * @param mng -
+ *
+ * @return
+ */
+void models_init(mng_t *mng)
+{
+  uint16_t ret, id;
+  struct gecko_msg_mesh_test_get_local_config_rsp_t *r;
+
+  r = gecko_cmd_mesh_test_get_local_config(mesh_node_dcd, 0);
+
+  if (r->result != bg_err_success) {
+    LOGBGE("gecko_cmd_mesh_test_get_local_config", r->result);
+    exit(1);
+  }
+
+  LOGD("DCD raw data - %d bytes\n", r->data.len);
+  parse_dcd(r->data.data, r->data.len, mng);
+
+  /* Locally bind all models to the given binding list */
+  if (mng->cfg->bindings && mng->cfg->bindings->len) {
+    for (int i = 0; i < mng->cfg->bindings->len; i++) {
+      appkey_by_refid(mng, mng->cfg->bindings->data[i], &id);
+      for (int elem = 0; elem < mng->dcd.element_num; elem++) {
+        for (int s = 0; s < mng->dcd.elements[elem].sig_model_num; s++) {
+          ret = gecko_cmd_mesh_test_bind_local_model_app(elem,
+                                                         id,
+                                                         0xffff,
+                                                         mng->dcd.elements[elem].sigmodels[s])->result;
+          if (bg_err_mesh_already_exists == ret) {
+            LOGD("Models already bound\n");
+            goto already_bound;
+          } else if (bg_err_success != ret) {
+            LOGE("Bind SIG model %04x failed with %04x\n", mng->dcd.elements[elem].sigmodels[s], ret);
+          }
+        }
+        for (int v = 0; v < mng->dcd.elements[elem].vendor_model_num; v++) {
+          ret = gecko_cmd_mesh_test_bind_local_model_app(elem,
+                                                         id,
+                                                         mng->dcd.elements[elem].vendor_models[v].vendor_id,
+                                                         mng->dcd.elements[elem].vendor_models[v].model_id)->result;
+          if (bg_err_mesh_already_exists == ret) {
+            LOGD("Models already bound\n");
+            goto already_bound;
+          } else if (bg_err_success != ret) {
+            LOGE("Bind Vendor model %04x:%04x failed with %04x\n",
+                 mng->dcd.elements[elem].vendor_models[v].vendor_id,
+                 mng->dcd.elements[elem].vendor_models[v].model_id,
+                 ret);
+          }
+        }
+      }
+    }
+  }
+
+  already_bound:
+
+  /*
+   * Initialize all the required model classes
+   */
+  /* Generic client model */
+  if (bg_err_success != (ret = gecko_cmd_mesh_generic_client_init()->result)) {
+    LOGBGE("gecko_cmd_mesh_generic_client_init", ret);
+  }
+
+  /* Sensor client model */
+  if (bg_err_success != (ret = gecko_cmd_mesh_sensor_client_init()->result)) {
+    LOGBGE("gecko_cmd_mesh_sensor_client_init", ret);
+  }
+#if (LC_CLIENT_PRESENT == 1)
+  /* LC client model */
+  if (bg_err_success != (ret = gecko_cmd_mesh_lc_client_init(LC_ELEM_INDEX)->result)) {
+    LOGBGE("gecko_cmd_mesh_lc_client_init", ret);
+  }
+#endif
+#if (SCENE_CLIENT_PRESENT == 1)
+  /* Scene client model */
+  if (bg_err_success != (ret = gecko_cmd_mesh_scene_client_init(SCENE_ELEM_INDEX)->result)) {
+    LOGBGE("gecko_cmd_mesh_scene_client_init", ret);
+  }
+#endif
+}
+
 err_t clicb_onoff(int argc, char *argv[])
 {
   mng_t *mng = get_mng();
@@ -519,7 +670,7 @@ static err_t clicb_perc_get(int argc, char *argv[], uint8_t func)
     }
   }
   if (mng->cache.model_operation.nodes) {
-    mng->cache.model_operation.type = MO_SET;
+    mng->cache.model_operation.type = MO_GET;
     mng->cache.model_operation.func = func;
   }
   return e;
@@ -546,7 +697,7 @@ uint16_t onoff_get(uint16_t addr)
                                            0,
                                            addr,
                                            0,
-                                           mesh_generic_request_on_off)->result;
+                                           mesh_generic_state_on_off)->result;
 }
 
 uint16_t send_lightness(uint16_t addr, uint8_t lightness)
@@ -571,7 +722,7 @@ uint16_t lightness_get(uint16_t addr)
                                            0,
                                            addr,
                                            0,
-                                           mesh_lighting_request_lightness_actual)->result;
+                                           mesh_lighting_state_lightness_linear)->result;
 }
 
 uint16_t send_ctl(uint16_t addr, uint8_t ctl)
@@ -592,13 +743,15 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl)
                                            buf)->result;
 }
 
+/* TODO: Report the issue that the node doesn't reply to get if using mesh_lighting_state_ctl_temperature */
 uint16_t ctl_get(uint16_t addr)
 {
   return gecko_cmd_mesh_generic_client_get(MESH_LIGHTING_CTL_CLIENT_MODEL_ID,
                                            0,
                                            addr,
                                            0,
-                                           mesh_lighting_request_ctl)->result;
+                                           /* mesh_lighting_state_ctl_temperature)->result; */
+                                           mesh_lighting_state_ctl)->result;
 }
 
 static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
@@ -728,30 +881,30 @@ bool models_loop(mng_t *mng)
 void lc_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
 {
   if (evt_id == gecko_evt_mesh_lc_client_light_onoff_status_id) {
-    LOGM("LC Light Onoff Status\n"
-         "  From: 0x%04x To: 0x%04x\n"
-         "  Present value: %d\n"
-         "  Target  value: %d\n"
-         "  Remaining time: %u\n",
-         evt->data.evt_mesh_lc_client_light_onoff_status.server_address,
-         evt->data.evt_mesh_lc_client_light_onoff_status.destination_address,
-         evt->data.evt_mesh_lc_client_light_onoff_status.present_light_onoff,
-         evt->data.evt_mesh_lc_client_light_onoff_status.target_light_onoff,
-         evt->data.evt_mesh_lc_client_light_onoff_status.remaining_time);
+    bt_shell_printf("LC Light Onoff Status\n"
+                    "  From: 0x%04x To: 0x%04x\n"
+                    "  Present value: %d\n"
+                    "  Target  value: %d\n"
+                    "  Remaining time: %u\n",
+                    evt->data.evt_mesh_lc_client_light_onoff_status.server_address,
+                    evt->data.evt_mesh_lc_client_light_onoff_status.destination_address,
+                    evt->data.evt_mesh_lc_client_light_onoff_status.present_light_onoff,
+                    evt->data.evt_mesh_lc_client_light_onoff_status.target_light_onoff,
+                    evt->data.evt_mesh_lc_client_light_onoff_status.remaining_time);
   } else if (evt_id == gecko_evt_mesh_lc_client_mode_status_id) {
-    LOGM("LC Light Mode Status\n"
-         "  From: 0x%04x To: 0x%04x\n"
-         "  Mode: %u\n",
-         evt->data.evt_mesh_lc_client_mode_status.server_address,
-         evt->data.evt_mesh_lc_client_mode_status.destination_address,
-         evt->data.evt_mesh_lc_client_mode_status.mode_status_value);
+    bt_shell_printf("LC Light Mode Status\n"
+                    "  From: 0x%04x To: 0x%04x\n"
+                    "  Mode: %u\n",
+                    evt->data.evt_mesh_lc_client_mode_status.server_address,
+                    evt->data.evt_mesh_lc_client_mode_status.destination_address,
+                    evt->data.evt_mesh_lc_client_mode_status.mode_status_value);
   } else if (evt_id == gecko_evt_mesh_lc_client_om_status_id) {
-    LOGM("LC Light Occupancy Mode Status\n"
-         "  From: 0x%04x To: 0x%04x\n"
-         "  Mode: %u\n",
-         evt->data.evt_mesh_lc_client_om_status.server_address,
-         evt->data.evt_mesh_lc_client_om_status.destination_address,
-         evt->data.evt_mesh_lc_client_om_status.om_status_value);
+    bt_shell_printf("LC Light Occupancy Mode Status\n"
+                    "  From: 0x%04x To: 0x%04x\n"
+                    "  Mode: %u\n",
+                    evt->data.evt_mesh_lc_client_om_status.server_address,
+                    evt->data.evt_mesh_lc_client_om_status.destination_address,
+                    evt->data.evt_mesh_lc_client_om_status.om_status_value);
   } else if (evt_id == gecko_evt_mesh_lc_client_property_status_id) {
     LOGE("NOT IMPL YET\n");
   }
@@ -759,43 +912,38 @@ void lc_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
 
 void generic_light_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
 {
-  if (!(evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_request_on_off
-        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_lightness_actual
-        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_ctl)) {
+  if (!(evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_state_on_off
+        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_linear
+        /* || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_temperature)) { */
+        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_lightness_temperature)) {
+    LOGW("type %x missed\n", evt->data.evt_mesh_generic_client_server_status.type);
     return;
   }
   if (evt_id == gecko_evt_mesh_generic_client_server_status_id) {
-    LOGD("Server Status Message:\n"
-         "  Model[0x%04x] on Element[%d]\n"
-         "  From: 0x%04x To 0x%04x\n"
-         "  Relayed %s\n"
-         "  Type: %s\n",
-         evt->data.evt_mesh_generic_client_server_status.model_id,
-         evt->data.evt_mesh_generic_client_server_status.elem_index,
-         evt->data.evt_mesh_generic_client_server_status.server_address,
-         evt->data.evt_mesh_generic_client_server_status.client_address,
-         evt->data.evt_mesh_generic_client_server_status.flags & 0x1 ? "Yes" : "No",
-         evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_request_on_off
-         ? "ONOFF Status"
-         : evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_lightness_actual
-         ? "Lightness Status" : "CTL Status");
+    bt_shell_printf("Server Status Message:\n"
+                    "  Model[0x%04x] on Element[%d]\n"
+                    "  From: 0x%04x To 0x%04x\n"
+                    "  Relayed %s\n",
+                    evt->data.evt_mesh_generic_client_server_status.model_id,
+                    evt->data.evt_mesh_generic_client_server_status.elem_index,
+                    evt->data.evt_mesh_generic_client_server_status.server_address,
+                    evt->data.evt_mesh_generic_client_server_status.client_address,
+                    evt->data.evt_mesh_generic_client_server_status.flags & 0x1 ? "Yes" : "No");
   }
-  if (evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_request_on_off) {
-    LOGD("  Type: ONOFF Status\n"
-         "    Value: %s\n",
-         evt->data.evt_mesh_generic_client_server_status.parameters.data[0] ? "ON" : "OFF");
-  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_request_lightness_actual) {
-    LOGD("  Type: Lightness Status\n"
-         "    Value: 0x%x\n",
-         uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data));
-  } else {
-    LOGD("  Type: CTL Status\n"
-         "    Lightness: 0x%x\n"
-         "    Color Temperature: 0x%x\n",
-         "    Color Temperature: %d\n",
-         uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data),
-         uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 2),
-         int16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 4));
+  if (evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_state_on_off) {
+    bt_shell_printf("  Type: ONOFF Status\n"
+                    "    Value: %s\n",
+                    evt->data.evt_mesh_generic_client_server_status.parameters.data[0] ? "ON" : "OFF");
+  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_linear) {
+    bt_shell_printf("  Type: Lightness Status\n"
+                    "    Value: %.2f%%\n",
+                    uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data) * 100 / 65535.0);
+  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_lightness_temperature) {
+    bt_shell_printf("  Type: CTL Status\n"
+                    "    Lightness: 0x%x\n"
+                    "    Color Temperature: %dK\n",
+                    uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data),
+                    uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 2));
   }
 }
 
@@ -803,9 +951,11 @@ int model_evt_hdr(const struct gecko_cmd_packet *evt)
 {
   uint32_t evt_id = BGLIB_MSG_ID(evt->header);
 
+  /* LOGD("Model event 0x%08x\n", evt_id); */
   if ((evt_id & 0x00ff0000) == 0x004c0000) {
     lc_client_evt_hdr(evt_id, evt);
   } else if ((evt_id & 0x00ff0000) == 0x001e0000) {
+    LOGD("Generic Light event\n");
     generic_light_client_evt_hdr(evt_id, evt);
   } else {
     return 0;
