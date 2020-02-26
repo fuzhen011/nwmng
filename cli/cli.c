@@ -157,19 +157,19 @@ const command_t commands[] = {
   { "onoff", "[on/off] [addr...]", clicb_onoff,
     "Set the onoff of a light", NULL, NULL,
     vaget_onoff_lights_addrs },
-  { "onoff_get", "[addr...]", clicb_onoff_get,
+  { "get_onoff", "[addr...]", clicb_onoff_get,
     "Get the onoff status from light(s)", NULL, NULL,
     vaget_onoff_lights_addrs },
   { "lightness", "[pecentage] [addr...]", clicb_lightness,
     "Set the lightness of a light", NULL, NULL,
     vaget_lightness_lights_addrs },
-  { "lightness_get", "[addr...]", clicb_lightness_get,
+  { "get_lightness", "[addr...]", clicb_lightness_get,
     "Get the lightness from light(s)", NULL, NULL,
     vaget_lightness_lights_addrs },
   { "colortemp", "[pecentage] [addr...]", clicb_ct,
     "Set the color temperature of a light", NULL, NULL,
     vaget_ctl_lights_addrs },
-  { "colortemp_get", "[addr...]", clicb_ct_get,
+  { "get_colortemp", "[addr...]", clicb_ct_get,
     "Get the color temperature from light(s)", NULL, NULL,
     vaget_ctl_lights_addrs },
   /* LC Commands  */
@@ -586,9 +586,6 @@ static inline int find_cmd_index(const char *cmd)
 {
   int pos;
   for (pos = 0; pos < cmd_num; pos++) {
-    if (strlen(cmd) != strlen(commands[pos].name)) {
-      continue;
-    }
     if (!strncmp(cmd, commands[pos].name, strlen(commands[pos].name))) {
       return pos;
     }
