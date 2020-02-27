@@ -722,7 +722,7 @@ uint16_t lightness_get(uint16_t addr)
                                            0,
                                            addr,
                                            0,
-                                           mesh_lighting_state_lightness_linear)->result;
+                                           mesh_lighting_state_lightness_actual)->result;
 }
 
 uint16_t send_ctl(uint16_t addr, uint8_t ctl)
@@ -913,7 +913,7 @@ void lc_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
 void generic_light_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
 {
   if (!(evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_state_on_off
-        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_linear
+        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_actual
         /* || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_temperature)) { */
         || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_lightness_temperature)) {
     LOGW("type %x missed\n", evt->data.evt_mesh_generic_client_server_status.type);
@@ -934,7 +934,7 @@ void generic_light_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet
     bt_shell_printf("  Type: ONOFF Status\n"
                     "    Value: %s\n",
                     evt->data.evt_mesh_generic_client_server_status.parameters.data[0] ? "ON" : "OFF");
-  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_linear) {
+  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_actual) {
     bt_shell_printf("  Type: Lightness Status\n"
                     "    Value: %.2f%%\n",
                     uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data) * 100 / 65535.0);
