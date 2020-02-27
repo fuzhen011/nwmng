@@ -951,7 +951,6 @@ int model_evt_hdr(const struct gecko_cmd_packet *evt)
 {
   uint32_t evt_id = BGLIB_MSG_ID(evt->header);
 
-  /* LOGD("Model event 0x%08x\n", evt_id); */
   if ((evt_id & 0x00ff0000) == 0x004c0000) {
     lc_client_evt_hdr(evt_id, evt);
   } else if ((evt_id & 0x00ff0000) == 0x001e0000) {
