@@ -278,7 +278,6 @@ void models_init(mng_t *mng)
     exit(1);
   }
 
-  LOGD("DCD raw data - %d bytes\n", r->data.len);
   parse_dcd(r->data.data, r->data.len, mng);
 
   /* Locally bind all models to the given binding list */
@@ -292,7 +291,7 @@ void models_init(mng_t *mng)
                                                          0xffff,
                                                          mng->dcd.elements[elem].sigmodels[s])->result;
           if (bg_err_mesh_already_exists == ret) {
-            LOGD("Models already bound\n");
+            LOGD("Models already bound with given appkey index(es)\n");
             goto already_bound;
           } else if (bg_err_success != ret) {
             LOGE("Bind SIG model %04x failed with %04x\n", mng->dcd.elements[elem].sigmodels[s], ret);
@@ -316,6 +315,7 @@ void models_init(mng_t *mng)
       }
     }
   }
+  LOGD("Models bound with given appkey index(es)\n");
 
   already_bound:
 
@@ -797,7 +797,7 @@ static err_t model_set_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
                                                         tid++,
                                                         0,
                                                         0)->result;
-    } else if (mng->cache.model_operation.value == LC_STATE_MODE) {
+    } else if (mng->cache.model_operation.sub_which == LC_STATE_MODE) {
       *bgerr = gecko_cmd_mesh_lc_client_set_mode(LC_ELEM_INDEX,
                                                  addr,
                                                  0,
