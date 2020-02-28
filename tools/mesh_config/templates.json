@@ -31,7 +31,7 @@
       "Bind Appkeys":[
         "0x0000"
       ],
-      "Subscribe from":[
+      "xSubscribe from":[
         "0xC021",
         "0xC030"
       ]

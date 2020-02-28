@@ -65,6 +65,37 @@ static const uint32_t events[] = {
 };
 
 static const uint16_t not_pub_models[] = {
+  /* Debugging the problem of pub causing blocking */
+#if 0
+  0x2,
+  0x1000,
+  0x1300,
+  0x1301,
+  0x1002,
+  0x1006,
+#endif
+#if 0
+  0x1007,
+  0x1004,
+  0x1303,
+#endif
+#if 0
+  0x1304,
+  0x1203,
+#endif
+#if 0
+  0x1204,
+#endif
+
+  /* 0x1002, */
+#if 1
+  0x1306,
+#endif
+  /* 0x1000, */
+#if 0
+  0x130f,
+  0x1310,
+#endif
   0x1301,
   0x1007,
   0x1304,
@@ -146,12 +177,44 @@ bool setpub_guard(const config_cache_t *cache)
 
 int setpub_entry(config_cache_t *cache, func_guard guard)
 {
+#if 1
+  uint16_t key_id;
+  mng_t *mng = get_mng();
+  int ret = appkey_by_refid(mng,
+                            cache->node->config.pub->aki,
+                            &key_id);
+  ASSERT(ret == asr_suc);
+  struct gecko_msg_mesh_config_client_set_model_pub_rsp_t *rsp;
+  rsp = gecko_cmd_mesh_config_client_set_model_pub(
+    mng->cfg->subnets[0].netkey.id,
+    cache->node->addr,
+    1,
+    0xffff,
+    0x1306,
+    cache->node->config.pub->addr,
+    key_id,
+    0,
+    cache->node->config.pub->ttl,
+    cache->node->config.pub->period,
+    cache->node->config.pub->txp.cnt,
+    cache->node->config.pub->txp.intv ? cache->node->config.pub->txp.intv : 50);
+
+  if (rsp->result != bg_err_success) {
+    ASSERT(0);
+  }
+  ONCE_P(cache);
+  WAIT_RESPONSE_SET(cache);
+  cache->cc_handle = rsp->handle;
+  timer_set(cache, 1);
+  return asr_suc;
+#else
   if (guard && !guard(cache)) {
     LOGW("State[%s] Guard Not Passed\n", state_names[cache->state]);
     return asr_tonext;
   }
 
   return __setpub(cache, get_mng());
+#endif
 }
 
 int setpub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
@@ -274,6 +337,7 @@ static inline bool __pub_supported(uint16_t md)
 
 static int iter_setpub(config_cache_t *cache)
 {
+#if 0
   int md, increment = 0;
 
   do {
@@ -303,4 +367,7 @@ static int iter_setpub(config_cache_t *cache)
     }
   }
   return 0;
+#else
+  return 1;
+#endif
 }
