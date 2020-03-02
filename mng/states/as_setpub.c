@@ -68,7 +68,9 @@ static const uint16_t not_pub_models[] = {
   0x1301,
   0x1007,
   0x1304,
-  0x1204
+  0x1204,
+  /* TODO: UID update */
+  0x1310
 };
 
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))

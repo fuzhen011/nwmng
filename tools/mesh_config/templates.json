@@ -17,8 +17,8 @@
         "Address":"0xC001",
         "AppKey":"0x0000",
         "xPeriod":"0x00002710",
-        "TTL":"0x11",
-        "TX Parameters":{
+        "xTTL":"0x11",
+        "xTX Parameters":{
           "Count":"0x03",
           "Interval":"0x01F4"
         }
