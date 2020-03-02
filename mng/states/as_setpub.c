@@ -69,7 +69,7 @@ static const uint16_t not_pub_models[] = {
   0x1007,
   0x1304,
   0x1204,
-  /* TODO: UID update */
+  /* TODO: UID update - setting pub to this model causes problems */
   0x1310
 };
 

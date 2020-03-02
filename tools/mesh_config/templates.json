@@ -16,9 +16,9 @@
       "Publish To":{
         "Address":"0xC001",
         "AppKey":"0x0000",
-        "xPeriod":"0x00002710",
-        "xTTL":"0x11",
-        "xTX Parameters":{
+        "Period":"0x00002710",
+        "TTL":"0x11",
+        "TX Parameters":{
           "Count":"0x03",
           "Interval":"0x01F4"
         }
