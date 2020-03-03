@@ -1,96 +1,114 @@
 {
-  "Templates": [
+  "Templates":[
     {
-      "RefId": "0x0001",
-      "TTL": "0x03",
-      "xFeatures": {
-        "Low Power": "0x00",
-        "Proxy": "0x01",
-        "Friend": "0x01",
-        "Relay": {
-          "Enable": "0x01",
-          "Count": "0x02",
-          "Interval": "0x0032"
+      "RefId":"0x0001",
+      "TTL":"0x03",
+      "xFeatures":{
+        "Low Power":"0x00",
+        "Proxy":"0x01",
+        "Friend":"0x01",
+        "Relay":{
+          "Enable":"0x01",
+          "Count":"0x02",
+          "Interval":"0x0032"
         }
       },
-      "Publish To": {
-        "Address": "0xC001",
-        "AppKey": "0x0000",
-        "xPeriod": "0x00002710",
-        "xTTL": "0x11",
-        "xTX Parameters": {
-          "Count": "0x03",
-          "Interval": "0x01F4"
+      "Publish To":{
+        "Address":"0xC001",
+        "AppKey":"0x0000",
+        "xPeriod":"0x00002710",
+        "xTTL":"0x11",
+        "xTX Parameters":{
+          "Count":"0x03",
+          "Interval":"0x01F4"
         }
       },
-      "xSecure Network Beacon": "0x01",
-      "xTX Parameters": {
-        "Count": "0x03",
-        "Interval": "0x001E"
+      "xSecure Network Beacon":"0x01",
+      "xTX Parameters":{
+        "Count":"0x03",
+        "Interval":"0x001E"
       },
-      "Bind Appkeys": ["0x0000"],
-      "Subscribe from": ["0xC021", "0xC030"]
+      "Bind Appkeys":[
+        "0x0000"
+      ],
+      "Subscribe from":[
+        "0xC021",
+        "0xC030"
+      ]
     },
     {
-      "RefId": "0x0011",
-      "TTL": "0x03",
-      "Features": {
-        "Low Power": "0x00",
-        "Proxy": "0x01",
-        "Friend": "0x01",
-        "Relay": {
-          "Enable": "0x01",
-          "Count": "0x02",
-          "Interval": "0x0032"
+      "RefId":"0x0011",
+      "TTL":"0x03",
+      "Features":{
+        "Low Power":"0x00",
+        "Proxy":"0x01",
+        "Friend":"0x01",
+        "Relay":{
+          "Enable":"0x01",
+          "Count":"0x02",
+          "Interval":"0x0032"
         }
       },
-      "Publish To": {
-        "Address": "0xC001",
-        "AppKey": "0x0000",
-        "Period": "0x00002710",
-        "TTL": "0x11",
-        "TX Parameters": {
-          "Count": "0x03",
-          "Interval": "0x01F4"
+      "Publish To":{
+        "Address":"0xC001",
+        "AppKey":"0x0000",
+        "Period":"0x00002710",
+        "TTL":"0x11",
+        "TX Parameters":{
+          "Count":"0x03",
+          "Interval":"0x01F4"
         }
       },
-      "Secure Network Beacon": "0x01",
-      "TX Parameters": {
-        "Count": "0x03",
-        "Interval": "0x001E"
+      "Secure Network Beacon":"0x01",
+      "TX Parameters":{
+        "Count":"0x03",
+        "Interval":"0x001E"
       },
-      "Bind Appkeys": ["0x0000"],
-      "Subscribe from": ["0xC021"]
+      "Bind Appkeys":[
+        "0x0000"
+      ],
+      "Subscribe from":[
+        "0xC021"
+      ]
     },
     {
-      "RefId": "0x0021",
-      "Features": {
-        "Low Power": "0x01",
-        "Proxy": "0x00",
-        "Friend": "0x00",
-        "Relay": {
-          "Enable": "0x00",
-          "Count": "0x00",
-          "Interval": "0x0000"
+      "RefId":"0x0021",
+      "Features":{
+        "Low Power":"0x01",
+        "Proxy":"0x00",
+        "Friend":"0x00",
+        "Relay":{
+          "Enable":"0x00",
+          "Count":"0x00",
+          "Interval":"0x0000"
         }
       },
-      "Publish To": {
-        "Address": "0xC021",
-        "AppKey": "0x0000"
+      "Publish To":{
+        "Address":"0xC021",
+        "AppKey":"0x0000"
       },
-      "Bind Appkeys": ["0x0000"],
-      "Subscribe from": ["0xC001"]
+      "Bind Appkeys":[
+        "0x0000"
+      ],
+      "Subscribe from":[
+        "0xC001"
+      ]
     },
     {
-      "COMMENT": "Smart Lighting Template",
-      "RefId": "0x0031",
-      "Publish To": {
-        "Address": "0xC001",
-        "AppKey": "0x0000"
+      "COMMENT":"Smart Lighting Template",
+      "RefId":"0x0031",
+      "Publish To":{
+        "Address":"0xC001",
+        "AppKey":"0x0000"
       },
-      "Bind Appkeys": ["0x0000"],
-      "Subscribe from": ["0xC021"]
+      "Bind Appkeys":[
+        "0x0000"
+      ],
+      "Subscribe from":[
+        "0xC021"
+      ]
     }
   ],
-  "Backlog": []
+  "Backlog":[
+  ]
 }
