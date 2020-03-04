@@ -18,6 +18,7 @@
 #include "mesh_sensor_model_capi_types.h"
 
 /* Defines  *********************************************************** */
+#define LC_SERVER_ADDR(addr)  ((addr) + 1)
 
 enum {
   LC_STATE_ONOFF,
@@ -759,13 +760,13 @@ static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
   if (mng->cache.model_operation.func == LC_SV_BIT) {
     if (mng->cache.model_operation.sub_which == LC_STATE_ONOFF) {
       *bgerr = gecko_cmd_mesh_lc_client_get_light_onoff(LC_ELEM_INDEX,
-                                                        addr, 0)->result;
+                                                        LC_SERVER_ADDR(addr), 0)->result;
     } else if (mng->cache.model_operation.sub_which == LC_STATE_MODE) {
       *bgerr = gecko_cmd_mesh_lc_client_get_mode(LC_ELEM_INDEX,
-                                                 addr, 0)->result;
+                                                 LC_SERVER_ADDR(addr), 0)->result;
     } else {
       *bgerr = gecko_cmd_mesh_lc_client_get_om(LC_ELEM_INDEX,
-                                               addr, 0)->result;
+                                               LC_SERVER_ADDR(addr), 0)->result;
     }
   } else if (mng->cache.model_operation.func == ONOFF_SV_BIT) {
     *bgerr = onoff_get(addr);
@@ -790,7 +791,7 @@ static err_t model_set_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
   } else if (mng->cache.model_operation.func == LC_SV_BIT) {
     if (mng->cache.model_operation.sub_which == LC_STATE_ONOFF) {
       *bgerr = gecko_cmd_mesh_lc_client_set_light_onoff(LC_ELEM_INDEX,
-                                                        addr,
+                                                        LC_SERVER_ADDR(addr),
                                                         0,
                                                         0x2,
                                                         (uint8_t)mng->cache.model_operation.value,
@@ -799,13 +800,13 @@ static err_t model_set_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
                                                         0)->result;
     } else if (mng->cache.model_operation.sub_which == LC_STATE_MODE) {
       *bgerr = gecko_cmd_mesh_lc_client_set_mode(LC_ELEM_INDEX,
-                                                 addr,
+                                                 LC_SERVER_ADDR(addr),
                                                  0,
                                                  0x2,
                                                  (uint8_t)mng->cache.model_operation.value)->result;
     } else {
       *bgerr = gecko_cmd_mesh_lc_client_set_om(LC_ELEM_INDEX,
-                                               addr,
+                                               LC_SERVER_ADDR(addr),
                                                0,
                                                0x2,
                                                (uint8_t)mng->cache.model_operation.value)->result;
