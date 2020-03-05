@@ -1054,7 +1054,7 @@ static err_t model_set_property_handler(uint16_t addr, mng_t *mng, uint16_t *bge
   *bgerr = gecko_cmd_mesh_lc_client_set_property(LC_ELEM_INDEX,
                                                  LC_SERVER_ADDR(addr),
                                                  0,
-                                                 0,
+                                                 BITOF(1),
                                                  mng->cache.model_operation.sub_which,
                                                  mng->cache.model_operation.property.len,
                                                  mng->cache.model_operation.property.data)->result;
