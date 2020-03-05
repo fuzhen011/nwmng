@@ -198,8 +198,11 @@ typedef struct {
     }config;
     bl_cache_t bl;
     struct {
-      uint8_t type;
-      uint32_t property;
+      uint8_t type; /* @ref{MO_IDLE} */
+      struct {
+        uint8_t len;
+        uint8_t data[4];
+      }property; /* Used for store the property if the command contains */
       bbitmap_t func;
       uint8_t sub_which;
       uint32_t value;

@@ -71,7 +71,6 @@ static const char *seqset_arg[] = {
   "bar", "bra"
 };
 
-#define LC_PROPERTY_BASE  0x002b
 #define LC_PROPERTY_ARGS  "[ambient_luxlevel_on"      \
                           "/ambient_luxlevel_prolong" \
                           "/ambient_luxlevel_standby" \
@@ -90,30 +89,6 @@ static const char *seqset_arg[] = {
                           "/time_occupancy_delay"     \
                           "/time_prolong"             \
                           "/time_run_on]"
-#if 0
-static const char *lc_properties[] = {
-  "ambient_luxlevel_on",
-  "ambient_luxlevel_prolong",
-  "ambient_luxlevel_standby",
-  "lightness_on",
-  "lightness_prolong",
-  "lightness_standby",
-  "regulator_accuracy",
-  "regulator_kid",
-  "regulator_kiu",
-  "regulator_kpd",
-  "regulator_kpu",
-  "time_fade",
-  "time_fade_on",
-  "time_fade_standby_auto",
-  "time_fade_standby_manual",
-  "time_occupancy_delay",
-  "time_prolong",
-  "time_run_on",
-};
-#endif
-
-#define LC_PROP_ID_FROM_INDEX(x)  ((x) + LC_PROPERTY_BASE)
 
 static char *seqset_arg_generator(const char *text, int state);
 
@@ -177,9 +152,9 @@ const command_t commands[] = {
     "Get LC server state", NULL, NULL, vaget_lc_lights_addrs },
   { "lcset", "[onoff/mode/om] [on/off] [addr...]", clicb_lcset,
     "Set LC server state", NULL, NULL, vaget_lc_lights_addrs },
-  { "lcproperty_get", LC_PROPERTY_ARGS " [addr...]", clicb_lcget,
+  { "lcproperty_get", LC_PROPERTY_ARGS " [addr...]", clicb_lcpropertyget,
     "Get LC server property", NULL, NULL, vaget_lc_lights_addrs },
-  { "lcproperty_set", LC_PROPERTY_ARGS " [value] [addr...]", clicb_lcset,
+  { "lcproperty_set", LC_PROPERTY_ARGS " [value] [addr...]", clicb_lcpropertyset,
     "Set LC server property", NULL, NULL, vaget_lc_lights_addrs },
 
   /* Sensor Control Commands */

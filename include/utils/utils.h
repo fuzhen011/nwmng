@@ -274,14 +274,95 @@ static inline int fmt_key(char *buf, const uint8_t *key)
  * ***************************************************************/
 void uprint_tmpl(uint16_t refid);
 
-static inline uint16_t uint16_from_buf(const uint8_t *ptr)
+/* int 8 */
+static inline int8_t int8_from_buf(const uint8_t *ptr)
 {
-    return ((uint16_t)ptr[0]) | ((uint16_t)ptr[1] << 8);
+  return (int8_t)ptr[0];
 }
 
+static inline void int8_to_buf(uint8_t *ptr, int8_t n)
+{
+  ptr[0] = n & 0xff;
+}
+
+/* uint 8 */
+static inline uint8_t uint8_from_buf(const uint8_t *ptr)
+{
+  return (uint8_t)ptr[0];
+}
+
+static inline void uint8_to_buf(uint8_t *ptr, uint8_t n)
+{
+  ptr[0] = n & 0xff;
+}
+
+/* int16 */
 static inline int16_t int16_from_buf(const uint8_t *ptr)
 {
-    return ((int16_t)ptr[0]) | ((int16_t)ptr[1] << 8);
+  return ((int16_t)ptr[0]) | ((int16_t)ptr[1] << 8);
+}
+
+static inline void int16_to_buf(uint8_t *ptr, int16_t n)
+{
+  ptr[0] = n & 0xff;
+  ptr[1] = (n >> 8) & 0xff;
+}
+
+/* uint16 */
+static inline int16_t uint16_from_buf(const uint8_t *ptr)
+{
+  return ((int16_t)ptr[0]) | ((int16_t)ptr[1] << 8);
+}
+
+static inline void uint16_to_buf(uint8_t *ptr, uint16_t n)
+{
+  ptr[0] = n & 0xff;
+  ptr[1] = (n >> 8) & 0xff;
+}
+
+/* uint 24 */
+static inline uint32_t uint24_from_buf(const uint8_t *ptr)
+{
+  return ((uint32_t)ptr[0]) | ((uint32_t)ptr[1] << 8) | ((uint32_t)ptr[2] << 16);
+}
+
+static inline void uint24_to_buf(uint8_t *ptr, int32_t n)
+{
+  ptr[0] = n & 0xff;
+  ptr[1] = (n >> 8) & 0xff;
+  ptr[2] = (n >> 16) & 0xff;
+}
+
+/* uint32 */
+static inline int32_t uint32_from_buf(const uint8_t *ptr)
+{
+  return
+    ((uint32_t)ptr[0])
+    | ((uint32_t)ptr[1] << 8)
+    | ((uint32_t)ptr[2] << 16)
+    | ((uint32_t)ptr[3] << 24)
+  ;
+}
+
+static inline void uint32_to_buf(uint8_t *ptr, uint32_t n)
+{
+  ptr[0] = n & 0xff;
+  ptr[1] = (n >> 8) & 0xff;
+  ptr[2] = (n >> 16) & 0xff;
+  ptr[3] = (n >> 24) & 0xff;
+}
+
+/* float 32 */
+static inline float float_from_buf(const uint8_t *ptr)
+{
+  float a;
+  memcpy(&a, ptr, sizeof(float));
+  return a;
+}
+
+static inline void float_to_buf(uint8_t *ptr, float f)
+{
+  memcpy(ptr, &f, sizeof(float));
 }
 #ifdef __cplusplus
 }

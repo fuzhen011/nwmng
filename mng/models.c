@@ -16,6 +16,7 @@
 #include "mesh_generic_model_capi_types.h"
 #include "mesh_lighting_model_capi_types.h"
 #include "mesh_sensor_model_capi_types.h"
+#include "mesh_device_properties.h"
 
 /* Defines  *********************************************************** */
 #define LC_SERVER_ADDR(addr)  ((addr) + 1)
@@ -26,6 +27,53 @@ enum {
   LC_STATE_MODE,
   LC_STATE_OM
 };
+
+enum {
+  LCP_AMBIENT_LUXLEVEL_ON,
+  LCP_AMBIENT_LUXLEVEL_PROLONG,
+  LCP_AMBIENT_LUXLEVEL_STANDBY,
+  LCP_LIGHTNESS_ON,
+  LCP_LIGHTNESS_PROLONG,
+  LCP_LIGHTNESS_STANDBY,
+  LCP_REGULATOR_ACCURACY,
+  LCP_REGULATOR_KID,
+  LCP_REGULATOR_KIU,
+  LCP_REGULATOR_KPD,
+  LCP_REGULATOR_KPU,
+  LCP_TIME_FADE,
+  LCP_TIME_FADE_ON,
+  LCP_TIME_FADE_STANDBY_AUTO,
+  LCP_TIME_FADE_STANDBY_MANUAL,
+  LCP_TIME_OCCUPANCY_DELAY,
+  LCP_TIME_PROLONG,
+  LCP_TIME_RUN_ON
+};
+
+static const char *lc_properties[] = {
+  "ambient_luxlevel_on",
+  "ambient_luxlevel_prolong",
+  "ambient_luxlevel_standby",
+  "lightness_on",
+  "lightness_prolong",
+  "lightness_standby",
+  "regulator_accuracy",
+  "regulator_kid",
+  "regulator_kiu",
+  "regulator_kpd",
+  "regulator_kpu",
+  "time_fade",
+  "time_fade_on",
+  "time_fade_standby_auto",
+  "time_fade_standby_manual",
+  "time_occupancy_delay",
+  "time_prolong",
+  "time_run_on",
+};
+
+static const uint8_t properties_cnt = sizeof(lc_properties) / sizeof(char *);
+#define LC_PROPERTY_BASE  0x002b
+#define LC_PROP_ID_FROM_INDEX(x)  ((x) + LC_PROPERTY_BASE)
+#define STR_FROM_PROPERTY_ID(x) (lc_properties[(x) - LC_PROPERTY_BASE])
 
 #ifdef DEMO_EN
 #if 0
@@ -160,6 +208,77 @@ err_t clicb_demo(int argc, char *argv[])
   return ec_success;
 }
 #endif
+
+static inline uint16_t lc_property_id_from_str(const char *str)
+{
+  for (int i = 0; i < properties_cnt; i++) {
+    if (!strcmp(str, lc_properties[i])) {
+      return LC_PROP_ID_FROM_INDEX(i);
+    }
+  }
+  return 0; /* 0 indicates not found */
+}
+
+static inline int lc_property_value_from_str(const char *str,
+                                             uint16_t property_id,
+                                             mng_t *mng)
+{
+  uint8_t *data = mng->cache.model_operation.property.data;
+  unsigned int val;
+  float fval;
+  switch (property_id) {
+    case LIGHT_CONTROL_AMBIENT_LUXLEVEL_ON:
+    case LIGHT_CONTROL_AMBIENT_LUXLEVEL_PROLONG:
+    case LIGHT_CONTROL_AMBIENT_LUXLEVEL_STANDBY:
+    case LIGHT_CONTROL_TIME_FADE:
+    case LIGHT_CONTROL_TIME_FADE_ON:
+    case LIGHT_CONTROL_TIME_FADE_STANDBY_AUTO:
+    case LIGHT_CONTROL_TIME_FADE_STANDBY_MANUAL:
+    case LIGHT_CONTROL_TIME_OCCUPANCY_DELAY:
+    case LIGHT_CONTROL_TIME_PROLONG:
+    case LIGHT_CONTROL_TIME_RUN_ON:
+      val = atoi(str);
+      if (val < 0 || val > 0xffffff) {
+        return -1;
+      }
+      mng->cache.model_operation.property.len = 3;
+      uint24_to_buf(data, (uint32_t)val);
+      break;
+    case LIGHT_CONTROL_LIGHTNESS_ON:
+    case LIGHT_CONTROL_LIGHTNESS_PROLONG:
+    case LIGHT_CONTROL_LIGHTNESS_STANDBY:
+      val = atoi(str);
+      if (val < 0 || val > 0xffff) {
+        return -1;
+      }
+      mng->cache.model_operation.property.len = 2;
+      uint16_to_buf(data, (uint16_t)val);
+      break;
+    case LIGHT_CONTROL_REGULATOR_ACCURACY:
+      val = atoi(str);
+      if (val < 0 || val > 200) {
+        return -1;
+      }
+      mng->cache.model_operation.property.len = 1;
+      mng->cache.model_operation.property.data[0] = (uint8_t)val;
+      break;
+    case LIGHT_CONTROL_REGULATOR_KID:
+    case LIGHT_CONTROL_REGULATOR_KIU:
+    case LIGHT_CONTROL_REGULATOR_KPD:
+    case LIGHT_CONTROL_REGULATOR_KPU:
+      fval = atof(str);
+      if (fval < 0.0 || fval > 1000.0) {
+        return -1;
+      }
+      mng->cache.model_operation.property.len = 4;
+      float_to_buf(data, fval);
+      break;
+
+    default:
+      break;
+  }
+  return 0;
+}
 
 void check_demo(void)
 {
@@ -579,11 +698,107 @@ err_t clicb_lcset(int argc, char *argv[])
 
 err_t clicb_lcpropertyget(int argc, char *argv[])
 {
+  mng_t *mng = get_mng();
+  err_t e = ec_success;
+
+  if (mng->cache.model_operation.type) {
+    cli_print_busy();
+    return err(ec_state);
+  }
+
+  if (argc < 2) {
+    return err(ec_param_invalid);
+  }
+
+  mng->cache.model_operation.sub_which = lc_property_id_from_str(argv[1]);
+  if (mng->cache.model_operation.sub_which == 0) {
+    return err(ec_param_invalid);
+  }
+
+  if (argc == 2) {
+    uint16list_t *addrs = get_lights_addrs(LC_SV_BIT);
+    if (!addrs) {
+      return e;
+    }
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 2; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGE("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+  }
+
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_GET_PROPERTY;
+    mng->cache.model_operation.func = LC_SV_BIT;
+  }
   return ec_success;
 }
 
 err_t clicb_lcpropertyset(int argc, char *argv[])
 {
+  mng_t *mng = get_mng();
+  err_t e = ec_success;
+
+  if (mng->cache.model_operation.type) {
+    cli_print_busy();
+    return err(ec_state);
+  }
+
+  if (argc < 3) {
+    return err(ec_param_invalid);
+  }
+
+  mng->cache.model_operation.sub_which = lc_property_id_from_str(argv[1]);
+  if (mng->cache.model_operation.sub_which == 0) {
+    return err(ec_param_invalid);
+  }
+
+  if (-1 == lc_property_value_from_str(argv[2],
+                                       mng->cache.model_operation.sub_which,
+                                       mng)) {
+    return err(ec_param_invalid);
+  }
+
+  if (argc == 3) {
+    uint16list_t *addrs = get_lights_addrs(LC_SV_BIT);
+    if (!addrs) {
+      return e;
+    }
+    for (int i = 0; i < addrs->len; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      *addr = addrs->data[i];
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+    free(addrs->data);
+    free(addrs);
+  } else {
+    for (int i = 3; i < argc; i++) {
+      uint16 *addr = malloc(sizeof(uint16_t));
+      if (ec_success != str2uint(argv[i], strlen(argv[i]), addr, sizeof(uint16_t))) {
+        LOGE("str2uint failed\n");
+        free(addr);
+        continue;
+      }
+      mng->cache.model_operation.nodes = g_list_append(mng->cache.model_operation.nodes, addr);
+    }
+  }
+
+  if (mng->cache.model_operation.nodes) {
+    mng->cache.model_operation.type = MO_SET_PROPERTY;
+    mng->cache.model_operation.func = LC_SV_BIT;
+  }
   return ec_success;
 }
 
@@ -819,12 +1034,31 @@ static err_t model_set_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
 
 static err_t model_get_property_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
 {
-  return err(ec_not_supported);
+  if (mng->cache.model_operation.func != LC_SV_BIT) {
+    return err(ec_not_supported);
+  }
+
+  *bgerr = gecko_cmd_mesh_lc_client_get_property(LC_ELEM_INDEX,
+                                                 LC_SERVER_ADDR(addr),
+                                                 0,
+                                                 mng->cache.model_operation.sub_which)->result;
+  return (*bgerr == bg_err_success) ? ec_success : err(ec_bgrsp);
 }
 
 static err_t model_set_property_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
 {
-  return err(ec_not_supported);
+  if (mng->cache.model_operation.func != LC_SV_BIT) {
+    return err(ec_not_supported);
+  }
+
+  *bgerr = gecko_cmd_mesh_lc_client_set_property(LC_ELEM_INDEX,
+                                                 LC_SERVER_ADDR(addr),
+                                                 0,
+                                                 0,
+                                                 mng->cache.model_operation.sub_which,
+                                                 mng->cache.model_operation.property.len,
+                                                 mng->cache.model_operation.property.data)->result;
+  return (*bgerr == bg_err_success) ? ec_success : err(ec_bgrsp);
 }
 
 bool models_loop(mng_t *mng)
@@ -881,70 +1115,149 @@ bool models_loop(mng_t *mng)
 
 void lc_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
 {
-  if (evt_id == gecko_evt_mesh_lc_client_light_onoff_status_id) {
-    bt_shell_printf("LC Light Onoff Status\n"
-                    "  From: 0x%04x To: 0x%04x\n"
-                    "  Present value: %d\n"
-                    "  Target  value: %d\n"
-                    "  Remaining time: %u\n",
-                    evt->data.evt_mesh_lc_client_light_onoff_status.server_address,
-                    evt->data.evt_mesh_lc_client_light_onoff_status.destination_address,
-                    evt->data.evt_mesh_lc_client_light_onoff_status.present_light_onoff,
-                    evt->data.evt_mesh_lc_client_light_onoff_status.target_light_onoff,
-                    evt->data.evt_mesh_lc_client_light_onoff_status.remaining_time);
-  } else if (evt_id == gecko_evt_mesh_lc_client_mode_status_id) {
-    bt_shell_printf("LC Light Mode Status\n"
-                    "  From: 0x%04x To: 0x%04x\n"
-                    "  Mode: %u\n",
-                    evt->data.evt_mesh_lc_client_mode_status.server_address,
-                    evt->data.evt_mesh_lc_client_mode_status.destination_address,
-                    evt->data.evt_mesh_lc_client_mode_status.mode_status_value);
-  } else if (evt_id == gecko_evt_mesh_lc_client_om_status_id) {
-    bt_shell_printf("LC Light Occupancy Mode Status\n"
-                    "  From: 0x%04x To: 0x%04x\n"
-                    "  Mode: %u\n",
-                    evt->data.evt_mesh_lc_client_om_status.server_address,
-                    evt->data.evt_mesh_lc_client_om_status.destination_address,
-                    evt->data.evt_mesh_lc_client_om_status.om_status_value);
-  } else if (evt_id == gecko_evt_mesh_lc_client_property_status_id) {
-    LOGE("NOT IMPL YET\n");
+  switch (evt_id) {
+    case gecko_evt_mesh_lc_client_light_onoff_status_id:
+      bt_shell_printf(
+        "LC Light Onoff Status\n"
+        "  From: 0x%04x To: 0x%04x\n"
+        "  Present value: %d\n"
+        "  Target  value: %d\n"
+        "  Remaining time: %u\n",
+        evt->data.evt_mesh_lc_client_light_onoff_status.server_address,
+        evt->data.evt_mesh_lc_client_light_onoff_status.destination_address,
+        evt->data.evt_mesh_lc_client_light_onoff_status.present_light_onoff,
+        evt->data.evt_mesh_lc_client_light_onoff_status.target_light_onoff,
+        evt->data.evt_mesh_lc_client_light_onoff_status.remaining_time);
+      break;
+    case gecko_evt_mesh_lc_client_mode_status_id:
+      bt_shell_printf(
+        "LC Light Mode Status\n"
+        "  From: 0x%04x To: 0x%04x\n"
+        "  Mode: %u\n",
+        evt->data.evt_mesh_lc_client_mode_status.server_address,
+        evt->data.evt_mesh_lc_client_mode_status.destination_address,
+        evt->data.evt_mesh_lc_client_mode_status.mode_status_value);
+      break;
+    case gecko_evt_mesh_lc_client_om_status_id:
+      bt_shell_printf(
+        "LC Light Occupancy Mode Status\n"
+        "  From: 0x%04x To: 0x%04x\n"
+        "  Mode: %u\n",
+        evt->data.evt_mesh_lc_client_om_status.server_address,
+        evt->data.evt_mesh_lc_client_om_status.destination_address,
+        evt->data.evt_mesh_lc_client_om_status.om_status_value);
+      break;
+    case gecko_evt_mesh_lc_client_property_status_id:
+    {
+      uint32_t val;
+      float fval;
+      bt_shell_printf(
+        "LC Property Status\n"
+        "  From: 0x%04x To: 0x%04x\n"
+        "  Property: %s\n",
+        evt->data.evt_mesh_lc_client_property_status.server_address,
+        evt->data.evt_mesh_lc_client_property_status.destination_address,
+        STR_FROM_PROPERTY_ID(evt->data.evt_mesh_lc_client_property_status.property_id));
+      switch (evt->data.evt_mesh_lc_client_property_status.property_id) {
+        case LIGHT_CONTROL_AMBIENT_LUXLEVEL_ON:
+        case LIGHT_CONTROL_AMBIENT_LUXLEVEL_PROLONG:
+        case LIGHT_CONTROL_AMBIENT_LUXLEVEL_STANDBY:
+        case LIGHT_CONTROL_TIME_FADE:
+        case LIGHT_CONTROL_TIME_FADE_ON:
+        case LIGHT_CONTROL_TIME_FADE_STANDBY_AUTO:
+        case LIGHT_CONTROL_TIME_FADE_STANDBY_MANUAL:
+        case LIGHT_CONTROL_TIME_OCCUPANCY_DELAY:
+        case LIGHT_CONTROL_TIME_PROLONG:
+        case LIGHT_CONTROL_TIME_RUN_ON:
+          ASSERT(evt->data.evt_mesh_lc_client_property_status.property_value.len == 3);
+          val = uint24_from_buf(evt->data.evt_mesh_lc_client_property_status.property_value.data);
+          bt_shell_printf(
+            "  Value: %u\n",
+            val);
+          break;
+        case LIGHT_CONTROL_LIGHTNESS_ON:
+        case LIGHT_CONTROL_LIGHTNESS_PROLONG:
+        case LIGHT_CONTROL_LIGHTNESS_STANDBY:
+          ASSERT(evt->data.evt_mesh_lc_client_property_status.property_value.len == 2);
+          val = uint16_from_buf(evt->data.evt_mesh_lc_client_property_status.property_value.data);
+          bt_shell_printf(
+            "  Value: %u\n",
+            val);
+          break;
+        case LIGHT_CONTROL_REGULATOR_ACCURACY:
+          ASSERT(evt->data.evt_mesh_lc_client_property_status.property_value.len == 1);
+          val = uint8_from_buf(evt->data.evt_mesh_lc_client_property_status.property_value.data);
+          bt_shell_printf(
+            "  Value: %u\n",
+            val);
+          break;
+        case LIGHT_CONTROL_REGULATOR_KID:
+        case LIGHT_CONTROL_REGULATOR_KIU:
+        case LIGHT_CONTROL_REGULATOR_KPD:
+        case LIGHT_CONTROL_REGULATOR_KPU:
+          ASSERT(evt->data.evt_mesh_lc_client_property_status.property_value.len == 4);
+          fval = float_from_buf(evt->data.evt_mesh_lc_client_property_status.property_value.data);
+          bt_shell_printf(
+            "  Value: %.2f\n",
+            fval);
+          break;
+
+        default:
+          bt_shell_printf("  Value: ERROR FORMAT\n");
+          break;
+      }
+    }
+    break;
+    default:
+      LOGE("NOT IMPL YET\n");
+      break;
   }
 }
 
 void generic_light_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet *evt)
 {
-  if (!(evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_state_on_off
-        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_actual
-        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_temperature)) {
+  if (!(evt->data.evt_mesh_generic_client_server_status.type
+        == mesh_generic_state_on_off
+        || evt->data.evt_mesh_generic_client_server_status.type
+        == mesh_lighting_state_lightness_actual
+        || evt->data.evt_mesh_generic_client_server_status.type
+        == mesh_lighting_state_ctl_temperature)) {
     /* || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_lightness_temperature)) { */
     LOGW("type %x missed\n", evt->data.evt_mesh_generic_client_server_status.type);
     return;
   }
   if (evt_id == gecko_evt_mesh_generic_client_server_status_id) {
-    bt_shell_printf("Server Status Message:\n"
-                    "  Model[0x%04x] on Element[%d]\n"
-                    "  From: 0x%04x To 0x%04x\n"
-                    "  Relayed %s\n",
-                    evt->data.evt_mesh_generic_client_server_status.model_id,
-                    evt->data.evt_mesh_generic_client_server_status.elem_index,
-                    evt->data.evt_mesh_generic_client_server_status.server_address,
-                    evt->data.evt_mesh_generic_client_server_status.client_address,
-                    evt->data.evt_mesh_generic_client_server_status.flags & 0x1 ? "Yes" : "No");
+    bt_shell_printf(
+      "Server Status Message:\n"
+      "  Model[0x%04x] on Element[%d]\n"
+      "  From: 0x%04x To 0x%04x\n"
+      "  Relayed %s\n",
+      evt->data.evt_mesh_generic_client_server_status.model_id,
+      evt->data.evt_mesh_generic_client_server_status.elem_index,
+      evt->data.evt_mesh_generic_client_server_status.server_address,
+      evt->data.evt_mesh_generic_client_server_status.client_address,
+      evt->data.evt_mesh_generic_client_server_status.flags & 0x1 ? "Yes" : "No");
   }
-  if (evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_state_on_off) {
-    bt_shell_printf("  Type: ONOFF Status\n"
-                    "    Value: %s\n",
-                    evt->data.evt_mesh_generic_client_server_status.parameters.data[0] ? "ON" : "OFF");
-  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_actual) {
-    bt_shell_printf("  Type: Lightness Status\n"
-                    "    Value: %.2f%%\n",
-                    uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data) * 100 / 65535.0);
-  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_temperature) {
-    bt_shell_printf("  Type: CTL Status\n"
-                    "    Color Temperature: %dK\n"
-                    "    Delta UV: 0x%d\n",
-                    uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data),
-                    int16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 2));
+  if (evt->data.evt_mesh_generic_client_server_status.type
+      == mesh_generic_state_on_off) {
+    bt_shell_printf(
+      "  Type: ONOFF Status\n"
+      "    Value: %s\n",
+      evt->data.evt_mesh_generic_client_server_status.parameters.data[0] ? "ON" : "OFF");
+  } else if (evt->data.evt_mesh_generic_client_server_status.type
+             == mesh_lighting_state_lightness_actual) {
+    bt_shell_printf(
+      "  Type: Lightness Status\n"
+      "    Value: %.2f%%\n",
+      uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data) * 100 / 65535.0);
+  } else if (evt->data.evt_mesh_generic_client_server_status.type
+             == mesh_lighting_state_ctl_temperature) {
+    bt_shell_printf(
+      "  Type: CTL Status\n"
+      "    Color Temperature: %dK\n"
+      "    Delta UV: 0x%d\n",
+      uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data),
+      int16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 2));
   }
 }
 
