@@ -19,6 +19,7 @@
 
 /* Defines  *********************************************************** */
 #define LC_SERVER_ADDR(addr)  ((addr) + 1)
+#define CTL_TEMPERATURE_SERVER_ADDR(addr)  ((addr) + 1)
 
 enum {
   LC_STATE_ONOFF,
@@ -733,7 +734,7 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl)
   memcpy(buf, (uint8_t *)&lvl, 2);
   return gecko_cmd_mesh_generic_client_set(MESH_LIGHTING_CTL_CLIENT_MODEL_ID,
                                            0,
-                                           addr,
+                                           CTL_TEMPERATURE_SERVER_ADDR(addr),
                                            0, /* TODO: correct this */
                                            tid++,
                                            0,
@@ -744,15 +745,14 @@ uint16_t send_ctl(uint16_t addr, uint8_t ctl)
                                            buf)->result;
 }
 
-/* TODO: Report the issue that the node doesn't reply to get if using mesh_lighting_state_ctl_temperature */
 uint16_t ctl_get(uint16_t addr)
 {
   return gecko_cmd_mesh_generic_client_get(MESH_LIGHTING_CTL_CLIENT_MODEL_ID,
                                            0,
-                                           addr,
+                                           CTL_TEMPERATURE_SERVER_ADDR(addr),
                                            0,
-                                           /* mesh_lighting_state_ctl_temperature)->result; */
-                                           mesh_lighting_state_ctl)->result;
+                                           mesh_lighting_state_ctl_temperature)->result;
+  /* mesh_lighting_state_ctl)->result; */
 }
 
 static err_t model_get_handler(uint16_t addr, mng_t *mng, uint16_t *bgerr)
@@ -915,8 +915,8 @@ void generic_light_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet
 {
   if (!(evt->data.evt_mesh_generic_client_server_status.type == mesh_generic_state_on_off
         || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_lightness_actual
-        /* || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_temperature)) { */
-        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_lightness_temperature)) {
+        || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_temperature)) {
+    /* || evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_lightness_temperature)) { */
     LOGW("type %x missed\n", evt->data.evt_mesh_generic_client_server_status.type);
     return;
   }
@@ -939,12 +939,12 @@ void generic_light_client_evt_hdr(uint32_t evt_id, const struct gecko_cmd_packet
     bt_shell_printf("  Type: Lightness Status\n"
                     "    Value: %.2f%%\n",
                     uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data) * 100 / 65535.0);
-  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_lightness_temperature) {
+  } else if (evt->data.evt_mesh_generic_client_server_status.type == mesh_lighting_state_ctl_temperature) {
     bt_shell_printf("  Type: CTL Status\n"
-                    "    Lightness: 0x%x\n"
-                    "    Color Temperature: %dK\n",
+                    "    Color Temperature: %dK\n"
+                    "    Delta UV: 0x%d\n",
                     uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data),
-                    uint16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 2));
+                    int16_from_buf(evt->data.evt_mesh_generic_client_server_status.parameters.data + 2));
   }
 }
 
