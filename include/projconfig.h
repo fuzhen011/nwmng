@@ -36,10 +36,10 @@ extern "C"
 #endif
 
 #if __APPLE__ == 1
-#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json"
-#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json"
-/* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/prov.json" */
-/* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/nwk.json" */
+/* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json" */
+/* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json" */
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/nwk.json"
 #else
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/lc/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/lc/nwk.json"

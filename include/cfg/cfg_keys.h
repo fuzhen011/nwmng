@@ -36,6 +36,8 @@ extern "C"
 #define STR_TIMEOUT                       "Config Timeout"
 #define STR_TIMEOUT_NORMAL                "Normal"
 #define STR_TIMEOUT_LPN                   "LPN"
+#define STR_PUBGRPS                       "PubGroups"
+#define STR_SUBGRPS                       "SubGroups"
 
 /*
  * String keys only in the network & nodes config file

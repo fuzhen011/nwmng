@@ -26,6 +26,8 @@
 #include "dev_config.h"
 
 /* Defines  *********************************************************** */
+#define DEFAULT_NETKEY  "03030303030303030303030303030303"
+
 #ifndef JSON_ECHO_DBG
 #define JSON_ECHO_DBG 2
 #endif
@@ -1004,7 +1006,7 @@ static inline err_t __new_prov_file(void)
                          json_object_new_string("0x0000"));
   json_object_object_add(tmp,
                          STR_VALUE,
-                         json_object_new_string("9ddb055fdbe5e0320b56b5c192cc5683"));
+                         json_object_new_string(DEFAULT_NETKEY));
   json_object_object_add(tmp,
                          STR_DONE,
                          json_object_new_string("0x00"));
@@ -1019,7 +1021,7 @@ static inline err_t __new_prov_file(void)
                          json_object_new_string("0x0000"));
   json_object_object_add(ak,
                          STR_VALUE,
-                         json_object_new_string("9ddb055fdbe5e0320b56b5c192cc5683"));
+                         json_object_new_string(DEFAULT_NETKEY));
   json_object_object_add(ak,
                          STR_DONE,
                          json_object_new_string("0x00"));
@@ -1034,6 +1036,19 @@ static inline err_t __new_prov_file(void)
   json_object_object_add(jcfg.prov.gen.root,
                          STR_SUBNETS,
                          arr);
+
+  /* Bind Appkeys */
+  arr = json_object_new_array();
+  json_object_array_add(arr, json_object_new_string("0x0000"));
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_BIND,
+                         arr);
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_PUBGRPS,
+                         json_object_new_array());
+  json_object_object_add(jcfg.prov.gen.root,
+                         STR_SUBGRPS,
+                         json_object_new_array());
 
   return json_cfg_flush(PROV_CFG_FILE);
 }
