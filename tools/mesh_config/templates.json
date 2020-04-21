@@ -97,14 +97,14 @@
     {
       "COMMENT":"Smart Lighting Template",
       "RefId":"0x0031",
-      "Publish To":{
+      "xPublish To":{
         "Address":"0xC001",
         "AppKey":"0x0000"
       },
       "Bind Appkeys":[
         "0x0000"
       ],
-      "Subscribe from":[
+      "xSubscribe from":[
         "0xC021"
       ]
     }
