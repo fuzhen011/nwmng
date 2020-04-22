@@ -41,10 +41,12 @@ extern "C"
 #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/prov.json"
 #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/nwk.json"
 #else
-#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/lc/prov.json"
-#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/lc/nwk.json"
+/* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/lc/prov.json" */
+/* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/lc/nwk.json" */
 /* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/prov.json" */
 /* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/hcase/nwk.json" */
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sf_support/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sf_support/nwk.json"
 #endif
 
 #define CONFIG_CACHE_FILE_PATH  PROJ_DIR ".config"
