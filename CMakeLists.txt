@@ -40,8 +40,8 @@ endif()
 
 # readline doesn't work with pkg-config, so specify explicitly.
 if(APPLE)
-  set(READLINE_INC_DIRS "/usr/local/Cellar/readline/8.0.1/include")
-  set(READLINE_LIB_DIRS "/usr/local/Cellar/readline/8.0.1/lib")
+  set(READLINE_INC_DIRS "/usr/local/Cellar/readline/8.0.4/include")
+  set(READLINE_LIB_DIRS "/usr/local/Cellar/readline/8.0.4/lib")
 endif()
 
 if(GCOV EQUAL 1)
