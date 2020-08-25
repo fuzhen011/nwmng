@@ -304,6 +304,8 @@ static int iter_setpub(config_cache_t *cache)
         increment = 1;
         break;
       }
+      LOGW("Model - 0x%04x doesn't support Pub, pass.\n",
+           md);
     }
   } while (1);
 

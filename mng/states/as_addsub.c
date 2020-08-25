@@ -57,7 +57,13 @@ extern const char *state_names[];
 static const uint32_t events[] = {
   gecko_evt_mesh_config_client_model_sub_status_id
 };
+
+static const uint16_t not_sub_models[] = {
+  0x1201, /* Time Setup Server */
+};
+
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))
+#define NSPT_SUB_MODEL_NUM() (sizeof(not_sub_models) / sizeof(uint16_t))
 
 /* Static Functions Declaractions ************************************* */
 static int iter_addsub(config_cache_t *cache);
@@ -155,12 +161,6 @@ int addsub_inprg(const struct gecko_cmd_packet *evt, config_cache_t *cache)
       WAIT_RESPONSE_CLEAR(cache);
       switch (evt->data.evt_mesh_config_client_model_sub_status.result) {
         case bg_err_success:
-        case bg_err_mesh_no_friend_offer:
-          if (evt->data.evt_mesh_config_client_model_sub_status.result
-              == bg_err_mesh_no_friend_offer) {
-            /* TODO - This is a bug for btmesh stack */
-            ASSERT_MSG(0, "0x%04x Model doesn't support subscription\n", cache->vnm.md);
-          }
           RETRY_CLEAR(cache);
           SUC_P(cache);
           break;
@@ -255,14 +255,44 @@ bool is_addsub_pkts(uint32_t evtid)
   return 0;
 }
 
+static inline bool __sub_supported(uint16_t md)
+{
+  for (int i = 0; i < NSPT_SUB_MODEL_NUM(); i++) {
+    if (not_sub_models[i] == md) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static int iter_addsub(config_cache_t *cache)
 {
+  int md, increment = 0;
+
   if (++cache->iterators[SUB_ADDR_ITERATOR_INDEX] == cache->node->config.sublist->len) {
     cache->iterators[SUB_ADDR_ITERATOR_INDEX] = 0;
-    if (++cache->iterators[MODEL_ITERATOR_INDEX]
-        == cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt
-        + cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].vm_cnt) {
-      cache->iterators[MODEL_ITERATOR_INDEX] = 0;
+    do{
+      if (++cache->iterators[MODEL_ITERATOR_INDEX]
+          == cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt
+          + cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].vm_cnt) {
+        cache->iterators[MODEL_ITERATOR_INDEX] = 0;
+        increment = 0;
+        break;
+      } else {
+        md =
+          cache->iterators[MODEL_ITERATOR_INDEX] >= cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt
+          ? cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].vm[cache->iterators[MODEL_ITERATOR_INDEX] - cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sigm_cnt].mid
+          : cache->dcd.elems[cache->iterators[ELEMENT_ITERATOR_INDEX]].sig_models[cache->iterators[MODEL_ITERATOR_INDEX]];
+        if (__sub_supported(md)) {
+          increment = 1;
+          break;
+        }
+        LOGW("Model - 0x%04x doesn't support Sub, pass.\n",
+             md);
+      }
+    }while(1);
+
+    if (!increment) {
       if (++cache->iterators[ELEMENT_ITERATOR_INDEX] == cache->dcd.element_cnt) {
         cache->iterators[ELEMENT_ITERATOR_INDEX] = 0;
         return 1;
