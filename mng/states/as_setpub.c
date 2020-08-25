@@ -64,11 +64,22 @@ static const uint32_t events[] = {
   gecko_evt_mesh_config_client_model_pub_status_id
 };
 
+/*
+ * Models don't support publishing shouldn't be configured the publication
+ */
 static const uint16_t not_pub_models[] = {
-  0x1301,
-  0x1007,
-  0x1304,
-  0x1204
+  0x1007, /* Generic Power OnOff Setup Server */
+  0x100A,  /* Generic Power Level Setup Server */
+  0x100F,  /* Generic Location Setup Server */
+
+  0x1201, /* Time Setup Server */
+  0x1204, /* Scene Setup Server */
+  0x1207, /* Scheduler Setup Server */
+
+  0x1301, /* Light Lightness Setup Server */
+  0x1304, /* Light CTL Setup Server */
+  0x1308,  /* Light HSL Setup Server */
+  0x130D,  /* Light xyL Setup Server */
 };
 
 #define RELATE_EVENTS_NUM() (sizeof(events) / sizeof(uint32_t))

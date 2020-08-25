@@ -38,8 +38,8 @@ extern "C"
 #if __APPLE__ == 1
 /* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json" */
 /* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json" */
-#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/prov.json"
-#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/sensor/nwk.json"
+#define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/office_test/prov.json"
+#define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/office_test/nwk.json"
 #else
 /* #define SELFCFG_FILE_PATH PROJ_DIR "tools/mesh_config/home/prov.json" */
 /* #define NWNODES_FILE_PATH PROJ_DIR "tools/mesh_config/home/nwk.json" */
@@ -55,12 +55,12 @@ extern "C"
  * NOTE: Make sure this value is NOT greater than the Max Prov Sessions
  * definition on the NCP target side
  */
-#define MAX_PROV_SESSIONS 4
+#define MAX_PROV_SESSIONS 2
 /*
  * NOTE: Make sure this value is NOT greater than the Max Foundation Client Cmds
  * definition on the NCP target side
  */
-#define MAX_CONCURRENT_CONFIG_NODES 6
+#define MAX_CONCURRENT_CONFIG_NODES 2
 
 /*
  * Typically, each config client bg call will have an event raised no matter
