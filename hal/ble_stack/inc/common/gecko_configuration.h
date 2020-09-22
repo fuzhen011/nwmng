@@ -19,7 +19,7 @@
 
 #include "bg_gattdb_def.h"
 
-#define DEFAULT_BLUETOOTH_HEAP(CONNECTIONS) (4824 +(CONNECTIONS)*(476))
+#define DEFAULT_BLUETOOTH_HEAP(CONNECTIONS) (4824 +(CONNECTIONS)*(480))
 
 #define SLEEP_FLAGS_DEEP_SLEEP_ENABLE  4
 typedef struct {
@@ -92,6 +92,10 @@ typedef struct {
   uint32_t flags;
   uint8_t  device_name_len;
   char     *device_name_ptr;
+  uint8_t  antenna_defined; // 0 to disable antenna selection
+  uint8_t  antenna;         // A configuration for antenna selection.
+                            // Value should be come from RAIL_AntennaSel_t enum.
+                            // See antenna path selection in RAIL rail_chip_specific.h.
 }gecko_ota_config_t;
 
 #define GECKO_MBEDTLS_FLAGS_NO_MBEDTLS_DEVICE_INIT      1

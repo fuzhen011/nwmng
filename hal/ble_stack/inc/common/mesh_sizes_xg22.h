@@ -32,7 +32,7 @@ extern "C" {
 #define MESH_MEMSIZE_MODEL_BASE                     48
 #define MESH_MEMSIZE_MODEL_PER_APP_BINDING          2
 #define MESH_MEMSIZE_MODEL_PER_SUBSCRIPTION         3
-#define MESH_MEMSIZE_NETKEY                         206
+#define MESH_MEMSIZE_NETKEY                         62
 #define MESH_MEMSIZE_APPKEY                         39
 #define MESH_MEMSIZE_DEVKEY                         35
 #define MESH_MEMSIZE_FRIENDSHIP                     78

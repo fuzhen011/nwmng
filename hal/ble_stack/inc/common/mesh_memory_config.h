@@ -93,6 +93,8 @@ typedef struct {
   uint8_t friend_max_single_cache;
   /** Subscriptions per friendship */
   uint8_t friend_max_subs_list;
+  /** maximum deferred send queue for app layer */
+  uint8_t app_send_max_queue;
 } mesh_memory_config_t;
 
 #endif

@@ -38,9 +38,11 @@ extern "C" {
 typedef uint8_t   uint8;
 typedef uint16_t  uint16;
 typedef uint32_t  uint32;
+typedef uint64_t  uint64;
 typedef int8_t    int8;
 typedef int16_t   int16;
 typedef int32_t   int32;
+typedef int64_t   int64;
 
 typedef struct {
   uint16_t len;
@@ -142,9 +144,7 @@ enum system_linklayer_config_key
 enum le_gap_address_type
 {
     le_gap_address_type_public                                   = 0x0,
-    le_gap_address_type_random                                   = 0x1,
-    le_gap_address_type_public_identity                          = 0x2,
-    le_gap_address_type_random_identity                          = 0x3
+    le_gap_address_type_random                                   = 0x1
 };
 
 enum le_gap_phy_type
@@ -316,7 +316,8 @@ enum homekit_category
     homekit_sprinkler                                            = 0x1c,
     homekit_faucet                                               = 0x1d,
     homekit_shower_system                                        = 0x1e,
-    homekit_remote                                               = 0x20
+    homekit_remote                                               = 0x20,
+    homekit_wifi_router                                          = 0x21
 };
 
 enum homekit_status_code
@@ -433,6 +434,32 @@ enum l2cap_command_code
     l2cap_flow_control_credit                                    = 0x16
 };
 
+enum mesh_lc_server_lc_state
+{
+    mesh_lc_server_lc_state_off                                  = 0x0,
+    mesh_lc_server_lc_state_standby                              = 0x1,
+    mesh_lc_server_lc_state_fade_on                              = 0x2,
+    mesh_lc_server_lc_state_run                                  = 0x3,
+    mesh_lc_server_lc_state_fade                                 = 0x4,
+    mesh_lc_server_lc_state_prolong                              = 0x5,
+    mesh_lc_server_lc_state_fade_standby_auto                    = 0x6,
+    mesh_lc_server_lc_state_fade_standby_manual                  = 0x7
+};
+
+enum mesh_lc_server_lc_debug_events
+{
+    mesh_lc_server_lc_event_state_updated                        = 0x1,
+    mesh_lc_server_lc_event_regulator_debug_info                 = 0x2
+};
+
+enum mesh_time_client_time_roles
+{
+    mesh_time_client_time_role_none                              = 0x0,
+    mesh_time_client_time_role_authority                         = 0x1,
+    mesh_time_client_time_role_relay                             = 0x2,
+    mesh_time_client_time_role_client                            = 0x3
+};
+
 enum gecko_parameter_types
 {
     gecko_msg_parameter_uint8=2,
@@ -473,6 +500,7 @@ enum gecko_dev_types
 #define FLASH_PS_KEY_APPLICATION_AI                                  0x3b
 #define FLASH_PS_KEY_IDENTITY_ADDR_TYPE                              0x3c
 #define FLASH_PS_KEY_GATT_DB_HASH                                    0x3d
+#define FLASH_PS_KEY_OTA_RF_PATH                                     0x3e
 #define FLASH_PS_KEY_BONDING_DB_CONFIG                               0x3fff
 #define MESH_PROV_OOB_OTHER                                          0x1
 #define MESH_PROV_OOB_URI                                            0x2
@@ -595,6 +623,8 @@ enum gecko_dev_types
 #define gecko_cmd_le_gap_set_long_advertising_data_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x20030000)
 #define gecko_cmd_le_gap_enable_whitelisting_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x21030000)
 #define gecko_cmd_le_gap_set_conn_timing_parameters_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x22030000)
+#define gecko_cmd_le_gap_set_advertise_random_address_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x25030000)
+#define gecko_cmd_le_gap_clear_advertise_random_address_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x26030000)
 #define gecko_cmd_sync_open_id                                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00420000)
 #define gecko_cmd_sync_close_id                                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01420000)
 #define gecko_cmd_le_connection_set_parameters_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00080000)
@@ -635,6 +665,9 @@ enum gecko_dev_types
 #define gecko_cmd_gatt_server_set_capabilities_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x080a0000)
 #define gecko_cmd_gatt_server_set_max_mtu_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0a0a0000)
 #define gecko_cmd_gatt_server_get_mtu_id                              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0b0a0000)
+#define gecko_cmd_gatt_server_enable_capabilities_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0c0a0000)
+#define gecko_cmd_gatt_server_disable_capabilities_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0d0a0000)
+#define gecko_cmd_gatt_server_get_enabled_capabilities_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0e0a0000)
 #define gecko_cmd_hardware_set_soft_timer_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x000c0000)
 #define gecko_cmd_hardware_get_time_id                                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0b0c0000)
 #define gecko_cmd_hardware_set_lazy_soft_timer_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0c0c0000)
@@ -672,6 +705,7 @@ enum gecko_dev_types
 #define gecko_cmd_homekit_gsn_action_id                               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x07130000)
 #define gecko_cmd_homekit_event_notification_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x08130000)
 #define gecko_cmd_homekit_broadcast_action_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x09130000)
+#define gecko_cmd_homekit_configure_product_data_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0a130000)
 #define gecko_cmd_mesh_node_init_id                                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00140000)
 #define gecko_cmd_mesh_node_start_unprov_beaconing_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01140000)
 #define gecko_cmd_mesh_node_stop_unprov_beaconing_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x16140000)
@@ -696,6 +730,7 @@ enum gecko_dev_types
 #define gecko_cmd_mesh_node_static_oob_request_rsp_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x13140000)
 #define gecko_cmd_mesh_node_reset_id                                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x15140000)
 #define gecko_cmd_mesh_node_set_beacon_reporting_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x18140000)
+#define gecko_cmd_mesh_node_set_iv_update_age_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x19140000)
 #define gecko_cmd_mesh_prov_init_id                                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00150000)
 #define gecko_cmd_mesh_prov_scan_unprov_beacons_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01150000)
 #define gecko_cmd_mesh_prov_provision_device_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02150000)
@@ -755,6 +790,12 @@ enum gecko_dev_types
 #define gecko_cmd_mesh_prov_get_key_refresh_appkey_blacklist_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x38150000)
 #define gecko_cmd_mesh_prov_set_key_refresh_appkey_blacklist_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x39150000)
 #define gecko_cmd_mesh_prov_stop_scan_unprov_beacons_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x3a150000)
+#define gecko_cmd_mesh_prov_ddb_update_netkey_index_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x3b150000)
+#define gecko_cmd_mesh_prov_key_refresh_suspend_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x3c150000)
+#define gecko_cmd_mesh_prov_key_refresh_resume_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x3d150000)
+#define gecko_cmd_mesh_prov_get_key_refresh_phase_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x3e150000)
+#define gecko_cmd_mesh_prov_key_refresh_start_from_phase_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x3f150000)
+#define gecko_cmd_mesh_prov_flush_key_refresh_state_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x40150000)
 #define gecko_cmd_mesh_proxy_connect_id                               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00180000)
 #define gecko_cmd_mesh_proxy_disconnect_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01180000)
 #define gecko_cmd_mesh_proxy_set_filter_type_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02180000)
@@ -781,10 +822,32 @@ enum gecko_dev_types
 #define gecko_cmd_mesh_generic_client_publish_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x021e0000)
 #define gecko_cmd_mesh_generic_client_get_params_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x031e0000)
 #define gecko_cmd_mesh_generic_client_init_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x041e0000)
+#define gecko_cmd_mesh_generic_client_init_common_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x051e0000)
+#define gecko_cmd_mesh_generic_client_init_on_off_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x061e0000)
+#define gecko_cmd_mesh_generic_client_init_level_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x071e0000)
+#define gecko_cmd_mesh_generic_client_init_default_transition_time_id  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x081e0000)
+#define gecko_cmd_mesh_generic_client_init_power_on_off_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x091e0000)
+#define gecko_cmd_mesh_generic_client_init_power_level_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0a1e0000)
+#define gecko_cmd_mesh_generic_client_init_battery_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0b1e0000)
+#define gecko_cmd_mesh_generic_client_init_location_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0c1e0000)
+#define gecko_cmd_mesh_generic_client_init_property_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0d1e0000)
+#define gecko_cmd_mesh_generic_client_init_lightness_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0e1e0000)
+#define gecko_cmd_mesh_generic_client_init_ctl_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0f1e0000)
 #define gecko_cmd_mesh_generic_server_response_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x001f0000)
 #define gecko_cmd_mesh_generic_server_update_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x011f0000)
 #define gecko_cmd_mesh_generic_server_publish_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x021f0000)
 #define gecko_cmd_mesh_generic_server_init_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x041f0000)
+#define gecko_cmd_mesh_generic_server_init_common_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x051f0000)
+#define gecko_cmd_mesh_generic_server_init_on_off_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x061f0000)
+#define gecko_cmd_mesh_generic_server_init_level_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x071f0000)
+#define gecko_cmd_mesh_generic_server_init_default_transition_time_id  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x081f0000)
+#define gecko_cmd_mesh_generic_server_init_power_on_off_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x091f0000)
+#define gecko_cmd_mesh_generic_server_init_power_level_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0a1f0000)
+#define gecko_cmd_mesh_generic_server_init_battery_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0b1f0000)
+#define gecko_cmd_mesh_generic_server_init_location_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0c1f0000)
+#define gecko_cmd_mesh_generic_server_init_property_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0d1f0000)
+#define gecko_cmd_mesh_generic_server_init_lightness_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0e1f0000)
+#define gecko_cmd_mesh_generic_server_init_ctl_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0f1f0000)
 #define gecko_cmd_coex_set_options_id                                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00200000)
 #define gecko_cmd_coex_get_counters_id                                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01200000)
 #define gecko_cmd_coex_set_parameters_id                              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02200000)
@@ -829,6 +892,8 @@ enum gecko_dev_types
 #define gecko_cmd_mesh_test_set_iv_index_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x26220000)
 #define gecko_cmd_mesh_test_set_element_seqnum_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x27220000)
 #define gecko_cmd_mesh_test_set_model_option_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x28220000)
+#define gecko_cmd_mesh_test_get_local_model_app_bindings_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x29220000)
+#define gecko_cmd_mesh_test_get_replay_protection_list_entry_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x2a220000)
 #define gecko_cmd_mesh_lpn_init_id                                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00230000)
 #define gecko_cmd_mesh_lpn_deinit_id                                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01230000)
 #define gecko_cmd_mesh_lpn_configure_id                               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02230000)
@@ -888,19 +953,23 @@ enum gecko_dev_types
 #define gecko_cmd_l2cap_coc_send_le_flow_control_credit_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03430000)
 #define gecko_cmd_l2cap_coc_send_disconnection_request_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04430000)
 #define gecko_cmd_l2cap_coc_send_data_id                              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x05430000)
-#define gecko_cmd_cte_transmitter_enable_cte_response_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00440000)
-#define gecko_cmd_cte_transmitter_disable_cte_response_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01440000)
-#define gecko_cmd_cte_transmitter_start_connectionless_cte_id         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02440000)
-#define gecko_cmd_cte_transmitter_stop_connectionless_cte_id          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03440000)
+#define gecko_cmd_cte_transmitter_enable_connection_cte_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00440000)
+#define gecko_cmd_cte_transmitter_disable_connection_cte_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01440000)
+#define gecko_cmd_cte_transmitter_enable_connectionless_cte_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02440000)
+#define gecko_cmd_cte_transmitter_disable_connectionless_cte_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03440000)
 #define gecko_cmd_cte_transmitter_set_dtm_parameters_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04440000)
 #define gecko_cmd_cte_transmitter_clear_dtm_parameters_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x05440000)
+#define gecko_cmd_cte_transmitter_enable_silabs_cte_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x06440000)
+#define gecko_cmd_cte_transmitter_disable_silabs_cte_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x07440000)
 #define gecko_cmd_cte_receiver_configure_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00450000)
-#define gecko_cmd_cte_receiver_start_iq_sampling_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01450000)
-#define gecko_cmd_cte_receiver_stop_iq_sampling_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02450000)
-#define gecko_cmd_cte_receiver_start_connectionless_iq_sampling_id    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03450000)
-#define gecko_cmd_cte_receiver_stop_connectionless_iq_sampling_id     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04450000)
+#define gecko_cmd_cte_receiver_enable_connection_cte_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01450000)
+#define gecko_cmd_cte_receiver_disable_connection_cte_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02450000)
+#define gecko_cmd_cte_receiver_enable_connectionless_cte_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03450000)
+#define gecko_cmd_cte_receiver_disable_connectionless_cte_id          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04450000)
 #define gecko_cmd_cte_receiver_set_dtm_parameters_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x05450000)
 #define gecko_cmd_cte_receiver_clear_dtm_parameters_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x06450000)
+#define gecko_cmd_cte_receiver_enable_silabs_cte_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x07450000)
+#define gecko_cmd_cte_receiver_disable_silabs_cte_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x08450000)
 #define gecko_cmd_mesh_sensor_server_init_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00470000)
 #define gecko_cmd_mesh_sensor_server_deinit_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01470000)
 #define gecko_cmd_mesh_sensor_server_send_descriptor_status_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02470000)
@@ -938,6 +1007,8 @@ enum gecko_dev_types
 #define gecko_cmd_mesh_lc_server_init_all_properties_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x054d0000)
 #define gecko_cmd_mesh_lc_server_set_publish_mask_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x064d0000)
 #define gecko_cmd_mesh_lc_server_set_regulator_interval_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x074d0000)
+#define gecko_cmd_mesh_lc_server_set_event_mask_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x084d0000)
+#define gecko_cmd_mesh_lc_server_get_lc_state_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x094d0000)
 #define gecko_cmd_mesh_lc_setup_server_update_property_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x004e0000)
 #define gecko_cmd_mesh_scene_client_init_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x004f0000)
 #define gecko_cmd_mesh_scene_client_get_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x014f0000)
@@ -947,7 +1018,39 @@ enum gecko_dev_types
 #define gecko_cmd_mesh_scene_client_delete_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x054f0000)
 #define gecko_cmd_mesh_scene_server_init_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00500000)
 #define gecko_cmd_mesh_scene_server_deinit_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01500000)
+#define gecko_cmd_mesh_scene_server_reset_register_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02500000)
 #define gecko_cmd_mesh_scene_setup_server_init_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00510000)
+#define gecko_cmd_mesh_scheduler_client_init_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00540000)
+#define gecko_cmd_mesh_scheduler_client_deinit_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01540000)
+#define gecko_cmd_mesh_scheduler_client_get_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02540000)
+#define gecko_cmd_mesh_scheduler_client_get_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03540000)
+#define gecko_cmd_mesh_scheduler_client_set_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04540000)
+#define gecko_cmd_mesh_scheduler_server_init_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00550000)
+#define gecko_cmd_mesh_scheduler_server_deinit_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01550000)
+#define gecko_cmd_mesh_scheduler_server_get_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02550000)
+#define gecko_cmd_mesh_scheduler_server_get_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03550000)
+#define gecko_cmd_mesh_scheduler_server_set_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04550000)
+#define gecko_cmd_mesh_time_server_init_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00520000)
+#define gecko_cmd_mesh_time_server_deinit_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01520000)
+#define gecko_cmd_mesh_time_server_get_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02520000)
+#define gecko_cmd_mesh_time_server_set_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03520000)
+#define gecko_cmd_mesh_time_server_get_time_zone_offset_new_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04520000)
+#define gecko_cmd_mesh_time_server_set_time_zone_offset_new_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x05520000)
+#define gecko_cmd_mesh_time_server_get_tai_utc_delta_new_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x06520000)
+#define gecko_cmd_mesh_time_server_set_tai_utc_delta_new_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x07520000)
+#define gecko_cmd_mesh_time_server_get_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x08520000)
+#define gecko_cmd_mesh_time_server_set_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x09520000)
+#define gecko_cmd_mesh_time_server_get_datetime_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x0a520000)
+#define gecko_cmd_mesh_time_client_init_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00530000)
+#define gecko_cmd_mesh_time_client_deinit_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x01530000)
+#define gecko_cmd_mesh_time_client_get_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x02530000)
+#define gecko_cmd_mesh_time_client_set_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x03530000)
+#define gecko_cmd_mesh_time_client_get_time_zone_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x04530000)
+#define gecko_cmd_mesh_time_client_set_time_zone_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x05530000)
+#define gecko_cmd_mesh_time_client_get_tai_utc_delta_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x06530000)
+#define gecko_cmd_mesh_time_client_set_tai_utc_delta_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x07530000)
+#define gecko_cmd_mesh_time_client_get_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x08530000)
+#define gecko_cmd_mesh_time_client_set_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x09530000)
 #define gecko_cmd_user_message_to_target_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_cmd|0x00ff0000)
 
 #define gecko_rsp_dfu_reset_id                                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00000000)
@@ -1001,6 +1104,8 @@ enum gecko_dev_types
 #define gecko_rsp_le_gap_set_long_advertising_data_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x20030000)
 #define gecko_rsp_le_gap_enable_whitelisting_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x21030000)
 #define gecko_rsp_le_gap_set_conn_timing_parameters_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x22030000)
+#define gecko_rsp_le_gap_set_advertise_random_address_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x25030000)
+#define gecko_rsp_le_gap_clear_advertise_random_address_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x26030000)
 #define gecko_rsp_sync_open_id                                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00420000)
 #define gecko_rsp_sync_close_id                                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01420000)
 #define gecko_rsp_le_connection_set_parameters_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00080000)
@@ -1041,6 +1146,9 @@ enum gecko_dev_types
 #define gecko_rsp_gatt_server_set_capabilities_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x080a0000)
 #define gecko_rsp_gatt_server_set_max_mtu_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0a0a0000)
 #define gecko_rsp_gatt_server_get_mtu_id                              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0b0a0000)
+#define gecko_rsp_gatt_server_enable_capabilities_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0c0a0000)
+#define gecko_rsp_gatt_server_disable_capabilities_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0d0a0000)
+#define gecko_rsp_gatt_server_get_enabled_capabilities_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0e0a0000)
 #define gecko_rsp_hardware_set_soft_timer_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x000c0000)
 #define gecko_rsp_hardware_get_time_id                                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0b0c0000)
 #define gecko_rsp_hardware_set_lazy_soft_timer_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0c0c0000)
@@ -1078,6 +1186,7 @@ enum gecko_dev_types
 #define gecko_rsp_homekit_gsn_action_id                               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x07130000)
 #define gecko_rsp_homekit_event_notification_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x08130000)
 #define gecko_rsp_homekit_broadcast_action_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x09130000)
+#define gecko_rsp_homekit_configure_product_data_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0a130000)
 #define gecko_rsp_mesh_node_init_id                                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00140000)
 #define gecko_rsp_mesh_node_start_unprov_beaconing_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01140000)
 #define gecko_rsp_mesh_node_stop_unprov_beaconing_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x16140000)
@@ -1102,6 +1211,7 @@ enum gecko_dev_types
 #define gecko_rsp_mesh_node_static_oob_request_rsp_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x13140000)
 #define gecko_rsp_mesh_node_reset_id                                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x15140000)
 #define gecko_rsp_mesh_node_set_beacon_reporting_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x18140000)
+#define gecko_rsp_mesh_node_set_iv_update_age_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x19140000)
 #define gecko_rsp_mesh_prov_init_id                                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00150000)
 #define gecko_rsp_mesh_prov_scan_unprov_beacons_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01150000)
 #define gecko_rsp_mesh_prov_provision_device_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02150000)
@@ -1161,6 +1271,12 @@ enum gecko_dev_types
 #define gecko_rsp_mesh_prov_get_key_refresh_appkey_blacklist_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x38150000)
 #define gecko_rsp_mesh_prov_set_key_refresh_appkey_blacklist_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x39150000)
 #define gecko_rsp_mesh_prov_stop_scan_unprov_beacons_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x3a150000)
+#define gecko_rsp_mesh_prov_ddb_update_netkey_index_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x3b150000)
+#define gecko_rsp_mesh_prov_key_refresh_suspend_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x3c150000)
+#define gecko_rsp_mesh_prov_key_refresh_resume_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x3d150000)
+#define gecko_rsp_mesh_prov_get_key_refresh_phase_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x3e150000)
+#define gecko_rsp_mesh_prov_key_refresh_start_from_phase_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x3f150000)
+#define gecko_rsp_mesh_prov_flush_key_refresh_state_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x40150000)
 #define gecko_rsp_mesh_proxy_connect_id                               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00180000)
 #define gecko_rsp_mesh_proxy_disconnect_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01180000)
 #define gecko_rsp_mesh_proxy_set_filter_type_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02180000)
@@ -1187,10 +1303,32 @@ enum gecko_dev_types
 #define gecko_rsp_mesh_generic_client_publish_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x021e0000)
 #define gecko_rsp_mesh_generic_client_get_params_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x031e0000)
 #define gecko_rsp_mesh_generic_client_init_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x041e0000)
+#define gecko_rsp_mesh_generic_client_init_common_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x051e0000)
+#define gecko_rsp_mesh_generic_client_init_on_off_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x061e0000)
+#define gecko_rsp_mesh_generic_client_init_level_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x071e0000)
+#define gecko_rsp_mesh_generic_client_init_default_transition_time_id  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x081e0000)
+#define gecko_rsp_mesh_generic_client_init_power_on_off_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x091e0000)
+#define gecko_rsp_mesh_generic_client_init_power_level_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0a1e0000)
+#define gecko_rsp_mesh_generic_client_init_battery_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0b1e0000)
+#define gecko_rsp_mesh_generic_client_init_location_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0c1e0000)
+#define gecko_rsp_mesh_generic_client_init_property_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0d1e0000)
+#define gecko_rsp_mesh_generic_client_init_lightness_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0e1e0000)
+#define gecko_rsp_mesh_generic_client_init_ctl_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0f1e0000)
 #define gecko_rsp_mesh_generic_server_response_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x001f0000)
 #define gecko_rsp_mesh_generic_server_update_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x011f0000)
 #define gecko_rsp_mesh_generic_server_publish_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x021f0000)
 #define gecko_rsp_mesh_generic_server_init_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x041f0000)
+#define gecko_rsp_mesh_generic_server_init_common_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x051f0000)
+#define gecko_rsp_mesh_generic_server_init_on_off_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x061f0000)
+#define gecko_rsp_mesh_generic_server_init_level_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x071f0000)
+#define gecko_rsp_mesh_generic_server_init_default_transition_time_id  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x081f0000)
+#define gecko_rsp_mesh_generic_server_init_power_on_off_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x091f0000)
+#define gecko_rsp_mesh_generic_server_init_power_level_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0a1f0000)
+#define gecko_rsp_mesh_generic_server_init_battery_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0b1f0000)
+#define gecko_rsp_mesh_generic_server_init_location_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0c1f0000)
+#define gecko_rsp_mesh_generic_server_init_property_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0d1f0000)
+#define gecko_rsp_mesh_generic_server_init_lightness_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0e1f0000)
+#define gecko_rsp_mesh_generic_server_init_ctl_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0f1f0000)
 #define gecko_rsp_coex_set_options_id                                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00200000)
 #define gecko_rsp_coex_get_counters_id                                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01200000)
 #define gecko_rsp_coex_set_parameters_id                              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02200000)
@@ -1235,6 +1373,8 @@ enum gecko_dev_types
 #define gecko_rsp_mesh_test_set_iv_index_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x26220000)
 #define gecko_rsp_mesh_test_set_element_seqnum_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x27220000)
 #define gecko_rsp_mesh_test_set_model_option_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x28220000)
+#define gecko_rsp_mesh_test_get_local_model_app_bindings_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x29220000)
+#define gecko_rsp_mesh_test_get_replay_protection_list_entry_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x2a220000)
 #define gecko_rsp_mesh_lpn_init_id                                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00230000)
 #define gecko_rsp_mesh_lpn_deinit_id                                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01230000)
 #define gecko_rsp_mesh_lpn_configure_id                               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02230000)
@@ -1294,19 +1434,23 @@ enum gecko_dev_types
 #define gecko_rsp_l2cap_coc_send_le_flow_control_credit_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03430000)
 #define gecko_rsp_l2cap_coc_send_disconnection_request_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04430000)
 #define gecko_rsp_l2cap_coc_send_data_id                              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x05430000)
-#define gecko_rsp_cte_transmitter_enable_cte_response_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00440000)
-#define gecko_rsp_cte_transmitter_disable_cte_response_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01440000)
-#define gecko_rsp_cte_transmitter_start_connectionless_cte_id         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02440000)
-#define gecko_rsp_cte_transmitter_stop_connectionless_cte_id          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03440000)
+#define gecko_rsp_cte_transmitter_enable_connection_cte_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00440000)
+#define gecko_rsp_cte_transmitter_disable_connection_cte_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01440000)
+#define gecko_rsp_cte_transmitter_enable_connectionless_cte_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02440000)
+#define gecko_rsp_cte_transmitter_disable_connectionless_cte_id       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03440000)
 #define gecko_rsp_cte_transmitter_set_dtm_parameters_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04440000)
 #define gecko_rsp_cte_transmitter_clear_dtm_parameters_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x05440000)
+#define gecko_rsp_cte_transmitter_enable_silabs_cte_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x06440000)
+#define gecko_rsp_cte_transmitter_disable_silabs_cte_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x07440000)
 #define gecko_rsp_cte_receiver_configure_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00450000)
-#define gecko_rsp_cte_receiver_start_iq_sampling_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01450000)
-#define gecko_rsp_cte_receiver_stop_iq_sampling_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02450000)
-#define gecko_rsp_cte_receiver_start_connectionless_iq_sampling_id    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03450000)
-#define gecko_rsp_cte_receiver_stop_connectionless_iq_sampling_id     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04450000)
+#define gecko_rsp_cte_receiver_enable_connection_cte_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01450000)
+#define gecko_rsp_cte_receiver_disable_connection_cte_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02450000)
+#define gecko_rsp_cte_receiver_enable_connectionless_cte_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03450000)
+#define gecko_rsp_cte_receiver_disable_connectionless_cte_id          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04450000)
 #define gecko_rsp_cte_receiver_set_dtm_parameters_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x05450000)
 #define gecko_rsp_cte_receiver_clear_dtm_parameters_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x06450000)
+#define gecko_rsp_cte_receiver_enable_silabs_cte_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x07450000)
+#define gecko_rsp_cte_receiver_disable_silabs_cte_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x08450000)
 #define gecko_rsp_mesh_sensor_server_init_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00470000)
 #define gecko_rsp_mesh_sensor_server_deinit_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01470000)
 #define gecko_rsp_mesh_sensor_server_send_descriptor_status_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02470000)
@@ -1344,6 +1488,8 @@ enum gecko_dev_types
 #define gecko_rsp_mesh_lc_server_init_all_properties_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x054d0000)
 #define gecko_rsp_mesh_lc_server_set_publish_mask_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x064d0000)
 #define gecko_rsp_mesh_lc_server_set_regulator_interval_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x074d0000)
+#define gecko_rsp_mesh_lc_server_set_event_mask_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x084d0000)
+#define gecko_rsp_mesh_lc_server_get_lc_state_id                      (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x094d0000)
 #define gecko_rsp_mesh_lc_setup_server_update_property_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x004e0000)
 #define gecko_rsp_mesh_scene_client_init_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x004f0000)
 #define gecko_rsp_mesh_scene_client_get_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x014f0000)
@@ -1353,7 +1499,39 @@ enum gecko_dev_types
 #define gecko_rsp_mesh_scene_client_delete_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x054f0000)
 #define gecko_rsp_mesh_scene_server_init_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00500000)
 #define gecko_rsp_mesh_scene_server_deinit_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01500000)
+#define gecko_rsp_mesh_scene_server_reset_register_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02500000)
 #define gecko_rsp_mesh_scene_setup_server_init_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00510000)
+#define gecko_rsp_mesh_scheduler_client_init_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00540000)
+#define gecko_rsp_mesh_scheduler_client_deinit_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01540000)
+#define gecko_rsp_mesh_scheduler_client_get_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02540000)
+#define gecko_rsp_mesh_scheduler_client_get_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03540000)
+#define gecko_rsp_mesh_scheduler_client_set_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04540000)
+#define gecko_rsp_mesh_scheduler_server_init_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00550000)
+#define gecko_rsp_mesh_scheduler_server_deinit_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01550000)
+#define gecko_rsp_mesh_scheduler_server_get_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02550000)
+#define gecko_rsp_mesh_scheduler_server_get_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03550000)
+#define gecko_rsp_mesh_scheduler_server_set_action_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04550000)
+#define gecko_rsp_mesh_time_server_init_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00520000)
+#define gecko_rsp_mesh_time_server_deinit_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01520000)
+#define gecko_rsp_mesh_time_server_get_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02520000)
+#define gecko_rsp_mesh_time_server_set_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03520000)
+#define gecko_rsp_mesh_time_server_get_time_zone_offset_new_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04520000)
+#define gecko_rsp_mesh_time_server_set_time_zone_offset_new_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x05520000)
+#define gecko_rsp_mesh_time_server_get_tai_utc_delta_new_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x06520000)
+#define gecko_rsp_mesh_time_server_set_tai_utc_delta_new_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x07520000)
+#define gecko_rsp_mesh_time_server_get_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x08520000)
+#define gecko_rsp_mesh_time_server_set_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x09520000)
+#define gecko_rsp_mesh_time_server_get_datetime_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x0a520000)
+#define gecko_rsp_mesh_time_client_init_id                            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00530000)
+#define gecko_rsp_mesh_time_client_deinit_id                          (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x01530000)
+#define gecko_rsp_mesh_time_client_get_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x02530000)
+#define gecko_rsp_mesh_time_client_set_time_id                        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x03530000)
+#define gecko_rsp_mesh_time_client_get_time_zone_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x04530000)
+#define gecko_rsp_mesh_time_client_set_time_zone_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x05530000)
+#define gecko_rsp_mesh_time_client_get_tai_utc_delta_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x06530000)
+#define gecko_rsp_mesh_time_client_set_tai_utc_delta_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x07530000)
+#define gecko_rsp_mesh_time_client_get_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x08530000)
+#define gecko_rsp_mesh_time_client_set_time_role_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x09530000)
 #define gecko_rsp_user_message_to_target_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_rsp|0x00ff0000)
 
 #define gecko_evt_dfu_boot_id                                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00000000)
@@ -1507,7 +1685,10 @@ enum gecko_dev_types
 #define gecko_evt_l2cap_coc_channel_disconnected_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x04430000)
 #define gecko_evt_l2cap_coc_data_id                                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x05430000)
 #define gecko_evt_l2cap_command_rejected_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x06430000)
-#define gecko_evt_cte_receiver_iq_report_id                           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00450000)
+#define gecko_evt_cte_receiver_connection_iq_report_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00450000)
+#define gecko_evt_cte_receiver_connectionless_iq_report_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x01450000)
+#define gecko_evt_cte_receiver_dtm_iq_report_id                       (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x02450000)
+#define gecko_evt_cte_receiver_silabs_iq_report_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x03450000)
 #define gecko_evt_mesh_sensor_server_get_request_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x01470000)
 #define gecko_evt_mesh_sensor_server_get_column_request_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x02470000)
 #define gecko_evt_mesh_sensor_server_get_series_request_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x03470000)
@@ -1536,6 +1717,8 @@ enum gecko_dev_types
 #define gecko_evt_mesh_lc_server_occupancy_updated_id                 (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x034d0000)
 #define gecko_evt_mesh_lc_server_ambient_lux_level_updated_id         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x044d0000)
 #define gecko_evt_mesh_lc_server_linear_output_updated_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x054d0000)
+#define gecko_evt_mesh_lc_server_state_updated_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x064d0000)
+#define gecko_evt_mesh_lc_server_regulator_debug_info_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x074d0000)
 #define gecko_evt_mesh_lc_setup_server_set_property_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x004e0000)
 #define gecko_evt_mesh_scene_client_status_id                         (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x004f0000)
 #define gecko_evt_mesh_scene_client_register_status_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x014f0000)
@@ -1546,6 +1729,17 @@ enum gecko_dev_types
 #define gecko_evt_mesh_scene_setup_server_store_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00510000)
 #define gecko_evt_mesh_scene_setup_server_delete_id                   (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x01510000)
 #define gecko_evt_mesh_scene_setup_server_publish_id                  (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x02510000)
+#define gecko_evt_mesh_scheduler_client_status_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00540000)
+#define gecko_evt_mesh_scheduler_client_action_status_id              (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x01540000)
+#define gecko_evt_mesh_scheduler_server_action_changed_id             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x01550000)
+#define gecko_evt_mesh_time_server_time_updated_id                    (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00520000)
+#define gecko_evt_mesh_time_server_time_zone_offset_updated_id        (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x01520000)
+#define gecko_evt_mesh_time_server_tai_utc_delta_updated_id           (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x02520000)
+#define gecko_evt_mesh_time_server_time_role_updated_id               (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x03520000)
+#define gecko_evt_mesh_time_client_time_status_id                     (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00530000)
+#define gecko_evt_mesh_time_client_time_zone_status_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x01530000)
+#define gecko_evt_mesh_time_client_tai_utc_delta_status_id            (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x02530000)
+#define gecko_evt_mesh_time_client_time_role_status_id                (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x03530000)
 #define gecko_evt_user_message_to_host_id                             (((uint32)gecko_dev_type_gecko)|gecko_msg_type_evt|0x00ff0000)
 
 
@@ -2018,6 +2212,25 @@ PACKSTRUCT( struct gecko_msg_le_gap_set_conn_timing_parameters_cmd_t
     uint16              max_ce_length;
 });
 PACKSTRUCT( struct gecko_msg_le_gap_set_conn_timing_parameters_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_le_gap_set_advertise_random_address_cmd_t
+{
+    uint8               handle;
+    uint8               addr_type;
+    bd_addr             address;
+});
+PACKSTRUCT( struct gecko_msg_le_gap_set_advertise_random_address_rsp_t
+{
+    uint16              result;
+    bd_addr             address_out;
+});
+PACKSTRUCT( struct gecko_msg_le_gap_clear_advertise_random_address_cmd_t
+{
+    uint8               handle;
+});
+PACKSTRUCT( struct gecko_msg_le_gap_clear_advertise_random_address_rsp_t
 {
     uint16              result;
 });
@@ -2554,6 +2767,27 @@ PACKSTRUCT( struct gecko_msg_gatt_server_get_mtu_rsp_t
     uint16              result;
     uint16              mtu;
 });
+PACKSTRUCT( struct gecko_msg_gatt_server_enable_capabilities_cmd_t
+{
+    uint32              caps;
+});
+PACKSTRUCT( struct gecko_msg_gatt_server_enable_capabilities_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_gatt_server_disable_capabilities_cmd_t
+{
+    uint32              caps;
+});
+PACKSTRUCT( struct gecko_msg_gatt_server_disable_capabilities_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_gatt_server_get_enabled_capabilities_rsp_t
+{
+    uint16              result;
+    uint32              caps;
+});
 PACKSTRUCT( struct gecko_msg_gatt_server_attribute_value_evt_t
 {
     uint8               connection;
@@ -2939,6 +3173,14 @@ PACKSTRUCT( struct gecko_msg_homekit_broadcast_action_rsp_t
 {
     uint16              result;
 });
+PACKSTRUCT( struct gecko_msg_homekit_configure_product_data_cmd_t
+{
+    uint8array          product_data;
+});
+PACKSTRUCT( struct gecko_msg_homekit_configure_product_data_rsp_t
+{
+    uint16              result;
+});
 PACKSTRUCT( struct gecko_msg_homekit_setupcode_display_evt_t
 {
     uint8               connection;
@@ -3162,6 +3404,14 @@ PACKSTRUCT( struct gecko_msg_mesh_node_set_beacon_reporting_cmd_t
     uint8               report;
 });
 PACKSTRUCT( struct gecko_msg_mesh_node_set_beacon_reporting_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_node_set_iv_update_age_cmd_t
+{
+    uint32              age_s;
+});
+PACKSTRUCT( struct gecko_msg_mesh_node_set_iv_update_age_rsp_t
 {
     uint16              result;
 });
@@ -3892,6 +4142,59 @@ PACKSTRUCT( struct gecko_msg_mesh_prov_stop_scan_unprov_beacons_rsp_t
 {
     uint16              result;
 });
+PACKSTRUCT( struct gecko_msg_mesh_prov_ddb_update_netkey_index_cmd_t
+{
+    uuid_128            uuid;
+    uint16              netkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_ddb_update_netkey_index_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_key_refresh_suspend_cmd_t
+{
+    uint16              netkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_key_refresh_suspend_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_key_refresh_resume_cmd_t
+{
+    uint16              netkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_key_refresh_resume_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_get_key_refresh_phase_cmd_t
+{
+    uint16              netkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_get_key_refresh_phase_rsp_t
+{
+    uint16              result;
+    uint8               phase;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_key_refresh_start_from_phase_cmd_t
+{
+    uint8               phase;
+    uint16              netkey_index;
+    uint8               num_appkeys;
+    uint8array          appkey_indices;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_key_refresh_start_from_phase_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_flush_key_refresh_state_cmd_t
+{
+    uint16              netkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_prov_flush_key_refresh_state_rsp_t
+{
+    uint16              result;
+});
 PACKSTRUCT( struct gecko_msg_mesh_prov_initialized_evt_t
 {
     uint8               networks;
@@ -4430,6 +4733,50 @@ PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_rsp_t
 {
     uint16              result;
 });
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_common_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_on_off_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_level_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_default_transition_time_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_power_on_off_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_power_level_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_battery_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_location_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_property_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_lightness_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_client_init_ctl_rsp_t
+{
+    uint16              result;
+});
 PACKSTRUCT( struct gecko_msg_mesh_generic_client_server_status_evt_t
 {
     uint16              model_id;
@@ -4479,6 +4826,50 @@ PACKSTRUCT( struct gecko_msg_mesh_generic_server_publish_rsp_t
     uint16              result;
 });
 PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_common_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_on_off_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_level_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_default_transition_time_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_power_on_off_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_power_level_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_battery_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_location_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_property_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_lightness_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_generic_server_init_ctl_rsp_t
 {
     uint16              result;
 });
@@ -4950,6 +5341,27 @@ PACKSTRUCT( struct gecko_msg_mesh_test_set_model_option_rsp_t
 {
     uint16              result;
 });
+PACKSTRUCT( struct gecko_msg_mesh_test_get_local_model_app_bindings_cmd_t
+{
+    uint16              elem_index;
+    uint16              vendor_id;
+    uint16              model_id;
+});
+PACKSTRUCT( struct gecko_msg_mesh_test_get_local_model_app_bindings_rsp_t
+{
+    uint16              result;
+    uint8array          appkeys;
+});
+PACKSTRUCT( struct gecko_msg_mesh_test_get_replay_protection_list_entry_cmd_t
+{
+    uint16              address;
+});
+PACKSTRUCT( struct gecko_msg_mesh_test_get_replay_protection_list_entry_rsp_t
+{
+    uint16              result;
+    uint32              seq;
+    uint32              seq_ivindex;
+});
 PACKSTRUCT( struct gecko_msg_mesh_test_local_heartbeat_subscription_complete_evt_t
 {
     uint16              count;
@@ -5021,10 +5433,13 @@ PACKSTRUCT( struct gecko_msg_mesh_friend_deinit_rsp_t
 PACKSTRUCT( struct gecko_msg_mesh_friend_friendship_established_evt_t
 {
     uint16              lpn_address;
+    uint16              netkey_index;
 });
 PACKSTRUCT( struct gecko_msg_mesh_friend_friendship_terminated_evt_t
 {
     uint16              reason;
+    uint16              lpn_address;
+    uint16              netkey_index;
 });
 PACKSTRUCT( struct gecko_msg_mesh_config_client_cancel_request_cmd_t
 {
@@ -5829,41 +6244,41 @@ PACKSTRUCT( struct gecko_msg_l2cap_command_rejected_evt_t
     uint8               code;
     uint16              reason;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_cte_response_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_connection_cte_cmd_t
 {
     uint8               connection;
     uint8               cte_types;
     uint8array          switching_pattern;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_cte_response_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_connection_cte_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_cte_response_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_connection_cte_cmd_t
 {
     uint8               connection;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_cte_response_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_connection_cte_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_start_connectionless_cte_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_connectionless_cte_cmd_t
 {
-    uint8               adv;
+    uint8               handle;
     uint8               cte_length;
     uint8               cte_type;
     uint8               cte_count;
     uint8array          switching_pattern;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_start_connectionless_cte_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_connectionless_cte_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_stop_connectionless_cte_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_connectionless_cte_cmd_t
 {
-    uint8               adv;
+    uint8               handle;
 });
-PACKSTRUCT( struct gecko_msg_cte_transmitter_stop_connectionless_cte_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_connectionless_cte_rsp_t
 {
     uint16              result;
 });
@@ -5881,6 +6296,26 @@ PACKSTRUCT( struct gecko_msg_cte_transmitter_clear_dtm_parameters_rsp_t
 {
     uint16              result;
 });
+PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_silabs_cte_cmd_t
+{
+    uint8               handle;
+    uint8               cte_length;
+    uint8               cte_type;
+    uint8               cte_count;
+    uint8array          switching_pattern;
+});
+PACKSTRUCT( struct gecko_msg_cte_transmitter_enable_silabs_cte_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_silabs_cte_cmd_t
+{
+    uint8               handle;
+});
+PACKSTRUCT( struct gecko_msg_cte_transmitter_disable_silabs_cte_rsp_t
+{
+    uint16              result;
+});
 PACKSTRUCT( struct gecko_msg_cte_receiver_configure_cmd_t
 {
     uint8               flags;
@@ -5889,7 +6324,7 @@ PACKSTRUCT( struct gecko_msg_cte_receiver_configure_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_start_iq_sampling_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_enable_connection_cte_cmd_t
 {
     uint8               connection;
     uint16              interval;
@@ -5898,34 +6333,34 @@ PACKSTRUCT( struct gecko_msg_cte_receiver_start_iq_sampling_cmd_t
     uint8               slot_durations;
     uint8array          switching_pattern;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_start_iq_sampling_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_enable_connection_cte_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_stop_iq_sampling_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_disable_connection_cte_cmd_t
 {
     uint8               connection;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_stop_iq_sampling_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_disable_connection_cte_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_start_connectionless_iq_sampling_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_enable_connectionless_cte_cmd_t
 {
     uint8               sync;
     uint8               slot_durations;
     uint8               cte_count;
     uint8array          switching_pattern;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_start_connectionless_iq_sampling_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_enable_connectionless_cte_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_stop_connectionless_iq_sampling_cmd_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_disable_connectionless_cte_cmd_t
 {
     uint8               sync;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_stop_connectionless_iq_sampling_rsp_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_disable_connectionless_cte_rsp_t
 {
     uint16              result;
 });
@@ -5944,11 +6379,24 @@ PACKSTRUCT( struct gecko_msg_cte_receiver_clear_dtm_parameters_rsp_t
 {
     uint16              result;
 });
-PACKSTRUCT( struct gecko_msg_cte_receiver_iq_report_evt_t
+PACKSTRUCT( struct gecko_msg_cte_receiver_enable_silabs_cte_cmd_t
+{
+    uint8               slot_durations;
+    uint8               cte_count;
+    uint8array          switching_pattern;
+});
+PACKSTRUCT( struct gecko_msg_cte_receiver_enable_silabs_cte_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_cte_receiver_disable_silabs_cte_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_cte_receiver_connection_iq_report_evt_t
 {
     uint16              status;
-    uint8               packet_type;
-    uint8               handle;
+    uint8               connection;
     uint8               phy;
     uint8               channel;
     int8                rssi;
@@ -5956,7 +6404,43 @@ PACKSTRUCT( struct gecko_msg_cte_receiver_iq_report_evt_t
     uint8               cte_type;
     uint8               slot_durations;
     uint16              event_counter;
-    uint8               completeness;
+    uint8array          samples;
+});
+PACKSTRUCT( struct gecko_msg_cte_receiver_connectionless_iq_report_evt_t
+{
+    uint16              status;
+    uint8               sync;
+    uint8               channel;
+    int8                rssi;
+    uint8               rssi_antenna_id;
+    uint8               cte_type;
+    uint8               slot_durations;
+    uint16              event_counter;
+    uint8array          samples;
+});
+PACKSTRUCT( struct gecko_msg_cte_receiver_dtm_iq_report_evt_t
+{
+    uint16              status;
+    uint8               channel;
+    int8                rssi;
+    uint8               rssi_antenna_id;
+    uint8               cte_type;
+    uint8               slot_durations;
+    uint16              event_counter;
+    uint8array          samples;
+});
+PACKSTRUCT( struct gecko_msg_cte_receiver_silabs_iq_report_evt_t
+{
+    uint16              status;
+    bd_addr             address;
+    uint8               address_type;
+    uint8               phy;
+    uint8               channel;
+    int8                rssi;
+    uint8               rssi_antenna_id;
+    uint8               cte_type;
+    uint8               slot_durations;
+    uint16              packet_counter;
     uint8array          samples;
 });
 PACKSTRUCT( struct gecko_msg_mesh_sensor_server_init_cmd_t
@@ -6559,6 +7043,26 @@ PACKSTRUCT( struct gecko_msg_mesh_lc_server_set_regulator_interval_rsp_t
 {
     uint16              result;
 });
+PACKSTRUCT( struct gecko_msg_mesh_lc_server_set_event_mask_cmd_t
+{
+    uint16              elem_index;
+    uint16              event_type;
+    uint8               value;
+});
+PACKSTRUCT( struct gecko_msg_mesh_lc_server_set_event_mask_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_lc_server_get_lc_state_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_lc_server_get_lc_state_rsp_t
+{
+    uint16              result;
+    uint8               state;
+    uint32              transition_time;
+});
 PACKSTRUCT( struct gecko_msg_mesh_lc_server_mode_updated_evt_t
 {
     uint16              elem_index;
@@ -6605,6 +7109,18 @@ PACKSTRUCT( struct gecko_msg_mesh_lc_server_linear_output_updated_evt_t
 {
     uint16              elem_index;
     uint16              linear_output_value;
+});
+PACKSTRUCT( struct gecko_msg_mesh_lc_server_state_updated_evt_t
+{
+    uint16              elem_index;
+    uint8               state;
+    uint32              transition_time;
+});
+PACKSTRUCT( struct gecko_msg_mesh_lc_server_regulator_debug_info_evt_t
+{
+    uint16              elem_index;
+    uint16              i;
+    uint16              l;
 });
 PACKSTRUCT( struct gecko_msg_mesh_lc_setup_server_update_property_cmd_t
 {
@@ -6729,6 +7245,14 @@ PACKSTRUCT( struct gecko_msg_mesh_scene_server_deinit_rsp_t
 {
     uint16              result;
 });
+PACKSTRUCT( struct gecko_msg_mesh_scene_server_reset_register_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scene_server_reset_register_rsp_t
+{
+    uint16              result;
+});
 PACKSTRUCT( struct gecko_msg_mesh_scene_server_get_evt_t
 {
     uint16              elem_index;
@@ -6785,6 +7309,466 @@ PACKSTRUCT( struct gecko_msg_mesh_scene_setup_server_publish_evt_t
 {
     uint16              elem_index;
     uint32              period_ms;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_init_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_init_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_deinit_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_deinit_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_get_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_get_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_get_action_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+    uint8               index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_get_action_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_set_action_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+    uint8               flags;
+    uint8               index;
+    uint8               year;
+    uint16              month;
+    uint8               day;
+    uint8               hour;
+    uint8               minute;
+    uint8               second;
+    uint8               day_of_week;
+    uint8               action;
+    uint8               transition_time;
+    uint16              scene_number;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_set_action_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_status_evt_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              client_address;
+    uint16              appkey_index;
+    uint16              scheduler;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_client_action_status_evt_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              client_address;
+    uint16              appkey_index;
+    uint8               index;
+    uint8               year;
+    uint16              month;
+    uint8               day;
+    uint8               hour;
+    uint8               minute;
+    uint8               second;
+    uint8               day_of_week;
+    uint8               action;
+    uint8               transition_time;
+    uint16              scene_number;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_init_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_init_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_deinit_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_deinit_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_get_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_get_rsp_t
+{
+    uint16              result;
+    uint16              status;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_get_action_cmd_t
+{
+    uint16              elem_index;
+    uint8               index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_get_action_rsp_t
+{
+    uint16              result;
+    uint8               index;
+    uint8               year;
+    uint16              month;
+    uint8               day;
+    uint8               hour;
+    uint8               minute;
+    uint8               second;
+    uint8               day_of_week;
+    uint8               action;
+    uint8               transition_time;
+    uint16              scene_number;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_set_action_cmd_t
+{
+    uint16              elem_index;
+    uint8               index;
+    uint8               year;
+    uint16              month;
+    uint8               day;
+    uint8               hour;
+    uint8               minute;
+    uint8               second;
+    uint8               day_of_week;
+    uint8               action;
+    uint8               transition_time;
+    uint16              scene_number;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_set_action_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_scheduler_server_action_changed_evt_t
+{
+    uint16              elem_index;
+    uint8               index;
+    uint8               year;
+    uint16              month;
+    uint8               day;
+    uint8               hour;
+    uint8               minute;
+    uint8               second;
+    uint8               day_of_week;
+    uint8               action;
+    uint8               transition_time;
+    uint16              scene_number;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_init_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_init_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_deinit_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_deinit_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_time_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_time_rsp_t
+{
+    uint16              result;
+    uint64              tai_seconds;
+    uint8               subsecond;
+    uint8               uncertainty;
+    uint8               time_authority;
+    int16               time_zone_offset;
+    int32               tai_utc_delta;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_time_cmd_t
+{
+    uint16              elem_index;
+    uint64              tai_seconds;
+    uint8               subsecond;
+    uint8               uncertainty;
+    uint8               time_authority;
+    int16               time_zone_offset;
+    int32               tai_utc_delta;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_time_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_time_zone_offset_new_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_time_zone_offset_new_rsp_t
+{
+    uint16              result;
+    int16               new_offset;
+    uint64              tai_of_zone_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_time_zone_offset_new_cmd_t
+{
+    uint16              elem_index;
+    int16               new_offset;
+    uint64              tai_of_zone_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_time_zone_offset_new_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_tai_utc_delta_new_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_tai_utc_delta_new_rsp_t
+{
+    uint16              result;
+    int32               new_delta;
+    uint64              tai_of_delta_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_tai_utc_delta_new_cmd_t
+{
+    uint16              elem_index;
+    int32               new_delta;
+    uint64              tai_of_delta_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_tai_utc_delta_new_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_time_role_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_time_role_rsp_t
+{
+    uint16              result;
+    uint8               time_role;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_time_role_cmd_t
+{
+    uint16              elem_index;
+    uint8               time_role;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_set_time_role_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_datetime_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_get_datetime_rsp_t
+{
+    uint16              result;
+    uint16              year;
+    uint8               month;
+    uint8               day;
+    uint8               hour;
+    uint8               min;
+    uint8               sec;
+    uint16              msec;
+    uint16              timezone;
+    uint8               day_of_week;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_time_updated_evt_t
+{
+    uint16              elem_index;
+    uint64              tai_seconds;
+    uint8               subsecond;
+    uint8               uncertainty;
+    uint8               time_authority;
+    int32               tai_utc_delta;
+    int16               time_zone_offset;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_time_zone_offset_updated_evt_t
+{
+    uint16              elem_index;
+    int16               time_zone_offset_current;
+    int16               time_zone_offset_new;
+    uint64              tai_of_zone_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_tai_utc_delta_updated_evt_t
+{
+    uint16              elem_index;
+    int32               tai_utc_delta_current;
+    int32               tai_utc_delta_new;
+    uint64              tai_of_delta_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_server_time_role_updated_evt_t
+{
+    uint16              elem_index;
+    uint8               time_role;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_init_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_init_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_deinit_cmd_t
+{
+    uint16              elem_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_deinit_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_time_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_time_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_time_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+    uint64              tai_seconds;
+    uint8               subsecond;
+    uint8               uncertainty;
+    uint8               time_authority;
+    int32               tai_utc_delta;
+    int16               time_zone_offset;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_time_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_time_zone_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_time_zone_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_time_zone_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+    int16               time_zone_offset_new;
+    uint64              tai_of_zone_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_time_zone_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_tai_utc_delta_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_tai_utc_delta_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_tai_utc_delta_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+    int32               tai_utc_delta_new;
+    uint64              tai_of_delta_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_tai_utc_delta_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_time_role_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_get_time_role_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_time_role_cmd_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              appkey_index;
+    uint8               time_role;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_set_time_role_rsp_t
+{
+    uint16              result;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_time_status_evt_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              client_address;
+    uint16              appkey_index;
+    uint64              tai_seconds;
+    uint8               subsecond;
+    uint8               uncertainty;
+    uint8               time_authority;
+    int32               tai_utc_delta;
+    int16               time_zone_offset;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_time_zone_status_evt_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              client_address;
+    uint16              appkey_index;
+    int16               time_zone_offset_current;
+    int16               time_zone_offset_new;
+    uint64              tai_of_zone_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_tai_utc_delta_status_evt_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              client_address;
+    uint16              appkey_index;
+    int32               tai_utc_delta_current;
+    int32               tai_utc_delta_new;
+    uint64              tai_of_delta_change;
+});
+PACKSTRUCT( struct gecko_msg_mesh_time_client_time_role_status_evt_t
+{
+    uint16              elem_index;
+    uint16              server_address;
+    uint16              client_address;
+    uint16              appkey_index;
+    uint8               time_role;
 });
 PACKSTRUCT( struct gecko_msg_user_message_to_target_cmd_t
 {
@@ -6908,6 +7892,10 @@ union{
     struct gecko_msg_le_gap_enable_whitelisting_rsp_t            rsp_le_gap_enable_whitelisting;
     struct gecko_msg_le_gap_set_conn_timing_parameters_cmd_t     cmd_le_gap_set_conn_timing_parameters;
     struct gecko_msg_le_gap_set_conn_timing_parameters_rsp_t     rsp_le_gap_set_conn_timing_parameters;
+    struct gecko_msg_le_gap_set_advertise_random_address_cmd_t   cmd_le_gap_set_advertise_random_address;
+    struct gecko_msg_le_gap_set_advertise_random_address_rsp_t   rsp_le_gap_set_advertise_random_address;
+    struct gecko_msg_le_gap_clear_advertise_random_address_cmd_t cmd_le_gap_clear_advertise_random_address;
+    struct gecko_msg_le_gap_clear_advertise_random_address_rsp_t rsp_le_gap_clear_advertise_random_address;
     struct gecko_msg_le_gap_scan_response_evt_t                  evt_le_gap_scan_response;
     struct gecko_msg_le_gap_adv_timeout_evt_t                    evt_le_gap_adv_timeout;
     struct gecko_msg_le_gap_scan_request_evt_t                   evt_le_gap_scan_request;
@@ -7008,6 +7996,11 @@ union{
     struct gecko_msg_gatt_server_set_max_mtu_rsp_t               rsp_gatt_server_set_max_mtu;
     struct gecko_msg_gatt_server_get_mtu_cmd_t                   cmd_gatt_server_get_mtu;
     struct gecko_msg_gatt_server_get_mtu_rsp_t                   rsp_gatt_server_get_mtu;
+    struct gecko_msg_gatt_server_enable_capabilities_cmd_t       cmd_gatt_server_enable_capabilities;
+    struct gecko_msg_gatt_server_enable_capabilities_rsp_t       rsp_gatt_server_enable_capabilities;
+    struct gecko_msg_gatt_server_disable_capabilities_cmd_t      cmd_gatt_server_disable_capabilities;
+    struct gecko_msg_gatt_server_disable_capabilities_rsp_t      rsp_gatt_server_disable_capabilities;
+    struct gecko_msg_gatt_server_get_enabled_capabilities_rsp_t  rsp_gatt_server_get_enabled_capabilities;
     struct gecko_msg_gatt_server_attribute_value_evt_t           evt_gatt_server_attribute_value;
     struct gecko_msg_gatt_server_user_read_request_evt_t         evt_gatt_server_user_read_request;
     struct gecko_msg_gatt_server_user_write_request_evt_t        evt_gatt_server_user_write_request;
@@ -7088,6 +8081,8 @@ union{
     struct gecko_msg_homekit_event_notification_rsp_t            rsp_homekit_event_notification;
     struct gecko_msg_homekit_broadcast_action_cmd_t              cmd_homekit_broadcast_action;
     struct gecko_msg_homekit_broadcast_action_rsp_t              rsp_homekit_broadcast_action;
+    struct gecko_msg_homekit_configure_product_data_cmd_t        cmd_homekit_configure_product_data;
+    struct gecko_msg_homekit_configure_product_data_rsp_t        rsp_homekit_configure_product_data;
     struct gecko_msg_homekit_setupcode_display_evt_t             evt_homekit_setupcode_display;
     struct gecko_msg_homekit_paired_evt_t                        evt_homekit_paired;
     struct gecko_msg_homekit_pair_verified_evt_t                 evt_homekit_pair_verified;
@@ -7135,6 +8130,8 @@ union{
     struct gecko_msg_mesh_node_reset_rsp_t                       rsp_mesh_node_reset;
     struct gecko_msg_mesh_node_set_beacon_reporting_cmd_t        cmd_mesh_node_set_beacon_reporting;
     struct gecko_msg_mesh_node_set_beacon_reporting_rsp_t        rsp_mesh_node_set_beacon_reporting;
+    struct gecko_msg_mesh_node_set_iv_update_age_cmd_t           cmd_mesh_node_set_iv_update_age;
+    struct gecko_msg_mesh_node_set_iv_update_age_rsp_t           rsp_mesh_node_set_iv_update_age;
     struct gecko_msg_mesh_node_initialized_evt_t                 evt_mesh_node_initialized;
     struct gecko_msg_mesh_node_provisioned_evt_t                 evt_mesh_node_provisioned;
     struct gecko_msg_mesh_node_config_get_evt_t                  evt_mesh_node_config_get;
@@ -7266,6 +8263,18 @@ union{
     struct gecko_msg_mesh_prov_set_key_refresh_appkey_blacklist_cmd_t cmd_mesh_prov_set_key_refresh_appkey_blacklist;
     struct gecko_msg_mesh_prov_set_key_refresh_appkey_blacklist_rsp_t rsp_mesh_prov_set_key_refresh_appkey_blacklist;
     struct gecko_msg_mesh_prov_stop_scan_unprov_beacons_rsp_t    rsp_mesh_prov_stop_scan_unprov_beacons;
+    struct gecko_msg_mesh_prov_ddb_update_netkey_index_cmd_t     cmd_mesh_prov_ddb_update_netkey_index;
+    struct gecko_msg_mesh_prov_ddb_update_netkey_index_rsp_t     rsp_mesh_prov_ddb_update_netkey_index;
+    struct gecko_msg_mesh_prov_key_refresh_suspend_cmd_t         cmd_mesh_prov_key_refresh_suspend;
+    struct gecko_msg_mesh_prov_key_refresh_suspend_rsp_t         rsp_mesh_prov_key_refresh_suspend;
+    struct gecko_msg_mesh_prov_key_refresh_resume_cmd_t          cmd_mesh_prov_key_refresh_resume;
+    struct gecko_msg_mesh_prov_key_refresh_resume_rsp_t          rsp_mesh_prov_key_refresh_resume;
+    struct gecko_msg_mesh_prov_get_key_refresh_phase_cmd_t       cmd_mesh_prov_get_key_refresh_phase;
+    struct gecko_msg_mesh_prov_get_key_refresh_phase_rsp_t       rsp_mesh_prov_get_key_refresh_phase;
+    struct gecko_msg_mesh_prov_key_refresh_start_from_phase_cmd_t cmd_mesh_prov_key_refresh_start_from_phase;
+    struct gecko_msg_mesh_prov_key_refresh_start_from_phase_rsp_t rsp_mesh_prov_key_refresh_start_from_phase;
+    struct gecko_msg_mesh_prov_flush_key_refresh_state_cmd_t     cmd_mesh_prov_flush_key_refresh_state;
+    struct gecko_msg_mesh_prov_flush_key_refresh_state_rsp_t     rsp_mesh_prov_flush_key_refresh_state;
     struct gecko_msg_mesh_prov_initialized_evt_t                 evt_mesh_prov_initialized;
     struct gecko_msg_mesh_prov_provisioning_failed_evt_t         evt_mesh_prov_provisioning_failed;
     struct gecko_msg_mesh_prov_device_provisioned_evt_t          evt_mesh_prov_device_provisioned;
@@ -7352,6 +8361,17 @@ union{
     struct gecko_msg_mesh_generic_client_get_params_cmd_t        cmd_mesh_generic_client_get_params;
     struct gecko_msg_mesh_generic_client_get_params_rsp_t        rsp_mesh_generic_client_get_params;
     struct gecko_msg_mesh_generic_client_init_rsp_t              rsp_mesh_generic_client_init;
+    struct gecko_msg_mesh_generic_client_init_common_rsp_t       rsp_mesh_generic_client_init_common;
+    struct gecko_msg_mesh_generic_client_init_on_off_rsp_t       rsp_mesh_generic_client_init_on_off;
+    struct gecko_msg_mesh_generic_client_init_level_rsp_t        rsp_mesh_generic_client_init_level;
+    struct gecko_msg_mesh_generic_client_init_default_transition_time_rsp_t rsp_mesh_generic_client_init_default_transition_time;
+    struct gecko_msg_mesh_generic_client_init_power_on_off_rsp_t rsp_mesh_generic_client_init_power_on_off;
+    struct gecko_msg_mesh_generic_client_init_power_level_rsp_t  rsp_mesh_generic_client_init_power_level;
+    struct gecko_msg_mesh_generic_client_init_battery_rsp_t      rsp_mesh_generic_client_init_battery;
+    struct gecko_msg_mesh_generic_client_init_location_rsp_t     rsp_mesh_generic_client_init_location;
+    struct gecko_msg_mesh_generic_client_init_property_rsp_t     rsp_mesh_generic_client_init_property;
+    struct gecko_msg_mesh_generic_client_init_lightness_rsp_t    rsp_mesh_generic_client_init_lightness;
+    struct gecko_msg_mesh_generic_client_init_ctl_rsp_t          rsp_mesh_generic_client_init_ctl;
     struct gecko_msg_mesh_generic_client_server_status_evt_t     evt_mesh_generic_client_server_status;
     struct gecko_msg_mesh_generic_server_response_cmd_t          cmd_mesh_generic_server_response;
     struct gecko_msg_mesh_generic_server_response_rsp_t          rsp_mesh_generic_server_response;
@@ -7360,6 +8380,17 @@ union{
     struct gecko_msg_mesh_generic_server_publish_cmd_t           cmd_mesh_generic_server_publish;
     struct gecko_msg_mesh_generic_server_publish_rsp_t           rsp_mesh_generic_server_publish;
     struct gecko_msg_mesh_generic_server_init_rsp_t              rsp_mesh_generic_server_init;
+    struct gecko_msg_mesh_generic_server_init_common_rsp_t       rsp_mesh_generic_server_init_common;
+    struct gecko_msg_mesh_generic_server_init_on_off_rsp_t       rsp_mesh_generic_server_init_on_off;
+    struct gecko_msg_mesh_generic_server_init_level_rsp_t        rsp_mesh_generic_server_init_level;
+    struct gecko_msg_mesh_generic_server_init_default_transition_time_rsp_t rsp_mesh_generic_server_init_default_transition_time;
+    struct gecko_msg_mesh_generic_server_init_power_on_off_rsp_t rsp_mesh_generic_server_init_power_on_off;
+    struct gecko_msg_mesh_generic_server_init_power_level_rsp_t  rsp_mesh_generic_server_init_power_level;
+    struct gecko_msg_mesh_generic_server_init_battery_rsp_t      rsp_mesh_generic_server_init_battery;
+    struct gecko_msg_mesh_generic_server_init_location_rsp_t     rsp_mesh_generic_server_init_location;
+    struct gecko_msg_mesh_generic_server_init_property_rsp_t     rsp_mesh_generic_server_init_property;
+    struct gecko_msg_mesh_generic_server_init_lightness_rsp_t    rsp_mesh_generic_server_init_lightness;
+    struct gecko_msg_mesh_generic_server_init_ctl_rsp_t          rsp_mesh_generic_server_init_ctl;
     struct gecko_msg_mesh_generic_server_client_request_evt_t    evt_mesh_generic_server_client_request;
     struct gecko_msg_mesh_generic_server_state_changed_evt_t     evt_mesh_generic_server_state_changed;
     struct gecko_msg_mesh_generic_server_state_recall_evt_t      evt_mesh_generic_server_state_recall;
@@ -7445,6 +8476,10 @@ union{
     struct gecko_msg_mesh_test_set_element_seqnum_rsp_t          rsp_mesh_test_set_element_seqnum;
     struct gecko_msg_mesh_test_set_model_option_cmd_t            cmd_mesh_test_set_model_option;
     struct gecko_msg_mesh_test_set_model_option_rsp_t            rsp_mesh_test_set_model_option;
+    struct gecko_msg_mesh_test_get_local_model_app_bindings_cmd_t cmd_mesh_test_get_local_model_app_bindings;
+    struct gecko_msg_mesh_test_get_local_model_app_bindings_rsp_t rsp_mesh_test_get_local_model_app_bindings;
+    struct gecko_msg_mesh_test_get_replay_protection_list_entry_cmd_t cmd_mesh_test_get_replay_protection_list_entry;
+    struct gecko_msg_mesh_test_get_replay_protection_list_entry_rsp_t rsp_mesh_test_get_replay_protection_list_entry;
     struct gecko_msg_mesh_test_local_heartbeat_subscription_complete_evt_t evt_mesh_test_local_heartbeat_subscription_complete;
     struct gecko_msg_mesh_lpn_init_rsp_t                         rsp_mesh_lpn_init;
     struct gecko_msg_mesh_lpn_deinit_rsp_t                       rsp_mesh_lpn_deinit;
@@ -7595,31 +8630,41 @@ union{
     struct gecko_msg_l2cap_coc_channel_disconnected_evt_t        evt_l2cap_coc_channel_disconnected;
     struct gecko_msg_l2cap_coc_data_evt_t                        evt_l2cap_coc_data;
     struct gecko_msg_l2cap_command_rejected_evt_t                evt_l2cap_command_rejected;
-    struct gecko_msg_cte_transmitter_enable_cte_response_cmd_t   cmd_cte_transmitter_enable_cte_response;
-    struct gecko_msg_cte_transmitter_enable_cte_response_rsp_t   rsp_cte_transmitter_enable_cte_response;
-    struct gecko_msg_cte_transmitter_disable_cte_response_cmd_t  cmd_cte_transmitter_disable_cte_response;
-    struct gecko_msg_cte_transmitter_disable_cte_response_rsp_t  rsp_cte_transmitter_disable_cte_response;
-    struct gecko_msg_cte_transmitter_start_connectionless_cte_cmd_t cmd_cte_transmitter_start_connectionless_cte;
-    struct gecko_msg_cte_transmitter_start_connectionless_cte_rsp_t rsp_cte_transmitter_start_connectionless_cte;
-    struct gecko_msg_cte_transmitter_stop_connectionless_cte_cmd_t cmd_cte_transmitter_stop_connectionless_cte;
-    struct gecko_msg_cte_transmitter_stop_connectionless_cte_rsp_t rsp_cte_transmitter_stop_connectionless_cte;
+    struct gecko_msg_cte_transmitter_enable_connection_cte_cmd_t cmd_cte_transmitter_enable_connection_cte;
+    struct gecko_msg_cte_transmitter_enable_connection_cte_rsp_t rsp_cte_transmitter_enable_connection_cte;
+    struct gecko_msg_cte_transmitter_disable_connection_cte_cmd_t cmd_cte_transmitter_disable_connection_cte;
+    struct gecko_msg_cte_transmitter_disable_connection_cte_rsp_t rsp_cte_transmitter_disable_connection_cte;
+    struct gecko_msg_cte_transmitter_enable_connectionless_cte_cmd_t cmd_cte_transmitter_enable_connectionless_cte;
+    struct gecko_msg_cte_transmitter_enable_connectionless_cte_rsp_t rsp_cte_transmitter_enable_connectionless_cte;
+    struct gecko_msg_cte_transmitter_disable_connectionless_cte_cmd_t cmd_cte_transmitter_disable_connectionless_cte;
+    struct gecko_msg_cte_transmitter_disable_connectionless_cte_rsp_t rsp_cte_transmitter_disable_connectionless_cte;
     struct gecko_msg_cte_transmitter_set_dtm_parameters_cmd_t    cmd_cte_transmitter_set_dtm_parameters;
     struct gecko_msg_cte_transmitter_set_dtm_parameters_rsp_t    rsp_cte_transmitter_set_dtm_parameters;
     struct gecko_msg_cte_transmitter_clear_dtm_parameters_rsp_t  rsp_cte_transmitter_clear_dtm_parameters;
+    struct gecko_msg_cte_transmitter_enable_silabs_cte_cmd_t     cmd_cte_transmitter_enable_silabs_cte;
+    struct gecko_msg_cte_transmitter_enable_silabs_cte_rsp_t     rsp_cte_transmitter_enable_silabs_cte;
+    struct gecko_msg_cte_transmitter_disable_silabs_cte_cmd_t    cmd_cte_transmitter_disable_silabs_cte;
+    struct gecko_msg_cte_transmitter_disable_silabs_cte_rsp_t    rsp_cte_transmitter_disable_silabs_cte;
     struct gecko_msg_cte_receiver_configure_cmd_t                cmd_cte_receiver_configure;
     struct gecko_msg_cte_receiver_configure_rsp_t                rsp_cte_receiver_configure;
-    struct gecko_msg_cte_receiver_start_iq_sampling_cmd_t        cmd_cte_receiver_start_iq_sampling;
-    struct gecko_msg_cte_receiver_start_iq_sampling_rsp_t        rsp_cte_receiver_start_iq_sampling;
-    struct gecko_msg_cte_receiver_stop_iq_sampling_cmd_t         cmd_cte_receiver_stop_iq_sampling;
-    struct gecko_msg_cte_receiver_stop_iq_sampling_rsp_t         rsp_cte_receiver_stop_iq_sampling;
-    struct gecko_msg_cte_receiver_start_connectionless_iq_sampling_cmd_t cmd_cte_receiver_start_connectionless_iq_sampling;
-    struct gecko_msg_cte_receiver_start_connectionless_iq_sampling_rsp_t rsp_cte_receiver_start_connectionless_iq_sampling;
-    struct gecko_msg_cte_receiver_stop_connectionless_iq_sampling_cmd_t cmd_cte_receiver_stop_connectionless_iq_sampling;
-    struct gecko_msg_cte_receiver_stop_connectionless_iq_sampling_rsp_t rsp_cte_receiver_stop_connectionless_iq_sampling;
+    struct gecko_msg_cte_receiver_enable_connection_cte_cmd_t    cmd_cte_receiver_enable_connection_cte;
+    struct gecko_msg_cte_receiver_enable_connection_cte_rsp_t    rsp_cte_receiver_enable_connection_cte;
+    struct gecko_msg_cte_receiver_disable_connection_cte_cmd_t   cmd_cte_receiver_disable_connection_cte;
+    struct gecko_msg_cte_receiver_disable_connection_cte_rsp_t   rsp_cte_receiver_disable_connection_cte;
+    struct gecko_msg_cte_receiver_enable_connectionless_cte_cmd_t cmd_cte_receiver_enable_connectionless_cte;
+    struct gecko_msg_cte_receiver_enable_connectionless_cte_rsp_t rsp_cte_receiver_enable_connectionless_cte;
+    struct gecko_msg_cte_receiver_disable_connectionless_cte_cmd_t cmd_cte_receiver_disable_connectionless_cte;
+    struct gecko_msg_cte_receiver_disable_connectionless_cte_rsp_t rsp_cte_receiver_disable_connectionless_cte;
     struct gecko_msg_cte_receiver_set_dtm_parameters_cmd_t       cmd_cte_receiver_set_dtm_parameters;
     struct gecko_msg_cte_receiver_set_dtm_parameters_rsp_t       rsp_cte_receiver_set_dtm_parameters;
     struct gecko_msg_cte_receiver_clear_dtm_parameters_rsp_t     rsp_cte_receiver_clear_dtm_parameters;
-    struct gecko_msg_cte_receiver_iq_report_evt_t                evt_cte_receiver_iq_report;
+    struct gecko_msg_cte_receiver_enable_silabs_cte_cmd_t        cmd_cte_receiver_enable_silabs_cte;
+    struct gecko_msg_cte_receiver_enable_silabs_cte_rsp_t        rsp_cte_receiver_enable_silabs_cte;
+    struct gecko_msg_cte_receiver_disable_silabs_cte_rsp_t       rsp_cte_receiver_disable_silabs_cte;
+    struct gecko_msg_cte_receiver_connection_iq_report_evt_t     evt_cte_receiver_connection_iq_report;
+    struct gecko_msg_cte_receiver_connectionless_iq_report_evt_t evt_cte_receiver_connectionless_iq_report;
+    struct gecko_msg_cte_receiver_dtm_iq_report_evt_t            evt_cte_receiver_dtm_iq_report;
+    struct gecko_msg_cte_receiver_silabs_iq_report_evt_t         evt_cte_receiver_silabs_iq_report;
     struct gecko_msg_mesh_sensor_server_init_cmd_t               cmd_mesh_sensor_server_init;
     struct gecko_msg_mesh_sensor_server_init_rsp_t               rsp_mesh_sensor_server_init;
     struct gecko_msg_mesh_sensor_server_deinit_cmd_t             cmd_mesh_sensor_server_deinit;
@@ -7714,12 +8759,18 @@ union{
     struct gecko_msg_mesh_lc_server_set_publish_mask_rsp_t       rsp_mesh_lc_server_set_publish_mask;
     struct gecko_msg_mesh_lc_server_set_regulator_interval_cmd_t cmd_mesh_lc_server_set_regulator_interval;
     struct gecko_msg_mesh_lc_server_set_regulator_interval_rsp_t rsp_mesh_lc_server_set_regulator_interval;
+    struct gecko_msg_mesh_lc_server_set_event_mask_cmd_t         cmd_mesh_lc_server_set_event_mask;
+    struct gecko_msg_mesh_lc_server_set_event_mask_rsp_t         rsp_mesh_lc_server_set_event_mask;
+    struct gecko_msg_mesh_lc_server_get_lc_state_cmd_t           cmd_mesh_lc_server_get_lc_state;
+    struct gecko_msg_mesh_lc_server_get_lc_state_rsp_t           rsp_mesh_lc_server_get_lc_state;
     struct gecko_msg_mesh_lc_server_mode_updated_evt_t           evt_mesh_lc_server_mode_updated;
     struct gecko_msg_mesh_lc_server_om_updated_evt_t             evt_mesh_lc_server_om_updated;
     struct gecko_msg_mesh_lc_server_light_onoff_updated_evt_t    evt_mesh_lc_server_light_onoff_updated;
     struct gecko_msg_mesh_lc_server_occupancy_updated_evt_t      evt_mesh_lc_server_occupancy_updated;
     struct gecko_msg_mesh_lc_server_ambient_lux_level_updated_evt_t evt_mesh_lc_server_ambient_lux_level_updated;
     struct gecko_msg_mesh_lc_server_linear_output_updated_evt_t  evt_mesh_lc_server_linear_output_updated;
+    struct gecko_msg_mesh_lc_server_state_updated_evt_t          evt_mesh_lc_server_state_updated;
+    struct gecko_msg_mesh_lc_server_regulator_debug_info_evt_t   evt_mesh_lc_server_regulator_debug_info;
     struct gecko_msg_mesh_lc_setup_server_update_property_cmd_t  cmd_mesh_lc_setup_server_update_property;
     struct gecko_msg_mesh_lc_setup_server_update_property_rsp_t  rsp_mesh_lc_setup_server_update_property;
     struct gecko_msg_mesh_lc_setup_server_set_property_evt_t     evt_mesh_lc_setup_server_set_property;
@@ -7741,6 +8792,8 @@ union{
     struct gecko_msg_mesh_scene_server_init_rsp_t                rsp_mesh_scene_server_init;
     struct gecko_msg_mesh_scene_server_deinit_cmd_t              cmd_mesh_scene_server_deinit;
     struct gecko_msg_mesh_scene_server_deinit_rsp_t              rsp_mesh_scene_server_deinit;
+    struct gecko_msg_mesh_scene_server_reset_register_cmd_t      cmd_mesh_scene_server_reset_register;
+    struct gecko_msg_mesh_scene_server_reset_register_rsp_t      rsp_mesh_scene_server_reset_register;
     struct gecko_msg_mesh_scene_server_get_evt_t                 evt_mesh_scene_server_get;
     struct gecko_msg_mesh_scene_server_register_get_evt_t        evt_mesh_scene_server_register_get;
     struct gecko_msg_mesh_scene_server_recall_evt_t              evt_mesh_scene_server_recall;
@@ -7750,6 +8803,79 @@ union{
     struct gecko_msg_mesh_scene_setup_server_store_evt_t         evt_mesh_scene_setup_server_store;
     struct gecko_msg_mesh_scene_setup_server_delete_evt_t        evt_mesh_scene_setup_server_delete;
     struct gecko_msg_mesh_scene_setup_server_publish_evt_t       evt_mesh_scene_setup_server_publish;
+    struct gecko_msg_mesh_scheduler_client_init_cmd_t            cmd_mesh_scheduler_client_init;
+    struct gecko_msg_mesh_scheduler_client_init_rsp_t            rsp_mesh_scheduler_client_init;
+    struct gecko_msg_mesh_scheduler_client_deinit_cmd_t          cmd_mesh_scheduler_client_deinit;
+    struct gecko_msg_mesh_scheduler_client_deinit_rsp_t          rsp_mesh_scheduler_client_deinit;
+    struct gecko_msg_mesh_scheduler_client_get_cmd_t             cmd_mesh_scheduler_client_get;
+    struct gecko_msg_mesh_scheduler_client_get_rsp_t             rsp_mesh_scheduler_client_get;
+    struct gecko_msg_mesh_scheduler_client_get_action_cmd_t      cmd_mesh_scheduler_client_get_action;
+    struct gecko_msg_mesh_scheduler_client_get_action_rsp_t      rsp_mesh_scheduler_client_get_action;
+    struct gecko_msg_mesh_scheduler_client_set_action_cmd_t      cmd_mesh_scheduler_client_set_action;
+    struct gecko_msg_mesh_scheduler_client_set_action_rsp_t      rsp_mesh_scheduler_client_set_action;
+    struct gecko_msg_mesh_scheduler_client_status_evt_t          evt_mesh_scheduler_client_status;
+    struct gecko_msg_mesh_scheduler_client_action_status_evt_t   evt_mesh_scheduler_client_action_status;
+    struct gecko_msg_mesh_scheduler_server_init_cmd_t            cmd_mesh_scheduler_server_init;
+    struct gecko_msg_mesh_scheduler_server_init_rsp_t            rsp_mesh_scheduler_server_init;
+    struct gecko_msg_mesh_scheduler_server_deinit_cmd_t          cmd_mesh_scheduler_server_deinit;
+    struct gecko_msg_mesh_scheduler_server_deinit_rsp_t          rsp_mesh_scheduler_server_deinit;
+    struct gecko_msg_mesh_scheduler_server_get_cmd_t             cmd_mesh_scheduler_server_get;
+    struct gecko_msg_mesh_scheduler_server_get_rsp_t             rsp_mesh_scheduler_server_get;
+    struct gecko_msg_mesh_scheduler_server_get_action_cmd_t      cmd_mesh_scheduler_server_get_action;
+    struct gecko_msg_mesh_scheduler_server_get_action_rsp_t      rsp_mesh_scheduler_server_get_action;
+    struct gecko_msg_mesh_scheduler_server_set_action_cmd_t      cmd_mesh_scheduler_server_set_action;
+    struct gecko_msg_mesh_scheduler_server_set_action_rsp_t      rsp_mesh_scheduler_server_set_action;
+    struct gecko_msg_mesh_scheduler_server_action_changed_evt_t  evt_mesh_scheduler_server_action_changed;
+    struct gecko_msg_mesh_time_server_init_cmd_t                 cmd_mesh_time_server_init;
+    struct gecko_msg_mesh_time_server_init_rsp_t                 rsp_mesh_time_server_init;
+    struct gecko_msg_mesh_time_server_deinit_cmd_t               cmd_mesh_time_server_deinit;
+    struct gecko_msg_mesh_time_server_deinit_rsp_t               rsp_mesh_time_server_deinit;
+    struct gecko_msg_mesh_time_server_get_time_cmd_t             cmd_mesh_time_server_get_time;
+    struct gecko_msg_mesh_time_server_get_time_rsp_t             rsp_mesh_time_server_get_time;
+    struct gecko_msg_mesh_time_server_set_time_cmd_t             cmd_mesh_time_server_set_time;
+    struct gecko_msg_mesh_time_server_set_time_rsp_t             rsp_mesh_time_server_set_time;
+    struct gecko_msg_mesh_time_server_get_time_zone_offset_new_cmd_t cmd_mesh_time_server_get_time_zone_offset_new;
+    struct gecko_msg_mesh_time_server_get_time_zone_offset_new_rsp_t rsp_mesh_time_server_get_time_zone_offset_new;
+    struct gecko_msg_mesh_time_server_set_time_zone_offset_new_cmd_t cmd_mesh_time_server_set_time_zone_offset_new;
+    struct gecko_msg_mesh_time_server_set_time_zone_offset_new_rsp_t rsp_mesh_time_server_set_time_zone_offset_new;
+    struct gecko_msg_mesh_time_server_get_tai_utc_delta_new_cmd_t cmd_mesh_time_server_get_tai_utc_delta_new;
+    struct gecko_msg_mesh_time_server_get_tai_utc_delta_new_rsp_t rsp_mesh_time_server_get_tai_utc_delta_new;
+    struct gecko_msg_mesh_time_server_set_tai_utc_delta_new_cmd_t cmd_mesh_time_server_set_tai_utc_delta_new;
+    struct gecko_msg_mesh_time_server_set_tai_utc_delta_new_rsp_t rsp_mesh_time_server_set_tai_utc_delta_new;
+    struct gecko_msg_mesh_time_server_get_time_role_cmd_t        cmd_mesh_time_server_get_time_role;
+    struct gecko_msg_mesh_time_server_get_time_role_rsp_t        rsp_mesh_time_server_get_time_role;
+    struct gecko_msg_mesh_time_server_set_time_role_cmd_t        cmd_mesh_time_server_set_time_role;
+    struct gecko_msg_mesh_time_server_set_time_role_rsp_t        rsp_mesh_time_server_set_time_role;
+    struct gecko_msg_mesh_time_server_get_datetime_cmd_t         cmd_mesh_time_server_get_datetime;
+    struct gecko_msg_mesh_time_server_get_datetime_rsp_t         rsp_mesh_time_server_get_datetime;
+    struct gecko_msg_mesh_time_server_time_updated_evt_t         evt_mesh_time_server_time_updated;
+    struct gecko_msg_mesh_time_server_time_zone_offset_updated_evt_t evt_mesh_time_server_time_zone_offset_updated;
+    struct gecko_msg_mesh_time_server_tai_utc_delta_updated_evt_t evt_mesh_time_server_tai_utc_delta_updated;
+    struct gecko_msg_mesh_time_server_time_role_updated_evt_t    evt_mesh_time_server_time_role_updated;
+    struct gecko_msg_mesh_time_client_init_cmd_t                 cmd_mesh_time_client_init;
+    struct gecko_msg_mesh_time_client_init_rsp_t                 rsp_mesh_time_client_init;
+    struct gecko_msg_mesh_time_client_deinit_cmd_t               cmd_mesh_time_client_deinit;
+    struct gecko_msg_mesh_time_client_deinit_rsp_t               rsp_mesh_time_client_deinit;
+    struct gecko_msg_mesh_time_client_get_time_cmd_t             cmd_mesh_time_client_get_time;
+    struct gecko_msg_mesh_time_client_get_time_rsp_t             rsp_mesh_time_client_get_time;
+    struct gecko_msg_mesh_time_client_set_time_cmd_t             cmd_mesh_time_client_set_time;
+    struct gecko_msg_mesh_time_client_set_time_rsp_t             rsp_mesh_time_client_set_time;
+    struct gecko_msg_mesh_time_client_get_time_zone_cmd_t        cmd_mesh_time_client_get_time_zone;
+    struct gecko_msg_mesh_time_client_get_time_zone_rsp_t        rsp_mesh_time_client_get_time_zone;
+    struct gecko_msg_mesh_time_client_set_time_zone_cmd_t        cmd_mesh_time_client_set_time_zone;
+    struct gecko_msg_mesh_time_client_set_time_zone_rsp_t        rsp_mesh_time_client_set_time_zone;
+    struct gecko_msg_mesh_time_client_get_tai_utc_delta_cmd_t    cmd_mesh_time_client_get_tai_utc_delta;
+    struct gecko_msg_mesh_time_client_get_tai_utc_delta_rsp_t    rsp_mesh_time_client_get_tai_utc_delta;
+    struct gecko_msg_mesh_time_client_set_tai_utc_delta_cmd_t    cmd_mesh_time_client_set_tai_utc_delta;
+    struct gecko_msg_mesh_time_client_set_tai_utc_delta_rsp_t    rsp_mesh_time_client_set_tai_utc_delta;
+    struct gecko_msg_mesh_time_client_get_time_role_cmd_t        cmd_mesh_time_client_get_time_role;
+    struct gecko_msg_mesh_time_client_get_time_role_rsp_t        rsp_mesh_time_client_get_time_role;
+    struct gecko_msg_mesh_time_client_set_time_role_cmd_t        cmd_mesh_time_client_set_time_role;
+    struct gecko_msg_mesh_time_client_set_time_role_rsp_t        rsp_mesh_time_client_set_time_role;
+    struct gecko_msg_mesh_time_client_time_status_evt_t          evt_mesh_time_client_time_status;
+    struct gecko_msg_mesh_time_client_time_zone_status_evt_t     evt_mesh_time_client_time_zone_status;
+    struct gecko_msg_mesh_time_client_tai_utc_delta_status_evt_t evt_mesh_time_client_tai_utc_delta_status;
+    struct gecko_msg_mesh_time_client_time_role_status_evt_t     evt_mesh_time_client_time_role_status;
     struct gecko_msg_user_message_to_target_cmd_t                cmd_user_message_to_target;
     struct gecko_msg_user_message_to_target_rsp_t                rsp_user_message_to_target;
     struct gecko_msg_user_message_to_host_evt_t                  evt_user_message_to_host;
@@ -8086,11 +9212,10 @@ static inline struct gecko_msg_system_halt_rsp_t* gecko_cmd_system_halt(uint8 ha
 *
 * gecko_cmd_system_set_device_name
 *
-* Set the device name which will be used in application mode or during the OTA
-* update. The name will be stored in the persistent store. If the OTA device
-* name is also set in the stack configuration, the name stored in the persistent
-* store is overwritten by the name in the stack configuration during the device
-* boot. 
+* Set the device name which will be used during the OTA update. The name will be
+* stored in the persistent store. If the OTA device name is also set in the
+* stack configuration, the name stored in the persistent store is overwritten by
+* the name in the stack configuration during the device boot. 
 *
 * @param type   Device name to set. Values:
 *  
@@ -8216,10 +9341,10 @@ static inline struct gecko_msg_system_data_buffer_write_rsp_t* gecko_cmd_system_
 * gecko_cmd_system_set_identity_address
 *
 * Set the device's Bluetooth identity address. The address can be a public
-* device address or a random static device address. A valid address set with
-* this command will be written into persistent storage using PS keys. The stack
-* checks whether a random static address conforms to the Bluetooth
-* specification. If it does not, it returns an error.
+* device address or a static device address. A valid address set with this
+* command will be written into persistent storage using PS keys. The stack
+* returns an error if the static device address does not conform to the
+* Bluetooth specification.
 * 
 * The new address will be effective in the next system reboot. The stack will
 * use the address in the PS keys when present. Otherwise, it uses the default
@@ -8236,7 +9361,7 @@ static inline struct gecko_msg_system_data_buffer_write_rsp_t* gecko_cmd_system_
 * @param type   Address type
 *  
 *      0: Public device address
-*      1: Static random address
+*      1: Static device address
 *
 **/
 
@@ -9819,6 +10944,84 @@ static inline struct gecko_msg_le_gap_set_conn_timing_parameters_rsp_t* gecko_cm
 
 /** 
 *
+* gecko_cmd_le_gap_set_advertise_random_address
+*
+* Set the advertiser on an advertising set to use a random address. This
+* overrides the default advertiser address which is either the public device
+* address programmed at production or the address written into persistent
+* storage using system_set_identity_address command. This setting is stored in
+* RAM only and does not change the identity address in persistent storage.
+* 
+* When setting a resolvable random address, the address parameter is ignored.
+* The stack generates a private resolvable random address and set it as the
+* advertiser address. The generated address is returned in the response.
+* 
+* To use the default advertiser address, remove this setting using
+* le_gap_clear_advertise_random_address command.
+* 
+* Wrong state error is returned if advertising has been enabled on the
+* advertising set. Invalid parameter error is returned if the advertising set
+* handle is invalid or the address does not conforms to the Bluetooth
+* specification. 
+*
+* @param handle   Advertising set handle
+* @param addr_type   Address type:
+*  
+*      1: Static device address
+*      2: Private resolvable random address
+*      3: Private non-resolvable random address. This type can only be used for non-connectable advertising.
+* @param address   The random address to set. Ignore this field when setting a resolvable random
+*  address.
+*
+**/
+
+static inline struct gecko_msg_le_gap_set_advertise_random_address_rsp_t* gecko_cmd_le_gap_set_advertise_random_address(uint8 handle,uint8 addr_type,bd_addr address)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_le_gap_set_advertise_random_address.handle=(handle);
+    gecko_cmd_msg->data.cmd_le_gap_set_advertise_random_address.addr_type=(addr_type);
+    memcpy(&gecko_cmd_msg->data.cmd_le_gap_set_advertise_random_address.address,&address,sizeof(bd_addr));
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_le_gap_set_advertise_random_address_id+(((8)&0xff)<<8)+(((8)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_le_gap_set_advertise_random_address;
+}
+
+/** 
+*
+* gecko_cmd_le_gap_clear_advertise_random_address
+*
+* Clear the random address previously set for the advertiser address on an
+* advertising set. A random address can be set using
+* le_gap_set_advertise_random_address command. The default advertiser address
+* will be used after this operation.
+* 
+* Wrong state error is returned if advertising has been enabled on the
+* advertising set. Invalid parameter error is returned if the advertising set
+* handle is invalid. 
+*
+* @param handle   Advertising set handle
+*
+**/
+
+static inline struct gecko_msg_le_gap_clear_advertise_random_address_rsp_t* gecko_cmd_le_gap_clear_advertise_random_address(uint8 handle)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_le_gap_clear_advertise_random_address.handle=(handle);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_le_gap_clear_advertise_random_address_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_le_gap_clear_advertise_random_address;
+}
+
+/** 
+*
 * gecko_cmd_sync_open
 *
 * Establish a synchronization with a periodic advertising from the specified
@@ -11280,7 +12483,7 @@ static inline struct gecko_msg_gatt_server_send_characteristic_notification_rsp_
 *
 * @param start   Search start handle
 * @param type_len   Array length
-* @param type_data   
+* @param type_data   The attribute type UUID
 *
 **/
 
@@ -11309,9 +12512,9 @@ static inline struct gecko_msg_gatt_server_find_attribute_rsp_t* gecko_cmd_gatt_
 *
 * gecko_cmd_gatt_server_set_capabilities
 *
-* Set which capabilities should be enabled in the local GATT database. A service
-* is visible to remote GATT clients if at least one of its capabilities was
-* enabled. The same applies to a characteristic and its attributes. Capability
+* Reset capabilities that should be enabled by the GATT database. A service is
+* visible to remote GATT clients if at least one of its capabilities is enabled.
+* The same applies to a characteristic and its attributes. Capability
 * identifiers and their corresponding bit flag values can be found in the auto-
 * generated database header file. See UG118: Blue Gecko Bluetooth Profile
 * Toolkit Developer's Guide for how to declare capabilities in the GATT
@@ -11324,7 +12527,7 @@ static inline struct gecko_msg_gatt_server_find_attribute_rsp_t* gecko_cmd_gatt_
 * manage service changed indications for a GATT client that has enabled the
 * indication configuration of the Service Changed characteristic. 
 *
-* @param caps   Bit flags of capabilities to enable. Value 0 sets the default database
+* @param caps   Bit flags of capabilities to reset. Value 0 sets the default database
 *  capabilities.
 * @param reserved   Use the value 0 on this reserved field. Do not use none-zero values because
 *  they are reserved for future use.
@@ -11399,6 +12602,76 @@ static inline struct gecko_msg_gatt_server_get_mtu_rsp_t* gecko_cmd_gatt_server_
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_gatt_server_get_mtu;
+}
+
+/** 
+*
+* gecko_cmd_gatt_server_enable_capabilities
+*
+* Enable additional capabilities in the local GATT database. Already enabled
+* capabilities keep unchanged after this command. See
+* gatt_server_set_capabilities for more formation. 
+*
+* @param caps   Capabilities to enable
+*
+**/
+
+static inline struct gecko_msg_gatt_server_enable_capabilities_rsp_t* gecko_cmd_gatt_server_enable_capabilities(uint32 caps)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_gatt_server_enable_capabilities.caps=SL_BT_SWAP32(caps);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_gatt_server_enable_capabilities_id+(((4)&0xff)<<8)+(((4)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_gatt_server_enable_capabilities;
+}
+
+/** 
+*
+* gecko_cmd_gatt_server_disable_capabilities
+*
+* Disable the given capabilities in the local GATT database. See
+* gatt_server_set_capabilities for more formation. 
+*
+* @param caps   Capabilities to disable
+*
+**/
+
+static inline struct gecko_msg_gatt_server_disable_capabilities_rsp_t* gecko_cmd_gatt_server_disable_capabilities(uint32 caps)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_gatt_server_disable_capabilities.caps=SL_BT_SWAP32(caps);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_gatt_server_disable_capabilities_id+(((4)&0xff)<<8)+(((4)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_gatt_server_disable_capabilities;
+}
+
+/** 
+*
+* gecko_cmd_gatt_server_get_enabled_capabilities
+*
+* Get capabilities currently enabled in the local GATT database. 
+*
+*
+**/
+
+static inline struct gecko_msg_gatt_server_get_enabled_capabilities_rsp_t* gecko_cmd_gatt_server_get_enabled_capabilities()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_gatt_server_get_enabled_capabilities_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_gatt_server_get_enabled_capabilities;
 }
 
 /** 
@@ -12303,7 +13576,7 @@ static inline struct gecko_msg_sm_set_minimum_key_size_rsp_t* gecko_cmd_sm_set_m
 *  
 *      Time = Value x 100 ms
 * @param model_name_len   Array length
-* @param model_name_data   Model name characteristic value from HomeKit Accessory Information service.
+* @param model_name_data   Model Name characteristic value from HomeKit Accessory Information service.
 *  Mandatory for HomeKit software authentication usage.
 *
 **/
@@ -12631,6 +13904,39 @@ static inline struct gecko_msg_homekit_broadcast_action_rsp_t* gecko_cmd_homekit
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_homekit_broadcast_action;
+}
+
+/** 
+*
+* gecko_cmd_homekit_configure_product_data
+*
+* Configure the Apple HomeKit library. This is additional configuration
+* introduced in HAP revision R15. 
+*
+* @param product_data_len   Array length
+* @param product_data_data   Product Data characteristic value from HomeKit Accessory Information service.
+*  Mandatory (HAP revision R15 and later).
+*
+**/
+
+static inline struct gecko_msg_homekit_configure_product_data_rsp_t* gecko_cmd_homekit_configure_product_data(uint8 product_data_len, const uint8* product_data_data)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    if ((uint16_t)product_data_len > BGLIB_MSG_MAX_PAYLOAD - 1)
+    {
+        gecko_rsp_msg->data.rsp_homekit_configure_product_data.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_homekit_configure_product_data;
+    }
+
+    
+    gecko_cmd_msg->data.cmd_homekit_configure_product_data.product_data.len=product_data_len;
+    memcpy(gecko_cmd_msg->data.cmd_homekit_configure_product_data.product_data.data,product_data_data,product_data_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_homekit_configure_product_data_id+(((1+product_data_len)&0xff)<<8)+(((1+product_data_len)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_homekit_configure_product_data;
 }
 
 /** 
@@ -13366,6 +14672,31 @@ static inline struct gecko_msg_mesh_node_set_beacon_reporting_rsp_t* gecko_cmd_m
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_mesh_node_set_beacon_reporting;
+}
+
+/** 
+*
+* gecko_cmd_mesh_node_set_iv_update_age
+*
+* Set time since last IV update. After reboot the node does not know the time
+* since the last IV update and assumes that it happend at the time of the
+* reboot. 
+*
+* @param age_s   Seconds since last IV update. Values from 0 to 345600 (96h)
+*
+**/
+
+static inline struct gecko_msg_mesh_node_set_iv_update_age_rsp_t* gecko_cmd_mesh_node_set_iv_update_age(uint32 age_s)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_node_set_iv_update_age.age_s=SL_BT_SWAP32(age_s);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_node_set_iv_update_age_id+(((4)&0xff)<<8)+(((4)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_node_set_iv_update_age;
 }
 
 /** 
@@ -15740,6 +17071,192 @@ static inline struct gecko_msg_mesh_prov_stop_scan_unprov_beacons_rsp_t* gecko_c
 
 /** 
 *
+* gecko_cmd_mesh_prov_ddb_update_netkey_index
+*
+* Update a node's entry in the Provisioner's device database by setting a new
+* value to the netkey_index field. The netkey_index field is used to determine
+* the network key to use when encrypting and decrypting configuration model
+* messages to and from the node. 
+*
+* @param uuid   UUID of the node
+* @param netkey_index   Index of the network key used in configuring the node.
+*
+**/
+
+static inline struct gecko_msg_mesh_prov_ddb_update_netkey_index_rsp_t* gecko_cmd_mesh_prov_ddb_update_netkey_index(uuid_128 uuid,uint16 netkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_prov_ddb_update_netkey_index.uuid=(uuid);
+    gecko_cmd_msg->data.cmd_mesh_prov_ddb_update_netkey_index.netkey_index=SL_BT_SWAP16(netkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_prov_ddb_update_netkey_index_id+(((18)&0xff)<<8)+(((18)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_prov_ddb_update_netkey_index;
+}
+
+/** 
+*
+* gecko_cmd_mesh_prov_key_refresh_suspend
+*
+* Suspend an ongoing key refresh procedure.
+* 
+* Suspending a key refresh procedure means no further requests for updating keys
+* or setting key refresh phase will be sent to the network by the Provisioner
+* until the key refresh procedure is resumed. 
+*
+* @param netkey_index   Index of the network key identifying an ongoing key refresh procedure
+*
+**/
+
+static inline struct gecko_msg_mesh_prov_key_refresh_suspend_rsp_t* gecko_cmd_mesh_prov_key_refresh_suspend(uint16 netkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_prov_key_refresh_suspend.netkey_index=SL_BT_SWAP16(netkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_prov_key_refresh_suspend_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_prov_key_refresh_suspend;
+}
+
+/** 
+*
+* gecko_cmd_mesh_prov_key_refresh_resume
+*
+* Resume a suspended key refresh procedure.
+* 
+* By resuming a suspended key refresh procedure the Provisioner will again start
+* to send requests for updating keys or setting key refresh phase to the
+* network. 
+*
+* @param netkey_index   Index of the network key identifying a suspended key refresh procedure
+*
+**/
+
+static inline struct gecko_msg_mesh_prov_key_refresh_resume_rsp_t* gecko_cmd_mesh_prov_key_refresh_resume(uint16 netkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_prov_key_refresh_resume.netkey_index=SL_BT_SWAP16(netkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_prov_key_refresh_resume_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_prov_key_refresh_resume;
+}
+
+/** 
+*
+* gecko_cmd_mesh_prov_get_key_refresh_phase
+*
+* Get the key refresh phase of an ongoing key refresh procedure. 
+*
+* @param netkey_index   Index of the network key identifying an ongoing key refresh procedure
+*
+**/
+
+static inline struct gecko_msg_mesh_prov_get_key_refresh_phase_rsp_t* gecko_cmd_mesh_prov_get_key_refresh_phase(uint16 netkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_prov_get_key_refresh_phase.netkey_index=SL_BT_SWAP16(netkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_prov_get_key_refresh_phase_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_prov_get_key_refresh_phase;
+}
+
+/** 
+*
+* gecko_cmd_mesh_prov_key_refresh_start_from_phase
+*
+* Start a key refresh procedure from a non-default phase. Before calling this
+* the keys to be used in the key refresh procedure should have been specified by
+* calling prepare key refresh command.
+* 
+* Note that this command should not normally be used. It is intended only for
+* resuming an interrupted key refresh procedure on a backup Provisioner when the
+* original Provisioner that started the key refresh procedure is no longer
+* available to complete the procedure. 
+*
+* @param phase   Current key refresh phase
+* @param netkey_index   Index of the network key identifying a key refresh procedure
+* @param num_appkeys   Number of application keys to update; may be zero.
+* @param appkey_indices_len   Array length
+* @param appkey_indices_data   Indices of the application keys to update, represented as little endian two
+*  byte sequences. The array must contain num_appkeys indices and therefore
+*  2*num_appkeys bytes total.
+*
+* Events generated
+*
+* gecko_evt_mesh_prov_key_refresh_node_update - 
+* gecko_evt_mesh_prov_key_refresh_phase_update - 
+* gecko_evt_mesh_prov_key_refresh_complete - 
+*
+**/
+
+static inline struct gecko_msg_mesh_prov_key_refresh_start_from_phase_rsp_t* gecko_cmd_mesh_prov_key_refresh_start_from_phase(uint8 phase,uint16 netkey_index,uint8 num_appkeys,uint8 appkey_indices_len, const uint8* appkey_indices_data)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    if ((uint16_t)appkey_indices_len > BGLIB_MSG_MAX_PAYLOAD - 5)
+    {
+        gecko_rsp_msg->data.rsp_mesh_prov_key_refresh_start_from_phase.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_mesh_prov_key_refresh_start_from_phase;
+    }
+
+    
+    gecko_cmd_msg->data.cmd_mesh_prov_key_refresh_start_from_phase.phase=(phase);
+    gecko_cmd_msg->data.cmd_mesh_prov_key_refresh_start_from_phase.netkey_index=SL_BT_SWAP16(netkey_index);
+    gecko_cmd_msg->data.cmd_mesh_prov_key_refresh_start_from_phase.num_appkeys=(num_appkeys);
+    gecko_cmd_msg->data.cmd_mesh_prov_key_refresh_start_from_phase.appkey_indices.len=appkey_indices_len;
+    memcpy(gecko_cmd_msg->data.cmd_mesh_prov_key_refresh_start_from_phase.appkey_indices.data,appkey_indices_data,appkey_indices_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_prov_key_refresh_start_from_phase_id+(((5+appkey_indices_len)&0xff)<<8)+(((5+appkey_indices_len)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_prov_key_refresh_start_from_phase;
+}
+
+/** 
+*
+* gecko_cmd_mesh_prov_flush_key_refresh_state
+*
+* Clear key refresh state stored in persistent storage.
+* 
+* Note that this command should not normally be used. It is intended only for
+* clearing stored key refresh state when a key refresh procedure has been
+* suspended and will not be resumed, either because the network key has been
+* deleted from all nodes or the responsibility for completing the key refresh
+* has been moved to another Provisioner. 
+*
+* @param netkey_index   Index of the network key identifying a key refresh procedure
+*
+**/
+
+static inline struct gecko_msg_mesh_prov_flush_key_refresh_state_rsp_t* gecko_cmd_mesh_prov_flush_key_refresh_state(uint16 netkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_prov_flush_key_refresh_state.netkey_index=SL_BT_SWAP16(netkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_prov_flush_key_refresh_state_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_prov_flush_key_refresh_state;
+}
+
+/** 
+*
 * gecko_cmd_mesh_proxy_connect
 *
 * Start connecting a proxy client to a proxy server. After the connection is
@@ -16695,7 +18212,10 @@ static inline struct gecko_msg_mesh_generic_client_get_params_rsp_t* gecko_cmd_m
 *
 * gecko_cmd_mesh_generic_client_init
 *
-* Initialize generic client models 
+* Initialize generic client models. This command initializes all generic client
+* models on the device. Alternatively, only the necessary client models can be
+* initialized using model-specific initialization commands. Using model-specific
+* initialization can result in a smaller firmware image size for SoC projects. 
 *
 *
 **/
@@ -16710,6 +18230,239 @@ static inline struct gecko_msg_mesh_generic_client_init_rsp_t* gecko_cmd_mesh_ge
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_mesh_generic_client_init;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_common
+*
+* Initialize generic client model common functionality. This should be called
+* after all model-specific initialization calls are done, and does not need to
+* be called if command to initialize all generic client models is used. 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_common_rsp_t* gecko_cmd_mesh_generic_client_init_common()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_common_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_common;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_on_off
+*
+* Initialize generic on/off client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_on_off_rsp_t* gecko_cmd_mesh_generic_client_init_on_off()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_on_off_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_on_off;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_level
+*
+* Initialize generic level client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_level_rsp_t* gecko_cmd_mesh_generic_client_init_level()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_level_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_level;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_default_transition_time
+*
+* Initialize generic default transition time client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_default_transition_time_rsp_t* gecko_cmd_mesh_generic_client_init_default_transition_time()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_default_transition_time_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_default_transition_time;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_power_on_off
+*
+* Initialize generic power on/off client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_power_on_off_rsp_t* gecko_cmd_mesh_generic_client_init_power_on_off()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_power_on_off_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_power_on_off;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_power_level
+*
+* Initialize generic power level client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_power_level_rsp_t* gecko_cmd_mesh_generic_client_init_power_level()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_power_level_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_power_level;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_battery
+*
+* Initialize generic battery client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_battery_rsp_t* gecko_cmd_mesh_generic_client_init_battery()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_battery_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_battery;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_location
+*
+* Initialize generic location client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_location_rsp_t* gecko_cmd_mesh_generic_client_init_location()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_location_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_location;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_property
+*
+* Initialize generic property client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_property_rsp_t* gecko_cmd_mesh_generic_client_init_property()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_property_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_property;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_lightness
+*
+* Initialize light lightness client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_lightness_rsp_t* gecko_cmd_mesh_generic_client_init_lightness()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_lightness_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_lightness;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_client_init_ctl
+*
+* Initialize light CTL client models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_client_init_ctl_rsp_t* gecko_cmd_mesh_generic_client_init_ctl()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_client_init_ctl_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_client_init_ctl;
 }
 
 /** 
@@ -16843,7 +18596,10 @@ static inline struct gecko_msg_mesh_generic_server_publish_rsp_t* gecko_cmd_mesh
 *
 * gecko_cmd_mesh_generic_server_init
 *
-* Initialize generic server models 
+* Initialize generic server models. This command initializes all generic server
+* models on the device. Alternatively, only the necessary server models can be
+* initialized using model-specific initialization commands. Using model-specific
+* initialization can result in a smaller firmware image size for SoC projects. 
 *
 *
 **/
@@ -16858,6 +18614,243 @@ static inline struct gecko_msg_mesh_generic_server_init_rsp_t* gecko_cmd_mesh_ge
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_mesh_generic_server_init;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_common
+*
+* Initialize generic server model common functionality. This should be called
+* after all model-specific initialization calls are done, and does not need to
+* be called if command to initialize all generic server models is used. 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_common_rsp_t* gecko_cmd_mesh_generic_server_init_common()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_common_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_common;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_on_off
+*
+* Initialize generic on/off server models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_on_off_rsp_t* gecko_cmd_mesh_generic_server_init_on_off()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_on_off_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_on_off;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_level
+*
+* Initialize generic level server models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_level_rsp_t* gecko_cmd_mesh_generic_server_init_level()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_level_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_level;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_default_transition_time
+*
+* Initialize generic default transition time server models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_default_transition_time_rsp_t* gecko_cmd_mesh_generic_server_init_default_transition_time()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_default_transition_time_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_default_transition_time;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_power_on_off
+*
+* Initialize generic power on/off server models, power on/off setup server
+* models, and all models they extend 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_power_on_off_rsp_t* gecko_cmd_mesh_generic_server_init_power_on_off()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_power_on_off_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_power_on_off;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_power_level
+*
+* Initialize generic power level server models, power level setup server models,
+* and all models they extend 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_power_level_rsp_t* gecko_cmd_mesh_generic_server_init_power_level()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_power_level_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_power_level;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_battery
+*
+* Initialize generic battery server models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_battery_rsp_t* gecko_cmd_mesh_generic_server_init_battery()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_battery_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_battery;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_location
+*
+* Initialize generic location and generic location setup server models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_location_rsp_t* gecko_cmd_mesh_generic_server_init_location()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_location_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_location;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_property
+*
+* Initialize generic property server models 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_property_rsp_t* gecko_cmd_mesh_generic_server_init_property()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_property_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_property;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_lightness
+*
+* Initialize light lightness server models, light lightness setup server models,
+* and all models they extend 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_lightness_rsp_t* gecko_cmd_mesh_generic_server_init_lightness()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_lightness_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_lightness;
+}
+
+/** 
+*
+* gecko_cmd_mesh_generic_server_init_ctl
+*
+* Initialize light CTL server models, light CTL temperature server models, light
+* CTL setup server models, and all models they extend 
+*
+*
+**/
+
+static inline struct gecko_msg_mesh_generic_server_init_ctl_rsp_t* gecko_cmd_mesh_generic_server_init_ctl()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_generic_server_init_ctl_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_generic_server_init_ctl;
 }
 
 /** 
@@ -18174,6 +20167,56 @@ static inline struct gecko_msg_mesh_test_set_model_option_rsp_t* gecko_cmd_mesh_
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_mesh_test_set_model_option;
+}
+
+/** 
+*
+* gecko_cmd_mesh_test_get_local_model_app_bindings
+*
+* Get application key bindings of a model. 
+*
+* @param elem_index   The index of the target element, 0 is the primary element
+* @param vendor_id   Vendor ID for vendor-specific models. Use 0xffff for Bluetooth SIG models.
+* @param model_id   Model ID
+*
+**/
+
+static inline struct gecko_msg_mesh_test_get_local_model_app_bindings_rsp_t* gecko_cmd_mesh_test_get_local_model_app_bindings(uint16 elem_index,uint16 vendor_id,uint16 model_id)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_test_get_local_model_app_bindings.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_test_get_local_model_app_bindings.vendor_id=SL_BT_SWAP16(vendor_id);
+    gecko_cmd_msg->data.cmd_mesh_test_get_local_model_app_bindings.model_id=SL_BT_SWAP16(model_id);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_test_get_local_model_app_bindings_id+(((6)&0xff)<<8)+(((6)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_test_get_local_model_app_bindings;
+}
+
+/** 
+*
+* gecko_cmd_mesh_test_get_replay_protection_list_entry
+*
+* Get replay protection list entry for an address. 
+*
+* @param address   Source address to check
+*
+**/
+
+static inline struct gecko_msg_mesh_test_get_replay_protection_list_entry_rsp_t* gecko_cmd_mesh_test_get_replay_protection_list_entry(uint16 address)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_test_get_replay_protection_list_entry.address=SL_BT_SWAP16(address);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_test_get_replay_protection_list_entry_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_test_get_replay_protection_list_entry;
 }
 
 /** 
@@ -20157,7 +22200,7 @@ static inline struct gecko_msg_l2cap_coc_send_data_rsp_t* gecko_cmd_l2cap_coc_se
 
 /** 
 *
-* gecko_cmd_cte_transmitter_enable_cte_response
+* gecko_cmd_cte_transmitter_enable_connection_cte
 *
 * Enable different types of CTE responses on a connection. CTE response will be
 * sent once requested by the peer device using the CTE Request procedure. 
@@ -20175,31 +22218,31 @@ static inline struct gecko_msg_l2cap_coc_send_data_rsp_t* gecko_cmd_l2cap_coc_se
 *
 **/
 
-static inline struct gecko_msg_cte_transmitter_enable_cte_response_rsp_t* gecko_cmd_cte_transmitter_enable_cte_response(uint8 connection,uint8 cte_types,uint8 switching_pattern_len, const uint8* switching_pattern_data)
+static inline struct gecko_msg_cte_transmitter_enable_connection_cte_rsp_t* gecko_cmd_cte_transmitter_enable_connection_cte(uint8 connection,uint8 cte_types,uint8 switching_pattern_len, const uint8* switching_pattern_data)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     if ((uint16_t)switching_pattern_len > BGLIB_MSG_MAX_PAYLOAD - 3)
     {
-        gecko_rsp_msg->data.rsp_cte_transmitter_enable_cte_response.result = bg_err_command_too_long;
-        return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_cte_response;
+        gecko_rsp_msg->data.rsp_cte_transmitter_enable_connection_cte.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_connection_cte;
     }
 
     
-    gecko_cmd_msg->data.cmd_cte_transmitter_enable_cte_response.connection=(connection);
-    gecko_cmd_msg->data.cmd_cte_transmitter_enable_cte_response.cte_types=(cte_types);
-    gecko_cmd_msg->data.cmd_cte_transmitter_enable_cte_response.switching_pattern.len=switching_pattern_len;
-    memcpy(gecko_cmd_msg->data.cmd_cte_transmitter_enable_cte_response.switching_pattern.data,switching_pattern_data,switching_pattern_len);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_enable_cte_response_id+(((3+switching_pattern_len)&0xff)<<8)+(((3+switching_pattern_len)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connection_cte.connection=(connection);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connection_cte.cte_types=(cte_types);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connection_cte.switching_pattern.len=switching_pattern_len;
+    memcpy(gecko_cmd_msg->data.cmd_cte_transmitter_enable_connection_cte.switching_pattern.data,switching_pattern_data,switching_pattern_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_enable_connection_cte_id+(((3+switching_pattern_len)&0xff)<<8)+(((3+switching_pattern_len)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_cte_response;
+    return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_connection_cte;
 }
 
 /** 
 *
-* gecko_cmd_cte_transmitter_disable_cte_response
+* gecko_cmd_cte_transmitter_disable_connection_cte
 *
 * Disable CTE responses on a connection. 
 *
@@ -20207,33 +22250,33 @@ static inline struct gecko_msg_cte_transmitter_enable_cte_response_rsp_t* gecko_
 *
 **/
 
-static inline struct gecko_msg_cte_transmitter_disable_cte_response_rsp_t* gecko_cmd_cte_transmitter_disable_cte_response(uint8 connection)
+static inline struct gecko_msg_cte_transmitter_disable_connection_cte_rsp_t* gecko_cmd_cte_transmitter_disable_connection_cte(uint8 connection)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     
-    gecko_cmd_msg->data.cmd_cte_transmitter_disable_cte_response.connection=(connection);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_disable_cte_response_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_transmitter_disable_connection_cte.connection=(connection);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_disable_connection_cte_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_transmitter_disable_cte_response;
+    return &gecko_rsp_msg->data.rsp_cte_transmitter_disable_connection_cte;
 }
 
 /** 
 *
-* gecko_cmd_cte_transmitter_start_connectionless_cte
+* gecko_cmd_cte_transmitter_enable_connectionless_cte
 *
 * Start connectionless CTE transmit. CTEs will be transmitted in periodic
 * advertisement packets. As a result, a periodic advertising has to be started
 * prior this command. 
 *
-* @param adv   Periodic advertising handle
+* @param handle   Periodic advertising handle
 * @param cte_length   CTE length in 8 us units.
 *  
 *      Range: 0x02 to 0x14
 *      Time Range: 16 us to 160 us
-* @param cte_type   Requested CTE type
+* @param cte_type   CTE type
 *  
 *      0: AoA CTE
 *      1: AoD CTE with 1 us slots
@@ -20246,51 +22289,51 @@ static inline struct gecko_msg_cte_transmitter_disable_cte_response_rsp_t* gecko
 *
 **/
 
-static inline struct gecko_msg_cte_transmitter_start_connectionless_cte_rsp_t* gecko_cmd_cte_transmitter_start_connectionless_cte(uint8 adv,uint8 cte_length,uint8 cte_type,uint8 cte_count,uint8 switching_pattern_len, const uint8* switching_pattern_data)
+static inline struct gecko_msg_cte_transmitter_enable_connectionless_cte_rsp_t* gecko_cmd_cte_transmitter_enable_connectionless_cte(uint8 handle,uint8 cte_length,uint8 cte_type,uint8 cte_count,uint8 switching_pattern_len, const uint8* switching_pattern_data)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     if ((uint16_t)switching_pattern_len > BGLIB_MSG_MAX_PAYLOAD - 5)
     {
-        gecko_rsp_msg->data.rsp_cte_transmitter_start_connectionless_cte.result = bg_err_command_too_long;
-        return &gecko_rsp_msg->data.rsp_cte_transmitter_start_connectionless_cte;
+        gecko_rsp_msg->data.rsp_cte_transmitter_enable_connectionless_cte.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_connectionless_cte;
     }
 
     
-    gecko_cmd_msg->data.cmd_cte_transmitter_start_connectionless_cte.adv=(adv);
-    gecko_cmd_msg->data.cmd_cte_transmitter_start_connectionless_cte.cte_length=(cte_length);
-    gecko_cmd_msg->data.cmd_cte_transmitter_start_connectionless_cte.cte_type=(cte_type);
-    gecko_cmd_msg->data.cmd_cte_transmitter_start_connectionless_cte.cte_count=(cte_count);
-    gecko_cmd_msg->data.cmd_cte_transmitter_start_connectionless_cte.switching_pattern.len=switching_pattern_len;
-    memcpy(gecko_cmd_msg->data.cmd_cte_transmitter_start_connectionless_cte.switching_pattern.data,switching_pattern_data,switching_pattern_len);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_start_connectionless_cte_id+(((5+switching_pattern_len)&0xff)<<8)+(((5+switching_pattern_len)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connectionless_cte.handle=(handle);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connectionless_cte.cte_length=(cte_length);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connectionless_cte.cte_type=(cte_type);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connectionless_cte.cte_count=(cte_count);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_connectionless_cte.switching_pattern.len=switching_pattern_len;
+    memcpy(gecko_cmd_msg->data.cmd_cte_transmitter_enable_connectionless_cte.switching_pattern.data,switching_pattern_data,switching_pattern_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_enable_connectionless_cte_id+(((5+switching_pattern_len)&0xff)<<8)+(((5+switching_pattern_len)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_transmitter_start_connectionless_cte;
+    return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_connectionless_cte;
 }
 
 /** 
 *
-* gecko_cmd_cte_transmitter_stop_connectionless_cte
+* gecko_cmd_cte_transmitter_disable_connectionless_cte
 *
 * Stop the connectionless CTE transmit. 
 *
-* @param adv   Periodic advertising handle
+* @param handle   Periodic advertising handle
 *
 **/
 
-static inline struct gecko_msg_cte_transmitter_stop_connectionless_cte_rsp_t* gecko_cmd_cte_transmitter_stop_connectionless_cte(uint8 adv)
+static inline struct gecko_msg_cte_transmitter_disable_connectionless_cte_rsp_t* gecko_cmd_cte_transmitter_disable_connectionless_cte(uint8 handle)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     
-    gecko_cmd_msg->data.cmd_cte_transmitter_stop_connectionless_cte.adv=(adv);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_stop_connectionless_cte_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_transmitter_disable_connectionless_cte.handle=(handle);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_disable_connectionless_cte_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_transmitter_stop_connectionless_cte;
+    return &gecko_rsp_msg->data.rsp_cte_transmitter_disable_connectionless_cte;
 }
 
 /** 
@@ -20365,6 +22408,80 @@ static inline struct gecko_msg_cte_transmitter_clear_dtm_parameters_rsp_t* gecko
 
 /** 
 *
+* gecko_cmd_cte_transmitter_enable_silabs_cte
+*
+* Enable Silicon Labs CTE transmit. CTEs will be transmitted in extended
+* advertisement packets. As a result, extended advertising has to be started
+* prior this command. 
+*
+* @param handle   Advertising handle
+* @param cte_length   CTE length in 8 us units.
+*  
+*      Range: 0x02 to 0x14
+*      Time Range: 16 us to 160 us
+* @param cte_type   CTE type
+*  
+*      0: AoA CTE
+*      1: AoD CTE with 1 us slots
+*      2: AoD CTE with 2 us slots
+* @param cte_count   The number of CTEs to be transmitted in each extended advertising interval.
+*  Currently only cte_count = 1 is supported.
+* @param switching_pattern_len   Array length
+* @param switching_pattern_data   Antenna switching pattern. Antennas will be switched in this order with the
+*  antenna switch pins during CTE. If the CTE is longer than the switching
+*  pattern, the pattern starts over.
+*
+**/
+
+static inline struct gecko_msg_cte_transmitter_enable_silabs_cte_rsp_t* gecko_cmd_cte_transmitter_enable_silabs_cte(uint8 handle,uint8 cte_length,uint8 cte_type,uint8 cte_count,uint8 switching_pattern_len, const uint8* switching_pattern_data)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    if ((uint16_t)switching_pattern_len > BGLIB_MSG_MAX_PAYLOAD - 5)
+    {
+        gecko_rsp_msg->data.rsp_cte_transmitter_enable_silabs_cte.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_silabs_cte;
+    }
+
+    
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_silabs_cte.handle=(handle);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_silabs_cte.cte_length=(cte_length);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_silabs_cte.cte_type=(cte_type);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_silabs_cte.cte_count=(cte_count);
+    gecko_cmd_msg->data.cmd_cte_transmitter_enable_silabs_cte.switching_pattern.len=switching_pattern_len;
+    memcpy(gecko_cmd_msg->data.cmd_cte_transmitter_enable_silabs_cte.switching_pattern.data,switching_pattern_data,switching_pattern_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_enable_silabs_cte_id+(((5+switching_pattern_len)&0xff)<<8)+(((5+switching_pattern_len)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_cte_transmitter_enable_silabs_cte;
+}
+
+/** 
+*
+* gecko_cmd_cte_transmitter_disable_silabs_cte
+*
+* Disable Silicon Labs CTE transmit. 
+*
+* @param handle   Advertising handle
+*
+**/
+
+static inline struct gecko_msg_cte_transmitter_disable_silabs_cte_rsp_t* gecko_cmd_cte_transmitter_disable_silabs_cte(uint8 handle)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_cte_transmitter_disable_silabs_cte.handle=(handle);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_transmitter_disable_silabs_cte_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_cte_transmitter_disable_silabs_cte;
+}
+
+/** 
+*
 * gecko_cmd_cte_receiver_configure
 *
 * Configure the CTE sampling mode. 
@@ -20393,7 +22510,7 @@ static inline struct gecko_msg_cte_receiver_configure_rsp_t* gecko_cmd_cte_recei
 
 /** 
 *
-* gecko_cmd_cte_receiver_start_iq_sampling
+* gecko_cmd_cte_receiver_enable_connection_cte
 *
 * Start IQ samplings on a connection. A CTE requests will be initiated
 * periodically on the given connection and IQ sampling will be made on the
@@ -20424,38 +22541,38 @@ static inline struct gecko_msg_cte_receiver_configure_rsp_t* gecko_cmd_cte_recei
 *
 * Events generated
 *
-* gecko_evt_cte_receiver_iq_report - Triggered when IQ samples have been received.
+* gecko_evt_cte_receiver_connection_iq_report - Triggered when IQ samples have been received.
 *
 **/
 
-static inline struct gecko_msg_cte_receiver_start_iq_sampling_rsp_t* gecko_cmd_cte_receiver_start_iq_sampling(uint8 connection,uint16 interval,uint8 cte_length,uint8 cte_type,uint8 slot_durations,uint8 switching_pattern_len, const uint8* switching_pattern_data)
+static inline struct gecko_msg_cte_receiver_enable_connection_cte_rsp_t* gecko_cmd_cte_receiver_enable_connection_cte(uint8 connection,uint16 interval,uint8 cte_length,uint8 cte_type,uint8 slot_durations,uint8 switching_pattern_len, const uint8* switching_pattern_data)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     if ((uint16_t)switching_pattern_len > BGLIB_MSG_MAX_PAYLOAD - 7)
     {
-        gecko_rsp_msg->data.rsp_cte_receiver_start_iq_sampling.result = bg_err_command_too_long;
-        return &gecko_rsp_msg->data.rsp_cte_receiver_start_iq_sampling;
+        gecko_rsp_msg->data.rsp_cte_receiver_enable_connection_cte.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_cte_receiver_enable_connection_cte;
     }
 
     
-    gecko_cmd_msg->data.cmd_cte_receiver_start_iq_sampling.connection=(connection);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_iq_sampling.interval=SL_BT_SWAP16(interval);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_iq_sampling.cte_length=(cte_length);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_iq_sampling.cte_type=(cte_type);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_iq_sampling.slot_durations=(slot_durations);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_iq_sampling.switching_pattern.len=switching_pattern_len;
-    memcpy(gecko_cmd_msg->data.cmd_cte_receiver_start_iq_sampling.switching_pattern.data,switching_pattern_data,switching_pattern_len);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_start_iq_sampling_id+(((7+switching_pattern_len)&0xff)<<8)+(((7+switching_pattern_len)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connection_cte.connection=(connection);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connection_cte.interval=SL_BT_SWAP16(interval);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connection_cte.cte_length=(cte_length);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connection_cte.cte_type=(cte_type);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connection_cte.slot_durations=(slot_durations);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connection_cte.switching_pattern.len=switching_pattern_len;
+    memcpy(gecko_cmd_msg->data.cmd_cte_receiver_enable_connection_cte.switching_pattern.data,switching_pattern_data,switching_pattern_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_enable_connection_cte_id+(((7+switching_pattern_len)&0xff)<<8)+(((7+switching_pattern_len)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_receiver_start_iq_sampling;
+    return &gecko_rsp_msg->data.rsp_cte_receiver_enable_connection_cte;
 }
 
 /** 
 *
-* gecko_cmd_cte_receiver_stop_iq_sampling
+* gecko_cmd_cte_receiver_disable_connection_cte
 *
 * Stop the IQ sampling on a connection. CTEs will not be requested on the given
 * connection. 
@@ -20464,22 +22581,22 @@ static inline struct gecko_msg_cte_receiver_start_iq_sampling_rsp_t* gecko_cmd_c
 *
 **/
 
-static inline struct gecko_msg_cte_receiver_stop_iq_sampling_rsp_t* gecko_cmd_cte_receiver_stop_iq_sampling(uint8 connection)
+static inline struct gecko_msg_cte_receiver_disable_connection_cte_rsp_t* gecko_cmd_cte_receiver_disable_connection_cte(uint8 connection)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     
-    gecko_cmd_msg->data.cmd_cte_receiver_stop_iq_sampling.connection=(connection);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_stop_iq_sampling_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_receiver_disable_connection_cte.connection=(connection);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_disable_connection_cte_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_receiver_stop_iq_sampling;
+    return &gecko_rsp_msg->data.rsp_cte_receiver_disable_connection_cte;
 }
 
 /** 
 *
-* gecko_cmd_cte_receiver_start_connectionless_iq_sampling
+* gecko_cmd_cte_receiver_enable_connectionless_cte
 *
 * Start IQ sampling on a periodic advertising synchronization. IQ samples are
 * taken on each CTE found in the periodic advertisements. 
@@ -20498,36 +22615,36 @@ static inline struct gecko_msg_cte_receiver_stop_iq_sampling_rsp_t* gecko_cmd_ct
 *
 * Events generated
 *
-* gecko_evt_cte_receiver_iq_report - Triggered when IQ samples have been received.
+* gecko_evt_cte_receiver_connectionless_iq_report - Triggered when IQ samples have been received.
 *
 **/
 
-static inline struct gecko_msg_cte_receiver_start_connectionless_iq_sampling_rsp_t* gecko_cmd_cte_receiver_start_connectionless_iq_sampling(uint8 sync,uint8 slot_durations,uint8 cte_count,uint8 switching_pattern_len, const uint8* switching_pattern_data)
+static inline struct gecko_msg_cte_receiver_enable_connectionless_cte_rsp_t* gecko_cmd_cte_receiver_enable_connectionless_cte(uint8 sync,uint8 slot_durations,uint8 cte_count,uint8 switching_pattern_len, const uint8* switching_pattern_data)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     if ((uint16_t)switching_pattern_len > BGLIB_MSG_MAX_PAYLOAD - 4)
     {
-        gecko_rsp_msg->data.rsp_cte_receiver_start_connectionless_iq_sampling.result = bg_err_command_too_long;
-        return &gecko_rsp_msg->data.rsp_cte_receiver_start_connectionless_iq_sampling;
+        gecko_rsp_msg->data.rsp_cte_receiver_enable_connectionless_cte.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_cte_receiver_enable_connectionless_cte;
     }
 
     
-    gecko_cmd_msg->data.cmd_cte_receiver_start_connectionless_iq_sampling.sync=(sync);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_connectionless_iq_sampling.slot_durations=(slot_durations);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_connectionless_iq_sampling.cte_count=(cte_count);
-    gecko_cmd_msg->data.cmd_cte_receiver_start_connectionless_iq_sampling.switching_pattern.len=switching_pattern_len;
-    memcpy(gecko_cmd_msg->data.cmd_cte_receiver_start_connectionless_iq_sampling.switching_pattern.data,switching_pattern_data,switching_pattern_len);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_start_connectionless_iq_sampling_id+(((4+switching_pattern_len)&0xff)<<8)+(((4+switching_pattern_len)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connectionless_cte.sync=(sync);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connectionless_cte.slot_durations=(slot_durations);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connectionless_cte.cte_count=(cte_count);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_connectionless_cte.switching_pattern.len=switching_pattern_len;
+    memcpy(gecko_cmd_msg->data.cmd_cte_receiver_enable_connectionless_cte.switching_pattern.data,switching_pattern_data,switching_pattern_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_enable_connectionless_cte_id+(((4+switching_pattern_len)&0xff)<<8)+(((4+switching_pattern_len)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_receiver_start_connectionless_iq_sampling;
+    return &gecko_rsp_msg->data.rsp_cte_receiver_enable_connectionless_cte;
 }
 
 /** 
 *
-* gecko_cmd_cte_receiver_stop_connectionless_iq_sampling
+* gecko_cmd_cte_receiver_disable_connectionless_cte
 *
 * Stop IQ sampling on a periodic advertising synchronization. 
 *
@@ -20535,17 +22652,17 @@ static inline struct gecko_msg_cte_receiver_start_connectionless_iq_sampling_rsp
 *
 **/
 
-static inline struct gecko_msg_cte_receiver_stop_connectionless_iq_sampling_rsp_t* gecko_cmd_cte_receiver_stop_connectionless_iq_sampling(uint8 sync)
+static inline struct gecko_msg_cte_receiver_disable_connectionless_cte_rsp_t* gecko_cmd_cte_receiver_disable_connectionless_cte(uint8 sync)
 {
     struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
     struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
     
-    gecko_cmd_msg->data.cmd_cte_receiver_stop_connectionless_iq_sampling.sync=(sync);
-    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_stop_connectionless_iq_sampling_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
+    gecko_cmd_msg->data.cmd_cte_receiver_disable_connectionless_cte.sync=(sync);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_disable_connectionless_cte_id+(((1)&0xff)<<8)+(((1)&0x700)>>8));
     
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
-    return &gecko_rsp_msg->data.rsp_cte_receiver_stop_connectionless_iq_sampling;
+    return &gecko_rsp_msg->data.rsp_cte_receiver_disable_connectionless_cte;
 }
 
 /** 
@@ -20577,6 +22694,10 @@ static inline struct gecko_msg_cte_receiver_stop_connectionless_iq_sampling_rsp_
 * @param switching_pattern_data   Antenna switching pattern. Antennas will be switched in this order with the
 *  antenna switch pins during CTE. If the CTE is longer than the switching
 *  pattern, the pattern starts over. Default: empty array
+*
+* Events generated
+*
+* gecko_evt_cte_receiver_dtm_iq_report - Triggered when IQ samples have been received.
 *
 **/
 
@@ -20623,6 +22744,72 @@ static inline struct gecko_msg_cte_receiver_clear_dtm_parameters_rsp_t* gecko_cm
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_cte_receiver_clear_dtm_parameters;
+}
+
+/** 
+*
+* gecko_cmd_cte_receiver_enable_silabs_cte
+*
+* Enable IQ sampling of Silicon Labs CTE found in extended advertisements. 
+*
+* @param slot_durations   Slot durations
+*  
+*      1: Switching and sampling slots are 1 us each
+*      2: Switching and sampling slots are 2 us each
+* @param cte_count   * 0: Sample and report all available CTEs
+*      Other values: Maximum number of sampled CTEs in each extended advertising interval
+* @param switching_pattern_len   Array length
+* @param switching_pattern_data   Antenna switching pattern. Antennas will be switched in this order with the
+*  antenna switch pins during CTE. If the CTE is longer than the switching
+*  pattern, the pattern starts over.
+*
+* Events generated
+*
+* gecko_evt_cte_receiver_silabs_iq_report - Triggered when IQ samples of Silicon Labs CTE have been received.
+*
+**/
+
+static inline struct gecko_msg_cte_receiver_enable_silabs_cte_rsp_t* gecko_cmd_cte_receiver_enable_silabs_cte(uint8 slot_durations,uint8 cte_count,uint8 switching_pattern_len, const uint8* switching_pattern_data)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    if ((uint16_t)switching_pattern_len > BGLIB_MSG_MAX_PAYLOAD - 3)
+    {
+        gecko_rsp_msg->data.rsp_cte_receiver_enable_silabs_cte.result = bg_err_command_too_long;
+        return &gecko_rsp_msg->data.rsp_cte_receiver_enable_silabs_cte;
+    }
+
+    
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_silabs_cte.slot_durations=(slot_durations);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_silabs_cte.cte_count=(cte_count);
+    gecko_cmd_msg->data.cmd_cte_receiver_enable_silabs_cte.switching_pattern.len=switching_pattern_len;
+    memcpy(gecko_cmd_msg->data.cmd_cte_receiver_enable_silabs_cte.switching_pattern.data,switching_pattern_data,switching_pattern_len);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_enable_silabs_cte_id+(((3+switching_pattern_len)&0xff)<<8)+(((3+switching_pattern_len)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_cte_receiver_enable_silabs_cte;
+}
+
+/** 
+*
+* gecko_cmd_cte_receiver_disable_silabs_cte
+*
+* Disable IQ sampling of Silicon Labs CTE. 
+*
+*
+**/
+
+static inline struct gecko_msg_cte_receiver_disable_silabs_cte_rsp_t* gecko_cmd_cte_receiver_disable_silabs_cte()
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_cte_receiver_disable_silabs_cte_id+(((0)&0xff)<<8)+(((0)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_cte_receiver_disable_silabs_cte;
 }
 
 /** 
@@ -20712,7 +22899,8 @@ static inline struct gecko_msg_mesh_sensor_server_deinit_rsp_t* gecko_cmd_mesh_s
 * request. 
 *
 * @param elem_index   Server model element index
-* @param client_address   Destination client address.
+* @param client_address   Destination client address. The address 0x0000 can be used to publish the
+*  message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param descriptors_len   Array length
@@ -20759,7 +22947,7 @@ static inline struct gecko_msg_mesh_sensor_server_send_descriptor_status_rsp_t* 
 * unsolicited message. 
 *
 * @param elem_index   Setup Server model element index
-* @param client_address   Destination client address The address 0x0000 can be used to publish the
+* @param client_address   Destination client address. The address 0x0000 can be used to publish the
 *  message according to model configuration
 * @param appkey_index   The application key index to use
 * @param flags   No flags defined currently
@@ -20812,7 +23000,8 @@ static inline struct gecko_msg_mesh_sensor_server_send_status_rsp_t* gecko_cmd_m
 * an unsolicited message 
 *
 * @param elem_index   Client model element index
-* @param client_address   Destination client address
+* @param client_address   Destination client address. The address 0x0000 can be used to publish the
+*  message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -20864,7 +23053,8 @@ static inline struct gecko_msg_mesh_sensor_server_send_column_status_rsp_t* geck
 * an unsolicited message 
 *
 * @param elem_index   Client model element index
-* @param client_address   Destination client address
+* @param client_address   Destination client address. The address 0x0000 can be used to publish the
+*  message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -21111,7 +23301,8 @@ static inline struct gecko_msg_mesh_sensor_client_deinit_rsp_t* gecko_cmd_mesh_s
 * model. Results in a Sensor Descriptor Status event 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param property_id   ProperyID for the sensor (optional). Range: 0x0001 - 0xffff for a specific
@@ -21147,7 +23338,8 @@ static inline struct gecko_msg_mesh_sensor_client_get_descriptor_rsp_t* gecko_cm
 * element. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -21180,7 +23372,8 @@ static inline struct gecko_msg_mesh_sensor_client_get_rsp_t* gecko_cmd_mesh_sens
 * Get a Sensor Series Column state, results in a Sensor Column Status event. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -21223,7 +23416,8 @@ static inline struct gecko_msg_mesh_sensor_client_get_column_rsp_t* gecko_cmd_me
 * event. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -21266,7 +23460,8 @@ static inline struct gecko_msg_mesh_sensor_client_get_series_rsp_t* gecko_cmd_me
 * results in a Sensor Cadence Status message. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -21301,7 +23496,8 @@ static inline struct gecko_msg_mesh_sensor_client_get_cadence_rsp_t* gecko_cmd_m
 * case. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET CADENCE message will be sent, zero will send SET CADENCE
@@ -21355,7 +23551,8 @@ static inline struct gecko_msg_mesh_sensor_client_set_cadence_rsp_t* gecko_cmd_m
 * for the given sensor, which results in a Sensor Settings Status event. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -21388,7 +23585,8 @@ static inline struct gecko_msg_mesh_sensor_client_get_settings_rsp_t* gecko_cmd_
 * the given sensor, which results in a Sensor Setting Status event. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   No flags defined currently
 * @param property_id   Property ID for the sensor. Range: 0x0001 - 0x0ffff for a specific device
@@ -21426,7 +23624,8 @@ static inline struct gecko_msg_mesh_sensor_client_get_setting_rsp_t* gecko_cmd_m
 * Status reply. The server must publish its new state in any case. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET SETTING message is sent, zero will use SET SETTING
@@ -21498,7 +23697,8 @@ static inline struct gecko_msg_mesh_lc_client_init_rsp_t* gecko_cmd_mesh_lc_clie
 * Get the mode status. 
 *
 * @param elem_index   Index of the client element.
-* @param server_address   Device to be queried.
+* @param server_address   Device to be queried. The address 0x0000 can be used to publish the message
+*  according to model configuration
 * @param appkey_index   Appkey used by server_address.
 *
 * Events generated
@@ -21529,7 +23729,8 @@ static inline struct gecko_msg_mesh_lc_client_get_mode_rsp_t* gecko_cmd_mesh_lc_
 * Set mode 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET PROPERTY message will be sent, zero will send SET PROPERTY
@@ -21566,7 +23767,8 @@ static inline struct gecko_msg_mesh_lc_client_set_mode_rsp_t* gecko_cmd_mesh_lc_
 * Get the OM status. 
 *
 * @param elem_index   Index of the client element.
-* @param server_address   Device to be queried.
+* @param server_address   Device to be queried. The address 0x0000 can be used to publish the message
+*  according to model configuration
 * @param appkey_index   Appkey used by server_address.
 *
 * Events generated
@@ -21597,7 +23799,8 @@ static inline struct gecko_msg_mesh_lc_client_get_om_rsp_t* gecko_cmd_mesh_lc_cl
 * Set occupancy mode 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET PROPERTY message will be sent, zero will send SET PROPERTY
@@ -21634,7 +23837,8 @@ static inline struct gecko_msg_mesh_lc_client_set_om_rsp_t* gecko_cmd_mesh_lc_cl
 * Get the Light OnOff status. 
 *
 * @param elem_index   Index of the client element.
-* @param server_address   Device to be queried.
+* @param server_address   Device to be queried. The address 0x0000 can be used to publish the message
+*  according to model configuration
 * @param appkey_index   Appkey used by server_address.
 *
 * Events generated
@@ -21665,7 +23869,8 @@ static inline struct gecko_msg_mesh_lc_client_get_light_onoff_rsp_t* gecko_cmd_m
 * Set Light OnOff 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET PROPERTY message will be sent, zero will send SET PROPERTY
@@ -21711,7 +23916,8 @@ static inline struct gecko_msg_mesh_lc_client_set_light_onoff_rsp_t* gecko_cmd_m
 * Get the Property status. 
 *
 * @param elem_index   Index of the client element.
-* @param server_address   Device to be queried.
+* @param server_address   Device to be queried. The address 0x0000 can be used to publish the message
+*  according to model configuration
 * @param appkey_index   Appkey used by server_address.
 * @param property_id   The property ID to query.
 *
@@ -21744,7 +23950,8 @@ static inline struct gecko_msg_mesh_lc_client_get_property_rsp_t* gecko_cmd_mesh
 * Set a particular property 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET PROPERTY message will be sent, zero will send SET PROPERTY
@@ -22023,6 +24230,62 @@ static inline struct gecko_msg_mesh_lc_server_set_regulator_interval_rsp_t* geck
 
 /** 
 *
+* gecko_cmd_mesh_lc_server_set_event_mask
+*
+* This command will enable or disable additional diagnostics events. See
+* lc_debug_events. 
+*
+* @param elem_index   Index of the element.
+* @param event_type   The type of event to enable/disable. Options are:
+*  
+*  lc_event_state_updated = 0x01, state_updated event report state changes
+*  lc_event_regulator_debug_info = 0x02, regulator_debug_info Regulator
+*  calculation details
+* @param value   Valid values are 0 and 1 to disable or enable the event
+*
+**/
+
+static inline struct gecko_msg_mesh_lc_server_set_event_mask_rsp_t* gecko_cmd_mesh_lc_server_set_event_mask(uint16 elem_index,uint16 event_type,uint8 value)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_lc_server_set_event_mask.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_lc_server_set_event_mask.event_type=SL_BT_SWAP16(event_type);
+    gecko_cmd_msg->data.cmd_mesh_lc_server_set_event_mask.value=(value);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_lc_server_set_event_mask_id+(((5)&0xff)<<8)+(((5)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_lc_server_set_event_mask;
+}
+
+/** 
+*
+* gecko_cmd_mesh_lc_server_get_lc_state
+*
+* This command will fetch the current LC state. States can be as Off, Standby,
+* Fade On, Run, Fade, Prolong, Fade Standby Auto, Fade Standby Manual 
+*
+* @param elem_index   Index of the element.
+*
+**/
+
+static inline struct gecko_msg_mesh_lc_server_get_lc_state_rsp_t* gecko_cmd_mesh_lc_server_get_lc_state(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_lc_server_get_lc_state.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_lc_server_get_lc_state_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_lc_server_get_lc_state;
+}
+
+/** 
+*
 * gecko_cmd_mesh_lc_setup_server_update_property
 *
 * Command for updating LC Server property. Application may choose to directly
@@ -22091,7 +24354,8 @@ static inline struct gecko_msg_mesh_scene_client_init_rsp_t* gecko_cmd_mesh_scen
 * Scene Get command. 
 *
 * @param elem_index   Index of the client element.
-* @param server_address   Device to be queried.
+* @param server_address   Device to be queried. The address 0x0000 can be used to publish the message
+*  according to model configuration
 * @param appkey_index   Appkey used by server_address.
 *
 * Events generated
@@ -22122,7 +24386,8 @@ static inline struct gecko_msg_mesh_scene_client_get_rsp_t* gecko_cmd_mesh_scene
 * Scene Register Get command 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 *
 * Events generated
@@ -22153,7 +24418,8 @@ static inline struct gecko_msg_mesh_scene_client_get_register_rsp_t* gecko_cmd_m
 * Recall a scene. 
 *
 * @param elem_index   Index of the client element.
-* @param server_address   Destination server model address.
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   Appkey used by server_address.
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET PROPERTY message will be sent, zero will send SET PROPERTY
@@ -22197,7 +24463,8 @@ static inline struct gecko_msg_mesh_scene_client_recall_rsp_t* gecko_cmd_mesh_sc
 * Store a scene. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET PROPERTY message will be sent, zero will send SET PROPERTY
@@ -22230,7 +24497,8 @@ static inline struct gecko_msg_mesh_scene_client_store_rsp_t* gecko_cmd_mesh_sce
 * Delete a scene. 
 *
 * @param elem_index   Client model element index
-* @param server_address   Destination server model address
+* @param server_address   Destination server model address. The address 0x0000 can be used to publish
+*  the message according to model configuration
 * @param appkey_index   The application key index to use.
 * @param flags   Bit 1 (0x02) defines whether response is required.  
 *  If set to 1, SET PROPERTY message will be sent, zero will send SET PROPERTY
@@ -22305,6 +24573,33 @@ static inline struct gecko_msg_mesh_scene_server_deinit_rsp_t* gecko_cmd_mesh_sc
 
 /** 
 *
+* gecko_cmd_mesh_scene_server_reset_register
+*
+* Reset register value. This commmand should be invoked if state of a model has
+* been modified in such a manner that it cannot no longer considered to be in
+* scene indicated by the scene register. 
+*
+* @param elem_index   Index of the element. This can be either element of the updated model or the
+*  element of the scene model responsible for controlling scene of the updated
+*  model.
+*
+**/
+
+static inline struct gecko_msg_mesh_scene_server_reset_register_rsp_t* gecko_cmd_mesh_scene_server_reset_register(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scene_server_reset_register.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scene_server_reset_register_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scene_server_reset_register;
+}
+
+/** 
+*
 * gecko_cmd_mesh_scene_setup_server_init
 *
 * Initializes the Scene Setup Server model. Server does not have any internal
@@ -22325,6 +24620,889 @@ static inline struct gecko_msg_mesh_scene_setup_server_init_rsp_t* gecko_cmd_mes
     gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
     
     return &gecko_rsp_msg->data.rsp_mesh_scene_setup_server_init;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_client_init
+*
+* Initializes the Scheduler Client model 
+*
+* @param elem_index   Client model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_client_init_rsp_t* gecko_cmd_mesh_scheduler_client_init(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_init.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_client_init_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_client_init;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_client_deinit
+*
+* Deinitializes the Scheduler Client model 
+*
+* @param elem_index   Client model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_client_deinit_rsp_t* gecko_cmd_mesh_scheduler_client_deinit(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_deinit.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_client_deinit_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_client_deinit;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_client_get
+*
+* Send a Scheduler Get message to get the Scheduler Register status of a
+* Scheduler Server 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+*
+* Events generated
+*
+* gecko_evt_mesh_scheduler_client_status - 
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_client_get_rsp_t* gecko_cmd_mesh_scheduler_client_get(uint16 elem_index,uint16 server_address,uint16 appkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_get.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_get.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_get.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_client_get_id+(((6)&0xff)<<8)+(((6)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_client_get;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_client_get_action
+*
+* Send a Scheduler Action Get message to get action defined by a Schedule
+* Register state entry 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+* @param index   Index of the Scgeduler Register entry to get
+*
+* Events generated
+*
+* gecko_evt_mesh_scheduler_client_action_status - 
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_client_get_action_rsp_t* gecko_cmd_mesh_scheduler_client_get_action(uint16 elem_index,uint16 server_address,uint16 appkey_index,uint8 index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_get_action.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_get_action.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_get_action.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_get_action.index=(index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_client_get_action_id+(((7)&0xff)<<8)+(((7)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_client_get_action;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_client_set_action
+*
+* Send a Scheduler Action Set message to set the given entry of the Scheduler
+* Register state
+* 
+* For the description of these fields, please see Scheduler Server 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+* @param flags   Bit 1 (0x02) defines whether response is required, othewise the unacknowledged
+*  message is used.
+* @param index   Index of the Scheduler Register entry to set
+* @param year   Scheduled year for the action
+* @param month   Scheduled month for the action
+* @param day   Scheduled day of the month for the action
+* @param hour   Scheduled hour for the action
+* @param minute   Scheduled minute for the action
+* @param second   Scheduled second for the action
+* @param day_of_week   Scheduled days of the week for the action
+* @param action   Action to be performed at the scheduled time
+* @param transition_time   Transition time for this action
+* @param scene_number   Scene number to be used for some actions
+*
+* Events generated
+*
+* gecko_evt_mesh_scheduler_client_action_status - 
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_client_set_action_rsp_t* gecko_cmd_mesh_scheduler_client_set_action(uint16 elem_index,uint16 server_address,uint16 appkey_index,uint8 flags,uint8 index,uint8 year,uint16 month,uint8 day,uint8 hour,uint8 minute,uint8 second,uint8 day_of_week,uint8 action,uint8 transition_time,uint16 scene_number)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.flags=(flags);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.index=(index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.year=(year);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.month=SL_BT_SWAP16(month);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.day=(day);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.hour=(hour);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.minute=(minute);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.second=(second);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.day_of_week=(day_of_week);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.action=(action);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.transition_time=(transition_time);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_client_set_action.scene_number=SL_BT_SWAP16(scene_number);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_client_set_action_id+(((20)&0xff)<<8)+(((20)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_client_set_action;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_server_init
+*
+* Initializes the Scheduler Server model 
+*
+* @param elem_index   Scheduler server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_server_init_rsp_t* gecko_cmd_mesh_scheduler_server_init(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_init.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_server_init_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_server_init;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_server_deinit
+*
+* Deinitializes the Scheduler Server model 
+*
+* @param elem_index   Scheduler server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_server_deinit_rsp_t* gecko_cmd_mesh_scheduler_server_deinit(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_deinit.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_server_deinit_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_server_deinit;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_server_get
+*
+* Get Scheduler Register status of Scheduler Server 
+*
+* @param elem_index   Scheduler server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_server_get_rsp_t* gecko_cmd_mesh_scheduler_server_get(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_get.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_server_get_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_server_get;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_server_get_action
+*
+* Get the Scheduler Action defined by a Schedule Register state entry.
+* 
+* For the description of returned fields, please see Scheduler Server 
+*
+* @param elem_index   Scheduler server model element index
+* @param index   Index of the Scgeduler Register entry to get
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_server_get_action_rsp_t* gecko_cmd_mesh_scheduler_server_get_action(uint16 elem_index,uint8 index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_get_action.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_get_action.index=(index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_server_get_action_id+(((3)&0xff)<<8)+(((3)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_server_get_action;
+}
+
+/** 
+*
+* gecko_cmd_mesh_scheduler_server_set_action
+*
+* Set the given Scheduler Action entry of the Scheduler Register state
+* 
+* For the description of these fields, please see Scheduler Server 
+*
+* @param elem_index   Scheduler server model element index
+* @param index   Index of the Scheduler Register entry to set
+* @param year   Scheduled year for the action
+* @param month   Scheduled month for the action
+* @param day   Scheduled day of the month for the action
+* @param hour   Scheduled hour for the action
+* @param minute   Scheduled minute for the action
+* @param second   Scheduled second for the action
+* @param day_of_week   Scheduled days of the week for the action
+* @param action   Action to be performed at the scheduled time
+* @param transition_time   Transition time for this action
+* @param scene_number   Scene number to be used for some actions
+*
+**/
+
+static inline struct gecko_msg_mesh_scheduler_server_set_action_rsp_t* gecko_cmd_mesh_scheduler_server_set_action(uint16 elem_index,uint8 index,uint8 year,uint16 month,uint8 day,uint8 hour,uint8 minute,uint8 second,uint8 day_of_week,uint8 action,uint8 transition_time,uint16 scene_number)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.index=(index);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.year=(year);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.month=SL_BT_SWAP16(month);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.day=(day);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.hour=(hour);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.minute=(minute);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.second=(second);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.day_of_week=(day_of_week);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.action=(action);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.transition_time=(transition_time);
+    gecko_cmd_msg->data.cmd_mesh_scheduler_server_set_action.scene_number=SL_BT_SWAP16(scene_number);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_scheduler_server_set_action_id+(((15)&0xff)<<8)+(((15)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_scheduler_server_set_action;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_init
+*
+* Initializes the Time Server model 
+*
+* @param elem_index   Server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_init_rsp_t* gecko_cmd_mesh_time_server_init(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_init.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_init_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_init;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_deinit
+*
+* Deinitializes the Time Server model 
+*
+* @param elem_index   Server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_deinit_rsp_t* gecko_cmd_mesh_time_server_deinit(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_deinit.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_deinit_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_deinit;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_get_time
+*
+* Get the current time from Time Server> 
+*
+* @param elem_index   Server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_get_time_rsp_t* gecko_cmd_mesh_time_server_get_time(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_get_time.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_get_time_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_get_time;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_set_time
+*
+* Sets the current time for the element. 
+*
+* @param elem_index   Server model element index
+* @param tai_seconds   The current TAI time in seconds
+* @param subsecond   The sub-second time in units of 1/256th second
+* @param uncertainty   The estimated uncertainty in 10 millisecond steps
+* @param time_authority   0 = No Time Authority, 1 = Time Authority
+* @param time_zone_offset   Current local time zone offset. Range is -64 to 191, representing -16 to 47.75
+*  hours.
+* @param tai_utc_delta   Current difference between TAI and UTC in seconds. Range is -255 to 32512.
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_set_time_rsp_t* gecko_cmd_mesh_time_server_set_time(uint16 elem_index,uint64 tai_seconds,uint8 subsecond,uint8 uncertainty,uint8 time_authority,int16 time_zone_offset,int32 tai_utc_delta)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time.tai_seconds=(tai_seconds);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time.subsecond=(subsecond);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time.uncertainty=(uncertainty);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time.time_authority=(time_authority);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time.time_zone_offset=SL_BT_SWAP16(time_zone_offset);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time.tai_utc_delta=SL_BT_SWAP32(tai_utc_delta);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_set_time_id+(((19)&0xff)<<8)+(((19)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_set_time;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_get_time_zone_offset_new
+*
+* Get the upcoming time zone offset from Time Server 
+*
+* @param elem_index   Server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_get_time_zone_offset_new_rsp_t* gecko_cmd_mesh_time_server_get_time_zone_offset_new(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_get_time_zone_offset_new.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_get_time_zone_offset_new_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_get_time_zone_offset_new;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_set_time_zone_offset_new
+*
+* Sets the upcoming time zone offset for the element 
+*
+* @param elem_index   Server model element index
+* @param new_offset   Upcoming local time zone offset. Range is -64 to 191, representing -16 to
+*  47.75 hours.
+* @param tai_of_zone_change   Absolute TAI time when the Time Zone Offset will change from Current to New
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_set_time_zone_offset_new_rsp_t* gecko_cmd_mesh_time_server_set_time_zone_offset_new(uint16 elem_index,int16 new_offset,uint64 tai_of_zone_change)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time_zone_offset_new.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time_zone_offset_new.new_offset=SL_BT_SWAP16(new_offset);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time_zone_offset_new.tai_of_zone_change=(tai_of_zone_change);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_set_time_zone_offset_new_id+(((12)&0xff)<<8)+(((12)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_set_time_zone_offset_new;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_get_tai_utc_delta_new
+*
+* Get the upcoming TAI-UTC delta for the element 
+*
+* @param elem_index   Server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_get_tai_utc_delta_new_rsp_t* gecko_cmd_mesh_time_server_get_tai_utc_delta_new(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_get_tai_utc_delta_new.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_get_tai_utc_delta_new_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_get_tai_utc_delta_new;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_set_tai_utc_delta_new
+*
+* Sets the upcoming TAI-UTC delta for the element 
+*
+* @param elem_index   Server model element index
+* @param new_delta   Upcoming difference between TAI and UTC in seconds
+* @param tai_of_delta_change   Absolute TAI time when the TAI-UTC Delta will change from Current to New
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_set_tai_utc_delta_new_rsp_t* gecko_cmd_mesh_time_server_set_tai_utc_delta_new(uint16 elem_index,int32 new_delta,uint64 tai_of_delta_change)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_tai_utc_delta_new.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_tai_utc_delta_new.new_delta=SL_BT_SWAP32(new_delta);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_tai_utc_delta_new.tai_of_delta_change=(tai_of_delta_change);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_set_tai_utc_delta_new_id+(((14)&0xff)<<8)+(((14)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_set_tai_utc_delta_new;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_get_time_role
+*
+* Get Time Role for the element 
+*
+* @param elem_index   Server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_get_time_role_rsp_t* gecko_cmd_mesh_time_server_get_time_role(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_get_time_role.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_get_time_role_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_get_time_role;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_set_time_role
+*
+* Sets Time Role for the element 
+*
+* @param elem_index   Server model element index
+* @param time_role   Time Role of the element
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_set_time_role_rsp_t* gecko_cmd_mesh_time_server_set_time_role(uint16 elem_index,uint8 time_role)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time_role.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_server_set_time_role.time_role=(time_role);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_set_time_role_id+(((3)&0xff)<<8)+(((3)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_set_time_role;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_server_get_datetime
+*
+* Returns the date and time from the Time Server 
+*
+* @param elem_index   Server model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_server_get_datetime_rsp_t* gecko_cmd_mesh_time_server_get_datetime(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_server_get_datetime.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_server_get_datetime_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_server_get_datetime;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_init
+*
+* Initializes the Time Client model 
+*
+* @param elem_index   Client model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_init_rsp_t* gecko_cmd_mesh_time_client_init(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_init.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_init_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_init;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_deinit
+*
+* Deinitializes the Time Client model 
+*
+* @param elem_index   Client model element index
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_deinit_rsp_t* gecko_cmd_mesh_time_client_deinit(uint16 elem_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_deinit.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_deinit_id+(((2)&0xff)<<8)+(((2)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_deinit;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_get_time
+*
+* Sends a Time Get message to Time Server 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_get_time_rsp_t* gecko_cmd_mesh_time_client_get_time(uint16 elem_index,uint16 server_address,uint16 appkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_get_time_id+(((6)&0xff)<<8)+(((6)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_get_time;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_set_time
+*
+* Sends a Time Set message to Time Server 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+* @param tai_seconds   The current TAI time in seconds since the epoch, 40-bit value
+* @param subsecond   The sub-second in units of 1/256th second. Range is 0-255.
+* @param uncertainty   The estimated uncertainty in 10-milliseconds steps. Range is 0-255,
+*  representing up to 2.55 seconds.
+* @param time_authority   0: No Time Authority, the element does not have a trusted source of time such
+*  as GPS or NTP. 1: Time Authority, the element has a trusted source of time or
+*  a battery-backed properly initialized RTC. Other values are prohibited.
+* @param tai_utc_delta   Current difference between TAI and UTC in seconds. Range is -255 to 32512.
+* @param time_zone_offset   The local time zone offset in 15-minute increments. Range is -64 to 191,
+*  representing -16 to 47.75 hours.
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_set_time_rsp_t* gecko_cmd_mesh_time_client_set_time(uint16 elem_index,uint16 server_address,uint16 appkey_index,uint64 tai_seconds,uint8 subsecond,uint8 uncertainty,uint8 time_authority,int32 tai_utc_delta,int16 time_zone_offset)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.tai_seconds=(tai_seconds);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.subsecond=(subsecond);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.uncertainty=(uncertainty);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.time_authority=(time_authority);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.tai_utc_delta=SL_BT_SWAP32(tai_utc_delta);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time.time_zone_offset=SL_BT_SWAP16(time_zone_offset);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_set_time_id+(((23)&0xff)<<8)+(((23)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_set_time;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_get_time_zone
+*
+* Sends a Time Zone Get message to Time Server 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_get_time_zone_rsp_t* gecko_cmd_mesh_time_client_get_time_zone(uint16 elem_index,uint16 server_address,uint16 appkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time_zone.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time_zone.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time_zone.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_get_time_zone_id+(((6)&0xff)<<8)+(((6)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_get_time_zone;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_set_time_zone
+*
+* Sends a Time Zone Set message to Time Server to set the Time Zone New state 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+* @param time_zone_offset_new   Upcoming local time zone offset. Range is -64 to 191, representing -16 to
+*  47.75 hours.
+* @param tai_of_zone_change   TAI Seconds time of upcoming Time Zone offset change
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_set_time_zone_rsp_t* gecko_cmd_mesh_time_client_set_time_zone(uint16 elem_index,uint16 server_address,uint16 appkey_index,int16 time_zone_offset_new,uint64 tai_of_zone_change)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_zone.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_zone.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_zone.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_zone.time_zone_offset_new=SL_BT_SWAP16(time_zone_offset_new);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_zone.tai_of_zone_change=(tai_of_zone_change);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_set_time_zone_id+(((16)&0xff)<<8)+(((16)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_set_time_zone;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_get_tai_utc_delta
+*
+* Sends a TAI-UTC Delta Get message to Time Server 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_get_tai_utc_delta_rsp_t* gecko_cmd_mesh_time_client_get_tai_utc_delta(uint16 elem_index,uint16 server_address,uint16 appkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_tai_utc_delta.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_tai_utc_delta.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_tai_utc_delta.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_get_tai_utc_delta_id+(((6)&0xff)<<8)+(((6)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_get_tai_utc_delta;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_set_tai_utc_delta
+*
+* Sends a TAI-UTC Delta Set message to Time Server, which responds with a TAI-
+* UTC Delta Status message. 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+* @param tai_utc_delta_new   Upcoming difference between TAI and UTC is seconds. Range is -255 to 32512.
+* @param tai_of_delta_change   TAI Seconds time of the upcoming TAI-UTC Delta change
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_set_tai_utc_delta_rsp_t* gecko_cmd_mesh_time_client_set_tai_utc_delta(uint16 elem_index,uint16 server_address,uint16 appkey_index,int32 tai_utc_delta_new,uint64 tai_of_delta_change)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_tai_utc_delta.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_tai_utc_delta.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_tai_utc_delta.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_tai_utc_delta.tai_utc_delta_new=SL_BT_SWAP32(tai_utc_delta_new);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_tai_utc_delta.tai_of_delta_change=(tai_of_delta_change);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_set_tai_utc_delta_id+(((18)&0xff)<<8)+(((18)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_set_tai_utc_delta;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_get_time_role
+*
+* Sends a Time Role Get message to Time Server, which responds with a Time Role
+* Status message. 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_get_time_role_rsp_t* gecko_cmd_mesh_time_client_get_time_role(uint16 elem_index,uint16 server_address,uint16 appkey_index)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time_role.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time_role.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_get_time_role.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_get_time_role_id+(((6)&0xff)<<8)+(((6)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_get_time_role;
+}
+
+/** 
+*
+* gecko_cmd_mesh_time_client_set_time_role
+*
+* Sends Time Role Get message to Time Server, which responds with a Time Role
+* Status message. 
+*
+* @param elem_index   Client model element index
+* @param server_address   Destination server model address
+* @param appkey_index   The application key index to use.
+* @param time_role   The Time Role for the element.
+*
+**/
+
+static inline struct gecko_msg_mesh_time_client_set_time_role_rsp_t* gecko_cmd_mesh_time_client_set_time_role(uint16 elem_index,uint16 server_address,uint16 appkey_index,uint8 time_role)
+{
+    struct gecko_cmd_packet *gecko_cmd_msg = (struct gecko_cmd_packet *)gecko_cmd_msg_buf;
+    struct gecko_cmd_packet *gecko_rsp_msg = (struct gecko_cmd_packet *)gecko_rsp_msg_buf;
+    
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_role.elem_index=SL_BT_SWAP16(elem_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_role.server_address=SL_BT_SWAP16(server_address);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_role.appkey_index=SL_BT_SWAP16(appkey_index);
+    gecko_cmd_msg->data.cmd_mesh_time_client_set_time_role.time_role=(time_role);
+    gecko_cmd_msg->header=SL_BT_SWAP32(gecko_cmd_mesh_time_client_set_time_role_id+(((7)&0xff)<<8)+(((7)&0x700)>>8));
+    
+    gecko_handle_command(gecko_cmd_msg->header,&gecko_cmd_msg->data.payload);
+    
+    return &gecko_rsp_msg->data.rsp_mesh_time_client_set_time_role;
 }
 
 /** 
